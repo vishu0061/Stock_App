@@ -924,3 +924,51 @@
         overflow-x: auto;
     }
 }
+
+
+/* =========================================================
+   SECTION HEADER ROW
+========================================================= */
+
+.adminSectionHeaderRow {
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.adminSectionIcon {
+    flex-shrink: 0;
+}
+
+
+/* =========================================================
+   VIEW GRAPH BUTTON
+========================================================= */
+
+.adminGraphBtn.sapMBtn {
+    height: 28px !important;
+    min-width: 80px !important;
+}
+
+.adminGraphBtn .sapMBtnInner {
+    background: rgba(124, 58, 237, 0.15) !important;
+    border: 1px solid rgba(124, 58, 237, 0.40) !important;
+    border-radius: 8px !important;
+    color: #c4b5fd !important;
+    font-size: 0.80rem !important;
+    font-weight: 600 !important;
+    height: 28px !important;
+    transition: all 0.2s ease !important;
+}
+
+.adminGraphBtn .sapMBtnInner:hover {
+    background: rgba(124, 58, 237, 0.30) !important;
+    border-color: #7c3aed !important;
+    color: white !important;
+    transform: scale(1.04);
+}
+
+.adminVizFrame {
+    border-radius: 12px;
+    overflow: hidden;
+}

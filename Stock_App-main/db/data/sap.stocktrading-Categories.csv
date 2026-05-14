@@ -1,5 +1,5 @@
-ID,name,description,isActive
-CAT001,Energy,Energy Sector,true
-CAT002,Technology,Technology Sector,true
-CAT003,Banking,Banking Sector,true
-CAT004,Automotive,Automotive Sector,true
+ID,name,description,isActive,createdAt,createdBy,modifiedAt,modifiedBy
+00000000-0000-0000-0000-000000000001,Energy,Energy Sector,true,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+00000000-0000-0000-0000-000000000002,Technology,Technology Sector,true,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+00000000-0000-0000-0000-000000000003,Banking,Banking Sector,true,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+00000000-0000-0000-0000-000000000004,Automotive,Automotive Sector,true,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin

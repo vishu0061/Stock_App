@@ -47,11 +47,17 @@ sap.ui.define([
         // ================= NAVIGATION =================
 
         onNavBack: function () {
-
             window.history.go(-1);
-
         },
 
+        onNotificationsPress: function () {
+            MessageToast.show("No new notifications");
+        },
+
+        onAvatarPress: function () {
+            var oVM = this.getView().getModel("custVM");
+            MessageToast.show("Trading as: " + (oVM.getProperty("/customerName") || "Demo Customer"));
+        },
         // ================= PORTFOLIO PAGE =================
 
         onPortfolioPress: function () {

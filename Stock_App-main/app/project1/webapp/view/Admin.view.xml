@@ -130,32 +130,34 @@
                     </HBox>
                 </VBox>
 
-                <!-- ── CHART ──────────────────────────────────────── -->
+                <!-- ── DAILY TRADE CHART ─────────────────────────────── -->
                 <VBox class="adminSectionBlock">
                     <HBox alignItems="Center" class="adminSectionHeaderRow">
                         <core:Icon src="sap-icon://line-chart" size="1.1rem" color="#7c3aed" class="adminSectionIcon"/>
-                        <Title text="LIVE MARKET OVERVIEW" class="adminSectionTitle"/>
+                        <Title text="DAILY BUYS vs SELLS" class="adminSectionTitle"/>
                     </HBox>
                     <VBox class="adminChartContainer">
                         <viz:VizFrame
-                            id="buyerSellerChart"
-                            vizType="bar"
+                            id="dailyTradeChart"
+                            vizType="line"
                             width="100%"
                             height="300px"
+                            uiConfig="{applicationSet:'fiori'}"
                             class="adminVizFrame">
                             <viz:dataset>
-                                <data:FlattenedDataset data="{dashboard>/chartData}">
+                                <data:FlattenedDataset data="{dashboard>/dailyData}">
                                     <data:dimensions>
-                                        <data:DimensionDefinition name="Category" value="{dashboard>label}"/>
+                                        <data:DimensionDefinition name="Date" value="{dashboard>date}"/>
                                     </data:dimensions>
                                     <data:measures>
-                                        <data:MeasureDefinition name="Count" value="{dashboard>value}"/>
+                                        <data:MeasureDefinition name="Buys"  value="{dashboard>buys}"/>
+                                        <data:MeasureDefinition name="Sells" value="{dashboard>sells}"/>
                                     </data:measures>
                                 </data:FlattenedDataset>
                             </viz:dataset>
                             <viz:feeds>
-                                <feeds:FeedItem uid="valueAxis"    type="Measure"    values="Count"/>
-                                <feeds:FeedItem uid="categoryAxis" type="Dimension"  values="Category"/>
+                                <feeds:FeedItem uid="valueAxis"    type="Measure"    values="Buys,Sells"/>
+                                <feeds:FeedItem uid="categoryAxis" type="Dimension"  values="Date"/>
                             </viz:feeds>
                         </viz:VizFrame>
                     </VBox>
@@ -189,6 +191,7 @@
                             <Column hAlign="Center"><Text text="Quantity"/></Column>
                             <Column hAlign="Center"><Text text="Trend"/></Column>
                             <Column hAlign="Center"><Text text="Status"/></Column>
+                            <Column hAlign="Center"><Text text="Graph"/></Column>
                         </columns>
 
                         <items>
@@ -231,6 +234,13 @@
                                             formatter: '.formatStatusState'
                                         }"
                                         icon="sap-icon://inventory"/>
+
+                                    <!-- View Graph button -->
+                                    <Button
+                                        text="📊 Graph"
+                                        type="Transparent"
+                                        press=".onViewStockGraph"
+                                        class="adminGraphBtn"/>
 
                                 </cells>
                             </ColumnListItem>
