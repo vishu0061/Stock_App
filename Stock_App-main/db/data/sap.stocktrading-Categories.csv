@@ -1,0 +1,5 @@
+ID,name,description,isActive
+CAT001,Energy,Energy Sector,true
+CAT002,Technology,Technology Sector,true
+CAT003,Banking,Banking Sector,true
+CAT004,Automotive,Automotive Sector,true

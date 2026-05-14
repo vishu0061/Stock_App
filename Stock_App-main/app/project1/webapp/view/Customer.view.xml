@@ -1,0 +1,565 @@
+<mvc:View
+    controllerName="sap.stocktrading.app.controller.Customer"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:viz.data="sap.viz.ui5.data"
+    xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
+    displayBlock="true">
+
+    <Page id="customerPage" showHeader="false" backgroundDesign="List" class="cdPage">
+
+        <!-- ═══════════════════════════════════════════════════════
+             1. TOP NAVIGATION BAR
+        ═══════════════════════════════════════════════════════ -->
+        <customHeader>
+            <Bar id="customerNavBar" design="Header" class="cdNavBar">
+
+                <contentLeft>
+                    <Button
+                        icon="sap-icon://nav-back"
+                        type="Transparent"
+                        press=".onNavBack"
+                        class="cdNavBackBtn"/>
+
+                    <HBox alignItems="Center" class="cdNavBrand">
+                        <VBox justifyContent="Center" alignItems="Center" class="cdNavLogoWrap">
+                            <core:Icon src="sap-icon://bar-chart" class="cdNavLogoIcon"/>
+                        </VBox>
+                        <VBox justifyContent="Center" class="cdNavBrandText">
+                            <Title text="StockTrade Pro" level="H5" class="cdNavBrandName"/>
+                            <Text text="Customer Portal" class="cdNavBrandSub"/>
+                        </VBox>
+                    </HBox>
+                </contentLeft>
+
+                <contentMiddle>
+                    <SearchField
+                        id="stockSearchField"
+                        placeholder="Search stocks, companies..."
+                        width="380px"
+                        search=".onStockSearch"
+                        class="cdNavSearchField"/>
+                </contentMiddle>
+
+                <contentRight>
+                    <HBox alignItems="Center" class="cdNavActions">
+                        <Button
+                            icon="sap-icon://bell"
+                            type="Transparent"
+                            press=".onNotificationsPress"
+                            class="cdNavBellBtn"/>
+                        <Avatar
+                            id="userAvatar"
+                            initials="JD"
+                            displaySize="XS"
+                            press=".onAvatarPress"
+                            class="cdNavAvatar"/>
+                    </HBox>
+                </contentRight>
+
+            </Bar>
+        </customHeader>
+
+        <!-- ═══════════════════════════════════════════════════════
+             PAGE CONTENT
+        ═══════════════════════════════════════════════════════ -->
+        <VBox class="cdPageContent">
+
+            <!-- ─────────────────────────────────────────────────
+                 2. HERO SECTION
+            ───────────────────────────────────────────────── -->
+            <VBox alignItems="Center" class="cdHero">
+                <Title text="Customer Trading Dashboard" level="H1" class="cdHeroTitle"/>
+                <Text text="Buy, Sell and Monitor Stocks in Real Time" class="cdHeroSub"/>
+                <HBox alignItems="Center" class="cdLiveBadge">
+                    <core:Icon src="sap-icon://status-positive" class="cdLiveIcon"/>
+                    <Text text="Live Trading Active" class="cdLiveBadgeText"/>
+                </HBox>
+                <HBox alignItems="Center" class="sapUiSmallMarginTop">
+                    <Text text="Trading as" class="cdHeroSub"/>
+                    <Input
+                        id="customerNameInput"
+                        value="{custVM>/customerName}"
+                        width="240px"
+                        class="sapUiTinyMarginBegin"/>
+                    <Button
+                        text="Load Portfolio"
+                        type="Transparent"
+                        press=".onLoadPortfolio"
+                        class="stBtnGhost sapUiTinyMarginBegin"/>
+                    <Button
+                        text="Portfolio"
+                        icon="sap-icon://wallet"
+                        type="Transparent"
+                        press=".onPortfolioPress"
+                        class="stBtnPrimary sapUiTinyMarginBegin"/>
+                </HBox>
+            </VBox>
+
+            <!-- ─────────────────────────────────────────────────
+                 3. SUMMARY CARDS ROW
+            ───────────────────────────────────────────────── -->
+            <HBox justifyContent="SpaceBetween" wrap="Wrap" class="cdCardsRow">
+
+                <!-- Portfolio Value -->
+                <VBox class="cdSummaryCard cdCardPortfolio">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="cdCardTop">
+                        <VBox class="cdCardIconWrap cdIconGreen">
+                            <core:Icon src="sap-icon://wallet" class="cdCardIcon"/>
+                        </VBox>
+                        <ObjectStatus
+                            text="+12.45%"
+                            state="Success"
+                            class="cdCardBadge"/>
+                    </HBox>
+                    <Title text="{custVM>/summary/portfolioValue}" level="H2" class="cdCardValue"/>
+                    <Text text="Total Portfolio Value" class="cdCardLabel"/>
+                    <Text text="{custVM>/summary/unrealizedText}" class="cdCardSub"/>
+                    <ProgressIndicator
+                        percentValue="{custVM>/summary/portfolioProgress}"
+                        displayValue=""
+                        state="Success"
+                        class="cdCardProgress"/>
+                </VBox>
+
+                <!-- Profit / Loss -->
+                <VBox class="cdSummaryCard cdCardProfit">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="cdCardTop">
+                        <VBox class="cdCardIconWrap cdIconGreen">
+                            <core:Icon src="sap-icon://trend-up" class="cdCardIcon"/>
+                        </VBox>
+                        <ObjectStatus
+                            text="+26.47%"
+                            state="Success"
+                            class="cdCardBadge"/>
+                    </HBox>
+                    <Title text="{custVM>/summary/profitLoss}" level="H2" class="cdCardValue cdValueGreen"/>
+                    <Text text="Total Profit / Loss" class="cdCardLabel"/>
+                    <Text text="vs amount invested" class="cdCardSub"/>
+                    <ProgressIndicator
+                        percentValue="{custVM>/summary/profitProgress}"
+                        displayValue=""
+                        state="Success"
+                        class="cdCardProgress"/>
+                </VBox>
+
+                <!-- Available Balance -->
+                <VBox class="cdSummaryCard cdCardBalance">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="cdCardTop">
+                        <VBox class="cdCardIconWrap cdIconBlue">
+                            <core:Icon src="sap-icon://money-bills" class="cdCardIcon"/>
+                        </VBox>
+                        <ObjectStatus
+                            text="Ready to invest"
+                            state="Information"
+                            class="cdCardBadge"/>
+                    </HBox>
+                    <Title text="{custVM>/summary/buyingPower}" level="H2" class="cdCardValue cdValueBlue"/>
+                    <Text text="Available Balance" class="cdCardLabel"/>
+                    <Text text="Buying power" class="cdCardSub"/>
+                    <ProgressIndicator
+                        percentValue="{custVM>/summary/buyingPowerProgress}"
+                        displayValue=""
+                        state="Information"
+                        class="cdCardProgress"/>
+                </VBox>
+
+                <!-- Total Stocks -->
+                <VBox class="cdSummaryCard cdCardStocks">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="cdCardTop">
+                        <VBox class="cdCardIconWrap cdIconPurple">
+                            <core:Icon src="sap-icon://pie-chart" class="cdCardIcon"/>
+                        </VBox>
+                        <ObjectStatus
+                            text="+3 this month"
+                            state="Warning"
+                            class="cdCardBadge"/>
+                    </HBox>
+                    <Title text="{custVM>/summary/ownedStocks}" level="H2" class="cdCardValue cdValuePurple"/>
+                    <Text text="Total Stocks Owned" class="cdCardLabel"/>
+                    <Text text="{custVM>/summary/ownedStocksSub}" class="cdCardSub"/>
+                    <ProgressIndicator
+                        percentValue="{custVM>/summary/ownedStocksProgress}"
+                        displayValue=""
+                        state="Warning"
+                        class="cdCardProgress"/>
+                </VBox>
+
+            </HBox>
+
+            <!-- ─────────────────────────────────────────────────
+                 4. MAIN CONTENT: TABLE + SIDE PANEL
+            ───────────────────────────────────────────────── -->
+            <HBox alignItems="Stretch" wrap="Wrap" class="cdMainContent">
+
+                <!-- LEFT: Market Table + Graph -->
+                <VBox class="cdLeftPanel">
+
+                    <!-- Live Market Table -->
+                    <VBox class="cdCard cdTableCard">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center" class="cdCardHeader">
+                            <HBox alignItems="Center" class="cdCardTitleRow">
+                                <core:Icon src="sap-icon://activity-individual" class="cdSectionIcon cdIconGreen"/>
+                                <VBox>
+                                    <Title text="Live Market" level="H3" class="cdCardTitle"/>
+                                    <Text text="Real-time stock prices and trading" class="cdCardSubtitle"/>
+                                </VBox>
+                            </HBox>
+                            <HBox alignItems="Center" class="cdLivePill">
+                                <core:Icon src="sap-icon://status-positive" class="cdPillDot"/>
+                                <Text text="Live" class="cdPillText"/>
+                            </HBox>
+                        </HBox>
+
+                        <Table
+                            id="stockTable"
+                            items="{path:'/Products', parameters:{ $expand:'category' }}"
+                            alternateRowColors="false"
+                            showSeparators="Inner"
+                            class="cdStockTable">
+
+                            <headerToolbar>
+                                <OverflowToolbar class="cdTableToolbar">
+                                    <ToolbarSpacer/>
+                                </OverflowToolbar>
+                            </headerToolbar>
+
+                            <columns>
+                                <Column class="cdTableCol"><Text text="Company" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol"><Text text="Price" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol"><Text text="Qty" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol"><Text text="Trend" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol"><Text text="Status" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol"><Text text="Actions" class="cdColHeader"/></Column>
+                            </columns>
+
+                            <items>
+                                <ColumnListItem class="cdTableRow" type="Active" press=".onSelectProduct">
+                                    <cells>
+                                        <HBox alignItems="Center" class="cdCompanyCell">
+                                            <VBox class="cdStockAvatar cdAvatarGreen">
+                                                <Text text="{= ${productName}.substring(0,1) }" class="cdStockAvatarText"/>
+                                            </VBox>
+                                            <VBox>
+                                                <Text text="{productName}" class="cdStockSymbol"/>
+                                                <Text text="{= ${category/name} ? ${category/name} : 'General' }" class="cdStockName"/>
+                                            </VBox>
+                                        </HBox>
+                                        <VBox>
+                                            <Text text="{= ${currency} + ' ' + ${price} }" class="cdPrice"/>
+                                            <Text text="{= ${previousPrice} ? ((${price}-${previousPrice}) &gt;= 0 ? '+' : '') + (${price}-${previousPrice}).toFixed(2) : '' }" class="cdPriceChange cdChangeUp"/>
+                                        </VBox>
+                                        <Text text="{stockQuantity}" class="cdQty"/>
+                                        <ObjectStatus text="{trend}" state="{= ${trend} === 'BULL' ? 'Success' : (${trend} === 'BEAR' ? 'Error' : 'Warning') }" class="cdChangeStatus"/>
+                                        <ObjectStatus text="{status}" state="{= ${status} === 'ACTIVE' ? 'Success' : (${status} === 'LOW' ? 'Warning' : 'Error') }" class="cdStatusBadge"/>
+                                        <HBox class="cdActionBtns">
+                                            <Button text="Buy" type="Accept" press=".onBuyStock" class="cdBuyBtn"/>
+                                            <Button text="Sell" type="Reject" press=".onSellStock" class="cdSellBtn"/>
+                                        </HBox>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </VBox>
+
+                    <!-- ─────────────────────────────────────────
+                         5. STOCK GRAPH SECTION
+                    ───────────────────────────────────────────── -->
+                    <VBox class="cdCard cdGraphCard">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center" class="cdCardHeader">
+                            <HBox alignItems="Center" class="cdCardTitleRow">
+                                <core:Icon src="sap-icon://line-chart" class="cdSectionIcon cdIconGreen"/>
+                                <VBox>
+                                    <Title text="Live Stock Graph" level="H3" class="cdCardTitle"/>
+                                    <Text text="Portfolio value over time" class="cdCardSubtitle"/>
+                                </VBox>
+                            </HBox>
+                            <SegmentedButton
+                                id="graphTimeRange"
+                            selectedKey="{custVM>/range}"
+                                selectionChange=".onTimeRangeChange"
+                                class="cdSegmentedBtn">
+                                <items>
+                                    <SegmentedButtonItem key="1D" text="1D"/>
+                                    <SegmentedButtonItem key="1W" text="1W"/>
+                                    <SegmentedButtonItem key="1M" text="1M"/>
+                                    <SegmentedButtonItem key="1Y" text="1Y"/>
+                                </items>
+                            </SegmentedButton>
+                        </HBox>
+
+                        <viz:VizFrame
+                            id="priceChart"
+                            width="100%"
+                            height="320px"
+                            vizType="line"
+                            uiConfig="{applicationSet:'fiori'}">
+                            <viz:dataset>
+                                <viz.data:FlattenedDataset data="{chartModel>/data}">
+                                    <viz.data:dimensions>
+                                        <viz.data:DimensionDefinition name="Time" value="{chartModel>time}"/>
+                                    </viz.data:dimensions>
+                                    <viz.data:measures>
+                                        <viz.data:MeasureDefinition name="Price" value="{chartModel>price}"/>
+                                    </viz.data:measures>
+                                </viz.data:FlattenedDataset>
+                            </viz:dataset>
+                            <viz:feeds>
+                                <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Price"/>
+                                <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Time"/>
+                            </viz:feeds>
+                        </viz:VizFrame>
+
+                        <!-- Graph Stats Row -->
+                        <HBox justifyContent="SpaceBetween" wrap="Wrap" class="cdGraphStats">
+                            <VBox class="cdGraphStat">
+                                <Text text="Market Trend" class="cdGraphStatLabel"/>
+                                <HBox alignItems="Center" class="cdBullishRow">
+                                    <core:Icon src="sap-icon://trend-up" class="cdBullishIcon"/>
+                                    <Text text="Bullish" class="cdBullishText"/>
+                                </HBox>
+                            </VBox>
+                            <VBox class="cdGraphStat">
+                                <Text text="Day High" class="cdGraphStatLabel"/>
+                                <Text text="$125.80" class="cdGraphStatVal"/>
+                            </VBox>
+                            <VBox class="cdGraphStat">
+                                <Text text="Day Low" class="cdGraphStatLabel"/>
+                                <Text text="$118.20" class="cdGraphStatVal"/>
+                            </VBox>
+                            <VBox class="cdGraphStat">
+                                <Text text="Volume" class="cdGraphStatLabel"/>
+                                <Text text="89.4M" class="cdGraphStatVal"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                </VBox>
+
+                <!-- RIGHT: Portfolio Side Panel -->
+                <VBox class="cdRightPanel">
+
+                    <!-- ─────────────────────────────────────────
+                         6a. HOLDINGS BREAKDOWN
+                    ───────────────────────────────────────────── -->
+                    <VBox class="cdCard cdHoldingsCard">
+                        <HBox alignItems="Center" class="cdCardHeader">
+                            <core:Icon src="sap-icon://pie-chart" class="cdSectionIcon cdIconPurple"/>
+                            <VBox>
+                                <Title text="Portfolio" level="H4" class="cdCardTitle"/>
+                                <Text text="Holdings breakdown" class="cdCardSubtitle"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Holding: AAPL -->
+                        <VBox class="cdHoldingItem">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                <VBox>
+                                    <Text text="AAPL" class="cdHoldingSymbol"/>
+                                    <Text text="Apple Inc." class="cdHoldingName"/>
+                                </VBox>
+                                <ObjectStatus text="+15.2%" state="Success"/>
+                            </HBox>
+                            <HBox justifyContent="SpaceBetween">
+                                <Text text="50 shares" class="cdHoldingShares"/>
+                                <Text text="$8,725" class="cdHoldingValue"/>
+                            </HBox>
+                            <ProgressIndicator percentValue="72" displayValue="" state="Success" class="cdHoldingBar"/>
+                            <Text text="+$1,150" class="cdHoldingGain cdChangeUp"/>
+                        </VBox>
+
+                        <!-- Holding: MSFT -->
+                        <VBox class="cdHoldingItem">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                <VBox>
+                                    <Text text="MSFT" class="cdHoldingSymbol"/>
+                                    <Text text="Microsoft" class="cdHoldingName"/>
+                                </VBox>
+                                <ObjectStatus text="+17.3%" state="Success"/>
+                            </HBox>
+                            <HBox justifyContent="SpaceBetween">
+                                <Text text="40 shares" class="cdHoldingShares"/>
+                                <Text text="$15,156" class="cdHoldingValue"/>
+                            </HBox>
+                            <ProgressIndicator percentValue="86" displayValue="" state="Success" class="cdHoldingBar"/>
+                            <Text text="+$2,240" class="cdHoldingGain cdChangeUp"/>
+                        </VBox>
+
+                        <!-- Holding: TSLA -->
+                        <VBox class="cdHoldingItem">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                <VBox>
+                                    <Text text="TSLA" class="cdHoldingSymbol"/>
+                                    <Text text="Tesla Inc." class="cdHoldingName"/>
+                                </VBox>
+                                <ObjectStatus text="+19.2%" state="Success"/>
+                            </HBox>
+                            <HBox justifyContent="SpaceBetween">
+                                <Text text="25 shares" class="cdHoldingShares"/>
+                                <Text text="$6,070" class="cdHoldingValue"/>
+                            </HBox>
+                            <ProgressIndicator percentValue="76" displayValue="" state="Success" class="cdHoldingBar"/>
+                            <Text text="+$900" class="cdHoldingGain cdChangeUp"/>
+                        </VBox>
+
+                        <!-- Holding: GOOGL -->
+                        <VBox class="cdHoldingItem">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                <VBox>
+                                    <Text text="GOOGL" class="cdHoldingSymbol"/>
+                                    <Text text="Alphabet" class="cdHoldingName"/>
+                                </VBox>
+                                <ObjectStatus text="-2.8%" state="Error"/>
+                            </HBox>
+                            <HBox justifyContent="SpaceBetween">
+                                <Text text="30 shares" class="cdHoldingShares"/>
+                                <Text text="$4,236" class="cdHoldingValue"/>
+                            </HBox>
+                            <ProgressIndicator percentValue="28" displayValue="" state="Error" class="cdHoldingBar"/>
+                            <Text text="-$124" class="cdHoldingGain cdChangeDown"/>
+                        </VBox>
+                    </VBox>
+
+                    <!-- ─────────────────────────────────────────
+                         6b. RECENT ACTIVITY
+                    ───────────────────────────────────────────── -->
+                    <VBox class="cdCard cdActivityCard">
+                        <HBox alignItems="Center" class="cdCardHeader">
+                            <core:Icon src="sap-icon://history" class="cdSectionIcon cdIconBlue"/>
+                            <VBox>
+                                <Title text="Recent Activity" level="H4" class="cdCardTitle"/>
+                                <Text text="Your trading history" class="cdCardSubtitle"/>
+                            </VBox>
+                        </HBox>
+
+                        <VBox class="cdActivityItem">
+                            <HBox alignItems="Center" class="cdActivityRow">
+                                <VBox class="cdActivityDot cdDotGreen"/>
+                                <VBox class="cdActivityContent">
+                                    <HBox justifyContent="SpaceBetween">
+                                        <Text text="Bought NVDA" class="cdActivityTitle"/>
+                                        <Text text="2h ago" class="cdActivityTime"/>
+                                    </HBox>
+                                    <Text text="15 shares @ $496.20" class="cdActivityDetail"/>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <VBox class="cdActivityItem">
+                            <HBox alignItems="Center" class="cdActivityRow">
+                                <VBox class="cdActivityDot cdDotRed"/>
+                                <VBox class="cdActivityContent">
+                                    <HBox justifyContent="SpaceBetween">
+                                        <Text text="Sold META" class="cdActivityTitle"/>
+                                        <Text text="5h ago" class="cdActivityTime"/>
+                                    </HBox>
+                                    <Text text="20 shares @ $366.50" class="cdActivityDetail"/>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <VBox class="cdActivityItem">
+                            <HBox alignItems="Center" class="cdActivityRow">
+                                <VBox class="cdActivityDot cdDotBlue"/>
+                                <VBox class="cdActivityContent">
+                                    <HBox justifyContent="SpaceBetween">
+                                        <Text text="Profit Alert AAPL" class="cdActivityTitle"/>
+                                        <Text text="1d ago" class="cdActivityTime"/>
+                                    </HBox>
+                                    <Text text="+15% gain milestone reached" class="cdActivityDetail"/>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <VBox class="cdActivityItem">
+                            <HBox alignItems="Center" class="cdActivityRow">
+                                <VBox class="cdActivityDot cdDotGreen"/>
+                                <VBox class="cdActivityContent">
+                                    <HBox justifyContent="SpaceBetween">
+                                        <Text text="Bought AMZN" class="cdActivityTitle"/>
+                                        <Text text="1d ago" class="cdActivityTime"/>
+                                    </HBox>
+                                    <Text text="35 shares @ $156.30" class="cdActivityDetail"/>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <VBox class="cdActivityItem">
+                            <HBox alignItems="Center" class="cdActivityRow">
+                                <VBox class="cdActivityDot cdDotAmber"/>
+                                <VBox class="cdActivityContent">
+                                    <HBox justifyContent="SpaceBetween">
+                                        <Text text="Market Alert" class="cdActivityTitle"/>
+                                        <Text text="1d ago" class="cdActivityTime"/>
+                                    </HBox>
+                                    <Text text="Tech sector up +5.2% rally" class="cdActivityDetail"/>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <!-- ─────────────────────────────────────────
+                         6c. MARKET INSIGHTS
+                    ───────────────────────────────────────────── -->
+                    <VBox class="cdCard cdInsightsCard">
+                        <HBox alignItems="Center" class="cdCardHeader">
+                            <core:Icon src="sap-icon://lightbulb" class="cdSectionIcon cdIconAmber"/>
+                            <VBox>
+                                <Title text="Market Insights" level="H4" class="cdCardTitle"/>
+                                <Text text="AI-powered signals" class="cdCardSubtitle"/>
+                            </VBox>
+                        </HBox>
+
+                        <VBox class="cdInsightItem cdInsightBullish">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                <Text text="Tech Sector" class="cdInsightTitle"/>
+                                <ObjectStatus text="Bullish" state="Success"/>
+                            </HBox>
+                            <Text text="Strong momentum — NVDA, MSFT leading gains" class="cdInsightDesc"/>
+                            <ProgressIndicator percentValue="82" displayValue="" state="Success" class="cdInsightBar"/>
+                        </VBox>
+
+                        <VBox class="cdInsightItem cdInsightNeutral">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                <Text text="Consumer Goods" class="cdInsightTitle"/>
+                                <ObjectStatus text="Neutral" state="Warning"/>
+                            </HBox>
+                            <Text text="Mixed signals — wait for earnings report" class="cdInsightDesc"/>
+                            <ProgressIndicator percentValue="50" displayValue="" state="Warning" class="cdInsightBar"/>
+                        </VBox>
+
+                        <VBox class="cdInsightItem cdInsightBearish">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                <Text text="Energy Sector" class="cdInsightTitle"/>
+                                <ObjectStatus text="Bearish" state="Error"/>
+                            </HBox>
+                            <Text text="Downtrend continues — reduce exposure" class="cdInsightDesc"/>
+                            <ProgressIndicator percentValue="22" displayValue="" state="Error" class="cdInsightBar"/>
+                        </VBox>
+                    </VBox>
+
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- ═══════════════════════════════════════════════════════
+             FOOTER
+        ═══════════════════════════════════════════════════════ -->
+        <footer>
+            <Bar design="Footer" class="cdFooter">
+                <contentLeft>
+                    <Text text="StockTrade Pro" class="cdFooterBrand"/>
+                </contentLeft>
+                <contentMiddle>
+                    <Text text="© 2025 StockTrade Pro. Market data is for informational purposes only." class="cdFooterText"/>
+                </contentMiddle>
+                <contentRight>
+                    <Text text="SAP BTP · v1.0.0" class="cdFooterText"/>
+                </contentRight>
+            </Bar>
+        </footer>
+
+    </Page>
+</mvc:View>

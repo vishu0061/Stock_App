@@ -1,0 +1,291 @@
+<mvc:View
+    controllerName="sap.stocktrading.app.controller.Home"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    displayBlock="true">
+
+    <Page
+        showHeader="false"
+        enableScrolling="true"
+        class="homePage">
+
+        <content>
+
+            <!-- NAVBAR -->
+
+            <HBox
+                justifyContent="SpaceBetween"
+                alignItems="Center"
+                class="navbarContainer">
+
+                <!-- LEFT LOGO -->
+
+                <HBox alignItems="Center">
+
+                    <VBox
+                        class="logoBox"
+                        justifyContent="Center"
+                        alignItems="Center">
+
+                        <core:Icon
+                            src="sap-icon://trend-up"
+                            size="1.4rem"
+                            color="white"/>
+
+                    </VBox>
+
+                    <VBox class="sapUiTinyMarginBegin">
+
+                        <Title
+                            text="StockTrade Pro"
+                            class="logoTitle"/>
+
+                        <Text
+                            text="SAP Fiori Platform"
+                            class="logoSubtitle"/>
+
+                    </VBox>
+
+                </HBox>
+
+            </HBox>
+
+            <!-- HERO SECTION -->
+
+            <VBox
+                alignItems="Center"
+                justifyContent="Center"
+                class="heroSection">
+
+                <!-- BADGE -->
+
+                <HBox
+                    alignItems="Center"
+                    class="liveBadge">
+
+                    <core:Icon
+                        src="sap-icon://activity-items"
+                        color="#00ffc3"
+                        size="0.8rem"/>
+
+                    <Text
+                        text="Live Market Trading"
+                        class="badgeText"/>
+
+                </HBox>
+
+                <!-- TITLE -->
+
+                <Title
+                    text="Stock Trading Dashboard"
+                    class="mainTitle"/>
+
+                <Text
+                    text="Manage and Trade Stocks in Real Time"
+                    class="subTitle"/>
+
+                <!-- TILES -->
+
+              <HBox
+    justifyContent="Center"
+    class="tilesWrapper">
+
+    <!-- ADMIN TILE -->
+
+    <GenericTile
+        class="adminTile"
+        press="onAdminPress"
+        frameType="TwoByOne">
+
+        <TileContent>
+
+            <VBox class="tileContentBox">
+
+                <!-- ICON -->
+
+                <VBox
+                    class="tileIconPurple"
+                    justifyContent="Center"
+                    alignItems="Center">
+
+                    <core:Icon
+                        src="sap-icon://shield"
+                        size="2rem"
+                        color="white"/>
+
+                </VBox>
+
+                <!-- TITLE -->
+
+                <Title
+                    text="Admin Panel"
+                    class="tileTitle"/>
+
+                <Text
+                    text="Manage Stocks &amp; Products"
+                    class="tileSubtitle"/>
+
+                <!-- FEATURES -->
+
+                <VBox class="featureList">
+
+                    <HBox class="featureItem">
+
+                        <Text
+                            text="•"
+                            class="purpleDot"/>
+
+                        <Text
+                            text="Product Management"
+                            class="featureText"/>
+
+                    </HBox>
+
+                    <HBox class="featureItem">
+
+                        <Text
+                            text="•"
+                            class="purpleDot"/>
+
+                        <Text
+                            text="Stock Analytics"
+                            class="featureText"/>
+
+                    </HBox>
+
+                    <HBox class="featureItem">
+
+                        <Text
+                            text="•"
+                            class="purpleDot"/>
+
+                        <Text
+                            text="User Administration"
+                            class="featureText"/>
+
+                    </HBox>
+
+                </VBox>
+
+                <!-- BUTTON -->
+
+                <Button
+                    text="Access Admin Panel →"
+                    type="Transparent"
+                    class="adminTileButton"/>
+
+                <!-- CHART ICON -->
+
+               
+                   
+
+            </VBox>
+
+        </TileContent>
+
+    </GenericTile>
+
+    <!-- CUSTOMER TILE -->
+
+    <GenericTile
+        class="customerTile"
+        press="onCustomerPress"
+        frameType="TwoByOne">
+
+        <TileContent>
+
+            <VBox class="tileContentBox">
+
+                <!-- ICON -->
+
+                <VBox
+                    class="tileIconGreen"
+                    justifyContent="Center"
+                    alignItems="Center">
+
+                    <core:Icon
+                        src="sap-icon://group"
+                        size="2rem"
+                        color="white"/>
+
+                </VBox>
+
+                <!-- TITLE -->
+
+                <Title
+                    text="Customer Panel"
+                    class="tileTitle"/>
+
+                <Text
+                    text="Buy &amp; Sell Stocks"
+                    class="tileSubtitle"/>
+
+                <!-- FEATURES -->
+
+                <VBox class="featureList">
+
+                    <HBox class="featureItem">
+
+                        <Text
+                            text="•"
+                            class="greenDot"/>
+
+                        <Text
+                            text="Real-time Trading"
+                            class="featureText"/>
+
+                    </HBox>
+
+                    <HBox class="featureItem">
+
+                        <Text
+                            text="•"
+                            class="greenDot"/>
+
+                        <Text
+                            text="Portfolio Management"
+                            class="featureText"/>
+
+                    </HBox>
+
+                    <HBox class="featureItem">
+
+                        <Text
+                            text="•"
+                            class="greenDot"/>
+
+                        <Text
+                            text="Market Insights"
+                            class="featureText"/>
+
+                    </HBox>
+
+                </VBox>
+
+                <!-- BUTTON -->
+
+                <Button
+                    text="Access Customer Panel →"
+                    type="Transparent"
+                    class="customerTileButton"/>
+
+                <!-- CHART ICON -->
+
+              
+
+            </VBox>
+
+        </TileContent>
+
+    </GenericTile>
+
+</HBox>
+
+            </VBox>
+
+        </content>
+
+    </Page>
+
+</mvc:View>

@@ -1,0 +1,251 @@
+<mvc:View
+    controllerName="sap.stocktrading.app.controller.AdminDashboard"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:feeds="sap.viz.ui5.controls.common.feeds"
+    xmlns:data="sap.viz.ui5.data"
+    displayBlock="true">
+
+    <Page
+        id="adminDashboardPage"
+        showHeader="false"
+        enableScrolling="true"
+        class="adminDashboardPage">
+
+        <content>
+
+            <!-- ── TOP NAVBAR ─────────────────────────────────────── -->
+            <HBox justifyContent="SpaceBetween" alignItems="Center" class="adminNavbar">
+
+                <HBox alignItems="Center">
+                    <VBox class="adminLogoBox" justifyContent="Center" alignItems="Center">
+                        <core:Icon src="sap-icon://trend-up" size="1.3rem" color="white"/>
+                    </VBox>
+                    <Title text="SAP STOCK TRADING APP" class="adminNavBrand" wrapping="false"/>
+                </HBox>
+
+                <HBox alignItems="Center">
+                    <core:Icon src="sap-icon://customer" size="1.2rem" color="white" class="adminNavProfileIcon"/>
+                    <Text text="Admin Profile" class="adminNavProfileText"/>
+                    <core:Icon src="sap-icon://slim-arrow-down" size="0.8rem" color="#94a3b8" class="adminNavChevron"/>
+                </HBox>
+
+            </HBox>
+
+            <!-- ── NAV TABS ───────────────────────────────────────── -->
+            <HBox class="adminNavTabs" alignItems="Center">
+                <Button id="tabDashboard" text="🏠 Dashboard" type="Transparent" class="adminNavTab adminNavTabActive" press=".onTabDashboard"/>
+                <Button id="tabStocks"    text="📦 Stocks"    type="Transparent" class="adminNavTab" press=".onTabStocks"/>
+                <Button id="tabAnalytics" text="📊 Analytics" type="Transparent" class="adminNavTab" press=".onTabAnalytics"/>
+                <Button id="tabTrends"    text="📈 Trends"    type="Transparent" class="adminNavTab" press=".onTabTrends"/>
+                <Button id="tabSettings"  text="⚙ Settings"  type="Transparent" class="adminNavTab" press=".onTabSettings"/>
+                <ToolbarSpacer/>
+                <Button id="tabLogout"    text="🚪 Logout"    type="Transparent" class="adminNavTab adminNavTabLogout" press=".onLogout"/>
+            </HBox>
+
+            <!-- ── MAIN CONTENT ───────────────────────────────────── -->
+            <VBox class="adminDashboardContent">
+
+                <!-- WELCOME -->
+                <VBox class="adminWelcomeBanner">
+                    <Title text="👋 Welcome, Admin" class="adminWelcomeTitle"/>
+                    <Text text="Manage stocks, monitor trading activity, and analyze market trends" class="adminWelcomeSubtitle"/>
+                </VBox>
+
+                <!-- ── STAT CARDS ─────────────────────────────────── -->
+                <HBox class="adminStatsRow" wrap="Wrap">
+
+                    <VBox class="adminStatCard adminStatCardBlue">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://product" size="1.6rem" color="#7c3aed" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Total Stocks" class="adminStatLabel"/>
+                                <Title id="statTotalStocks" text="0" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox class="adminStatCard adminStatCardGreen">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://cart" size="1.6rem" color="#059669" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Total Buyers" class="adminStatLabel"/>
+                                <Title id="statTotalBuyers" text="0" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox class="adminStatCard adminStatCardOrange">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://sales-order" size="1.6rem" color="#d97706" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Total Sellers" class="adminStatLabel"/>
+                                <Title id="statTotalSellers" text="0" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                </HBox>
+
+                <!-- ── QUICK ACTIONS ──────────────────────────────── -->
+                <VBox class="adminSectionBlock">
+                    <Title text="QUICK ACTIONS" class="adminSectionTitle"/>
+                    <HBox wrap="Wrap" class="adminActionsRow">
+
+                        <!-- FIX: VBox does not support press — use Button instead -->
+                        <Button type="Transparent" press=".onQuickCreateStock" class="adminActionBtn">
+                            <customData><core:CustomData key="style" value="adminActionCardCreate"/></customData>
+                        </Button>
+
+                        <VBox class="adminActionCard adminActionCardCreate">
+                            <core:Icon src="sap-icon://add-product" size="1.8rem" color="#7c3aed" class="adminActionIcon"/>
+                            <Title text="Create Stock" class="adminActionLabel"/>
+                            <Text text="Add a new stock product" class="adminActionDesc"/>
+                            <Button text="Open" type="Transparent" press=".onQuickCreateStock" class="adminActionCardBtn"/>
+                        </VBox>
+
+                        <VBox class="adminActionCard adminActionCardManage">
+                            <core:Icon src="sap-icon://table-view" size="1.8rem" color="#2563eb" class="adminActionIcon"/>
+                            <Title text="Manage Stocks" class="adminActionLabel"/>
+                            <Text text="Edit or delete stocks" class="adminActionDesc"/>
+                            <Button text="Open" type="Transparent" press=".onQuickManageStocks" class="adminActionCardBtn"/>
+                        </VBox>
+
+                        <VBox class="adminActionCard adminActionCardAnalytics">
+                            <core:Icon src="sap-icon://bar-chart" size="1.8rem" color="#0891b2" class="adminActionIcon"/>
+                            <Title text="View Analytics" class="adminActionLabel"/>
+                            <Text text="Track market performance" class="adminActionDesc"/>
+                            <Button text="Open" type="Transparent" press=".onQuickViewAnalytics" class="adminActionCardBtn"/>
+                        </VBox>
+
+                        <VBox class="adminActionCard adminActionCardTrends">
+                            <core:Icon src="sap-icon://line-chart" size="1.8rem" color="#059669" class="adminActionIcon"/>
+                            <Title text="Price Trends" class="adminActionLabel"/>
+                            <Text text="View live stock trends" class="adminActionDesc"/>
+                            <Button text="Open" type="Transparent" press=".onQuickPriceTrends" class="adminActionCardBtn"/>
+                        </VBox>
+
+                    </HBox>
+                </VBox>
+
+                <!-- ── CHART ──────────────────────────────────────── -->
+                <VBox class="adminSectionBlock">
+                    <HBox alignItems="Center" class="adminSectionHeaderRow">
+                        <core:Icon src="sap-icon://line-chart" size="1.1rem" color="#7c3aed" class="adminSectionIcon"/>
+                        <Title text="LIVE MARKET OVERVIEW" class="adminSectionTitle"/>
+                    </HBox>
+                    <VBox class="adminChartContainer">
+                        <viz:VizFrame
+                            id="buyerSellerChart"
+                            vizType="bar"
+                            width="100%"
+                            height="300px"
+                            class="adminVizFrame">
+                            <viz:dataset>
+                                <data:FlattenedDataset data="{dashboard>/chartData}">
+                                    <data:dimensions>
+                                        <data:DimensionDefinition name="Category" value="{dashboard>label}"/>
+                                    </data:dimensions>
+                                    <data:measures>
+                                        <data:MeasureDefinition name="Count" value="{dashboard>value}"/>
+                                    </data:measures>
+                                </data:FlattenedDataset>
+                            </viz:dataset>
+                            <viz:feeds>
+                                <feeds:FeedItem uid="valueAxis"    type="Measure"    values="Count"/>
+                                <feeds:FeedItem uid="categoryAxis" type="Dimension"  values="Category"/>
+                            </viz:feeds>
+                        </viz:VizFrame>
+                    </VBox>
+                </VBox>
+
+                <!-- ── RECENT STOCKS TABLE ────────────────────────── -->
+                <VBox class="adminSectionBlock">
+                    <HBox alignItems="Center" class="adminSectionHeaderRow">
+                        <core:Icon src="sap-icon://product" size="1.1rem" color="#7c3aed" class="adminSectionIcon"/>
+                        <Title text="RECENTLY CREATED STOCKS" class="adminSectionTitle"/>
+                        <ToolbarSpacer/>
+                        <Button text="View All Stocks" type="Transparent" class="adminViewAllBtn" press=".onTabStocks"/>
+                    </HBox>
+
+                    <Table
+                        id="recentStocksTable"
+                        inset="false"
+                        growing="true"
+                        growingThreshold="5"
+                        class="adminRecentTable"
+                        items="{
+                            path: '/Products',
+                            parameters: { $expand: 'category' }
+                        }">
+
+                        <columns>
+                            <Column><Text text="Name"/></Column>
+                            <Column><Text text="Category"/></Column>
+                            <Column hAlign="End"><Text text="Price"/></Column>
+                            <Column hAlign="Center"><Text text="Currency"/></Column>
+                            <Column hAlign="Center"><Text text="Quantity"/></Column>
+                            <Column hAlign="Center"><Text text="Trend"/></Column>
+                            <Column hAlign="Center"><Text text="Status"/></Column>
+                        </columns>
+
+                        <items>
+                            <ColumnListItem class="adminTableRow" press=".onStockRowPress">
+                                <cells>
+
+                                    <Text text="{productName}"/>
+
+                                    <ObjectStatus text="{category/name}" state="Information"/>
+
+                                    <ObjectNumber number="{price}" unit="{currency}"/>
+
+                                    <ObjectStatus text="{currency}" state="Information"/>
+
+                                    <!-- FIX: use formatter instead of broken expression binding -->
+                                    <ObjectStatus
+                                        text="{stockQuantity}"
+                                        state="{
+                                            path: 'stockQuantity',
+                                            formatter: '.formatQtyState'
+                                        }"/>
+
+                                    <!-- FIX: use formatter for trend state and icon -->
+                                    <ObjectStatus
+                                        text="{trend}"
+                                        state="{
+                                            path: 'trend',
+                                            formatter: '.formatTrendState'
+                                        }"
+                                        icon="{
+                                            path: 'trend',
+                                            formatter: '.formatTrendIcon'
+                                        }"/>
+
+                                    <!-- FIX: use formatter for status state -->
+                                    <ObjectStatus
+                                        text="{status}"
+                                        state="{
+                                            path: 'status',
+                                            formatter: '.formatStatusState'
+                                        }"
+                                        icon="sap-icon://inventory"/>
+
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+
+                    </Table>
+                </VBox>
+
+            </VBox>
+
+            <!-- ── FOOTER ─────────────────────────────────────────── -->
+            <HBox class="adminDashboardFooter" justifyContent="Center" alignItems="Center">
+                <Text text="© 2026 SAP Stock Trading App — Admin Portal" class="adminFooterText"/>
+            </HBox>
+
+        </content>
+    </Page>
+</mvc:View>

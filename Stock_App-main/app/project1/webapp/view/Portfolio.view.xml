@@ -1,0 +1,196 @@
+<mvc:View
+    controllerName="sap.stocktrading.app.controller.Portfolio"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    displayBlock="true">
+
+    <Page
+        showHeader="false"
+        class="stPage">
+
+        <customHeader>
+            <Bar design="Header" class="stGlassBar">
+                <contentLeft>
+                    <Button icon="sap-icon://nav-back" type="Transparent" press=".onNavBack"/>
+                    <HBox alignItems="Center" class="sapUiTinyMarginBegin">
+                        <VBox class="stBrandLogoWrap" justifyContent="Center" alignItems="Center">
+                            <core:Icon src="sap-icon://wallet" class="stBrandIcon"/>
+                        </VBox>
+                        <VBox class="sapUiTinyMarginBegin">
+                            <Title text="StockTrade Pro" level="H5" class="stBrandTitle"/>
+                            <Text text="Portfolio" class="stBrandSub"/>
+                        </VBox>
+                    </HBox>
+                </contentLeft>
+                <contentMiddle>
+                    <HBox alignItems="Center">
+                        <Text text="Customer" class="stBrandSub"/>
+                        <Input id="pfCustomerName" value="{pfVM>/customerName}" width="260px" class="sapUiTinyMarginBegin"/>
+                        <Button text="Refresh" icon="sap-icon://refresh" type="Transparent" press=".onRefresh" class="stBtnGhost sapUiTinyMarginBegin"/>
+                    </HBox>
+                </contentMiddle>
+                <contentRight>
+                    <Button text="Market" icon="sap-icon://line-chart" type="Transparent" press=".onGoMarket" class="stBtnPrimary"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+
+        <content>
+
+            <VBox class="pfPageContent">
+
+                <HBox class="pfCardsRow" wrap="Wrap">
+                    <VBox class="pfCard">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center">
+                            <HBox alignItems="Center">
+                                <VBox class="stStatIconWrap stIconGreen">
+                                    <core:Icon src="sap-icon://wallet" color="white"/>
+                                </VBox>
+                                <VBox class="sapUiTinyMarginBegin">
+                                    <Text text="Current Value" class="pfSub"/>
+                                    <Title text="{pfVM>/summary/value}" level="H2" class="pfTitle"/>
+                                </VBox>
+                            </HBox>
+                            <ObjectStatus text="{pfVM>/summary/valueBadge}" state="Success"/>
+                        </HBox>
+                        <Text text="{pfVM>/summary/valueSub}" class="pfSub sapUiTinyMarginTop"/>
+                    </VBox>
+
+                    <VBox class="pfCard">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center">
+                            <HBox alignItems="Center">
+                                <VBox class="stStatIconWrap stIconPurple">
+                                    <core:Icon src="sap-icon://trend-up" color="white"/>
+                                </VBox>
+                                <VBox class="sapUiTinyMarginBegin">
+                                    <Text text="Profit / Loss" class="pfSub"/>
+                                    <Title text="{pfVM>/summary/pl}" level="H2" class="pfTitle"/>
+                                </VBox>
+                            </HBox>
+                            <ObjectStatus text="{pfVM>/summary/plBadge}" state="{pfVM>/summary/plState}"/>
+                        </HBox>
+                        <Text text="{pfVM>/summary/plSub}" class="pfSub sapUiTinyMarginTop"/>
+                    </VBox>
+
+                    <VBox class="pfCard">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center">
+                            <HBox alignItems="Center">
+                                <VBox class="stStatIconWrap stIconBlue">
+                                    <core:Icon src="sap-icon://pie-chart" color="white"/>
+                                </VBox>
+                                <VBox class="sapUiTinyMarginBegin">
+                                    <Text text="Holdings" class="pfSub"/>
+                                    <Title text="{pfVM>/summary/holdings}" level="H2" class="pfTitle"/>
+                                </VBox>
+                            </HBox>
+                            <ObjectStatus text="{pfVM>/summary/holdingsBadge}" state="Information"/>
+                        </HBox>
+                        <Text text="{pfVM>/summary/holdingsSub}" class="pfSub sapUiTinyMarginTop"/>
+                    </VBox>
+                </HBox>
+
+                <VBox class="pfTableCard">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center">
+                        <VBox>
+                            <Title text="Owned Stocks" level="H3" class="pfTitle"/>
+                            <Text text="Live P/L based on current market price" class="pfSub"/>
+                        </VBox>
+                    </HBox>
+
+                    <Table
+                        id="portfolioTable"
+                        inset="false"
+                        growing="true"
+                        growingScrollToLoad="true"
+                        items="{pfVM>/holdings}"
+                        class="pfTable">
+
+                        <columns>
+                            <Column><Text text="Stock"/></Column>
+                            <Column><Text text="Qty"/></Column>
+                            <Column><Text text="Avg Buy"/></Column>
+                            <Column><Text text="Market"/></Column>
+                            <Column><Text text="P/L"/></Column>
+                            <Column><Text text="Total"/></Column>
+                            <Column hAlign="Center"><Text text="Sell"/></Column>
+                        </columns>
+
+                        <items>
+                            <ColumnListItem>
+                                <cells>
+                                    <Text text="{pfVM>productName}"/>
+                                    <ObjectNumber number="{pfVM>quantity}"/>
+                                    <ObjectNumber number="{pfVM>avgBuyPrice}" unit="{pfVM>currency}"/>
+                                    <ObjectNumber number="{pfVM>currentPrice}" unit="{pfVM>currency}"/>
+                                    <ObjectStatus
+                                        text="{= (${pfVM>profitLoss} &gt;= 0 ? '+' : '') + ${pfVM>profitLoss} }"
+                                        state="{= ${pfVM>profitLoss} &gt;= 0 ? 'Success' : 'Error' }"/>
+                                    <ObjectNumber number="{pfVM>totalValue}" unit="{pfVM>currency}"/>
+                                    <Button
+                                        text="Sell"
+                                        type="Reject"
+                                        press=".onSellFromPortfolio"
+                                        class="stBtnDanger"/>
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </VBox>
+
+                <Panel headerText="Transaction History" class="stPanel">
+                    <Table
+                        id="pfTxTable"
+                        inset="false"
+                        growing="true"
+                        growingScrollToLoad="true"
+                        items="{pfVM>/transactions}"
+                        class="stTable">
+                        <columns>
+                            <Column><Text text="Type"/></Column>
+                            <Column><Text text="Stock"/></Column>
+                            <Column><Text text="Qty"/></Column>
+                            <Column><Text text="Price"/></Column>
+                            <Column><Text text="Total"/></Column>
+                            <Column><Text text="Time"/></Column>
+                            <Column><Text text="Status"/></Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem>
+                                <cells>
+                                    <ObjectStatus text="{pfVM>transactionType}" state="{= ${pfVM>transactionType} === 'BUY' ? 'Success' : 'Error' }"/>
+                                    <Text text="{pfVM>productName}"/>
+                                    <ObjectNumber number="{pfVM>quantity}"/>
+                                    <ObjectNumber number="{pfVM>unitPrice}" unit="{pfVM>currency}"/>
+                                    <ObjectNumber number="{pfVM>totalPrice}" unit="{pfVM>currency}"/>
+                                    <Text text="{pfVM>createdAtText}"/>
+                                    <ObjectStatus text="{pfVM>status}" state="{= ${pfVM>status} === 'COMPLETED' ? 'Success' : 'Error' }"/>
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </Panel>
+
+            </VBox>
+
+        </content>
+
+        <!-- Footer -->
+        <footer>
+
+            <Bar design="Footer">
+
+                <contentMiddle>
+
+                    <Text
+                        text="StockTrade Pro · Portfolio Dashboard"/>
+
+                </contentMiddle>
+
+            </Bar>
+
+        </footer>
+
+    </Page>
+
+</mvc:View>

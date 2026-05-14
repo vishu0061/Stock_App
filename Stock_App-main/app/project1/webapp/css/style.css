@@ -1,0 +1,926 @@
+/* =========================================================
+   GLOBAL PAGE
+========================================================= */
+
+.homePage {
+    background:
+        radial-gradient(circle at top left,
+            rgba(88, 28, 255, 0.22),
+            transparent 30%),
+        radial-gradient(circle at top right,
+            rgba(0, 255, 170, 0.15),
+            transparent 30%),
+        #040b17;
+
+    min-height: 100vh;
+    color: white;
+    overflow: auto;
+    font-family: "72", Arial, sans-serif;
+}
+
+
+/* =========================================================
+   NAVBAR
+========================================================= */
+
+.navbarContainer {
+    height: 50px;
+    padding: 0 2rem;
+    background: rgba(13, 19, 33, 0.9);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(12px);
+}
+
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.logoBox {
+    width: 45px;
+    height: 42px;
+
+    border-radius: 15px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #7c3aed,
+            #4f46e5
+        );
+
+    box-shadow:
+        0 0 25px rgba(124, 58, 237, 0.6);
+}
+
+.logoTitle {
+    color: white !important;
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+}
+
+.logoSubtitle {
+    color: #94a3b8 !important;
+    font-size: 1rem !important;
+}
+
+
+/* =========================================================
+   HERO SECTION
+========================================================= */
+
+.heroSection {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+}
+
+
+/* =========================================================
+   LIVE BADGE
+========================================================= */
+
+.liveBadge {
+    padding: 0.8rem 1.8rem;
+
+    border-radius: 999px;
+
+    background: rgba(255,255,255,0.05);
+
+    border: 1px solid rgba(255,255,255,0.08);
+
+    margin-bottom: 1rem;
+}
+
+.badgeText {
+    color: white !important;
+    margin-left: 0.5rem;
+    font-size: 0.85rem !important;
+}
+
+
+/* =========================================================
+   TITLES
+========================================================= */
+
+.mainTitle {
+    color: white !important;
+
+    font-size: 3rem !important;
+
+    font-weight: 300 !important;
+
+    text-align: center;
+
+    margin-bottom: 0.8rem !important;
+}
+
+.subTitle {
+    color: #94a3b8 !important;
+
+    font-size: 1.2rem !important;
+
+    text-align: center;
+
+    margin-bottom: 2rem !important;
+}
+
+
+/* =========================================================
+   TILE WRAPPER
+========================================================= */
+
+.tilesWrapper {
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   GENERIC TILE FIX
+========================================================= */
+
+.sapMGT {
+    width: 360px !important;
+    height: 340px !important;
+
+    border-radius: 28px !important;
+
+    overflow: hidden !important;
+
+    transition: all 0.35s ease !important;
+
+    box-sizing: border-box;
+}
+
+.sapMGT:hover {
+    transform: translateY(-6px) scale(1.02);
+}
+
+.sapMGTContent {
+    height: 100% !important;
+    overflow: visible !important;
+}
+
+.sapMTileCnt {
+    height: 100% !important;
+}
+
+.sapMGTHdrContent {
+    display: none !important;
+}
+
+
+/* =========================================================
+   ADMIN TILE
+========================================================= */
+
+.adminTile {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(91, 33, 182, 0.96),
+            rgba(79, 70, 229, 0.92)
+        ) !important;
+
+    border: 1px solid rgba(255,255,255,0.12);
+
+    box-shadow:
+        0 0 40px rgba(124,58,237,0.35);
+}
+
+
+/* =========================================================
+   CUSTOMER TILE
+========================================================= */
+
+.customerTile {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(5, 150, 105, 0.96),
+            rgba(16, 185, 129, 0.9)
+        ) !important;
+
+    border: 1px solid rgba(255,255,255,0.12);
+
+    box-shadow:
+        0 0 40px rgba(16,185,129,0.3);
+}
+
+
+/* =========================================================
+   TILE CONTENT
+========================================================= */
+
+.tileContentBox {
+    padding: 1.8rem;
+
+    height: 100%;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+
+/* =========================================================
+   TILE ICONS
+========================================================= */
+
+.tileIconPurple {
+    width: 60px;
+    height: 60px;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #8b5cf6,
+            #6d28d9
+        );
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin-bottom: 1rem;
+}
+
+.tileIconGreen {
+    width: 60px;
+    height: 60px;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #10b981,
+            #059669
+        );
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin-bottom: 1rem;
+}
+
+
+/* =========================================================
+   TILE TEXT
+========================================================= */
+
+.tileTitle {
+    color: white !important;
+
+    font-size: 1.7rem !important;
+
+    font-weight: 700 !important;
+
+    margin-bottom: 0.5rem !important;
+
+    display: block !important;
+}
+
+.tileSubtitle {
+    color: rgba(255,255,255,0.82) !important;
+
+    font-size: 0.95rem !important;
+
+    margin-bottom: 1rem !important;
+
+    display: block !important;
+}
+
+
+/* =========================================================
+   FEATURE LIST
+========================================================= */
+
+.featureList {
+    margin-top: 0.3rem;
+    margin-bottom: 1rem;
+}
+
+.featureItem {
+    margin-bottom: 0.5rem;
+    align-items: center;
+}
+
+.featureText {
+    color: rgba(255,255,255,0.88) !important;
+
+    font-size: 0.85rem !important;
+
+    margin-left: 0.6rem;
+}
+
+.purpleDot {
+    color: #e9d5ff !important;
+    font-size: 1rem !important;
+}
+
+.greenDot {
+    color: #6ee7b7 !important;
+    font-size: 1rem !important;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.adminTileButton,
+.customerTileButton {
+    width: 150% !important;
+    margin-top: auto !important;
+}
+
+.adminTileButton .sapMBtnInner,
+.customerTileButton .sapMBtnInner {
+
+    width: 100% !important;
+    height: 40px !important;
+
+    border-radius: 14px !important;
+
+    background: rgba(255,255,255,0.12) !important;
+
+    border: 1px solid rgba(255,255,255,0.18) !important;
+
+    color: white !important;
+
+    font-size: 0.95rem !important;
+
+    font-weight: 700 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    transition: all 0.3s ease;
+}
+
+.adminTileButton .sapMBtnContent,
+.customerTileButton .sapMBtnContent {
+
+    width: 100% !important;
+
+    text-align: center !important;
+
+    color: white !important;
+}
+
+.adminTileButton .sapMBtnInner:hover,
+.customerTileButton .sapMBtnInner:hover {
+
+    background: rgba(255,255,255,0.18) !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1200px) {
+
+    .tilesWrapper {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .sapMGT {
+        width: 92% !important;
+        max-width: 420px !important;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .navbarContainer {
+        padding: 1rem;
+        height: auto;
+    }
+
+    .mainTitle {
+        font-size: 2.2rem !important;
+    }
+
+    .subTitle {
+        font-size: 1rem !important;
+    }
+
+    .sapMGT {
+        height: auto !important;
+        min-height: 340px !important;
+    }
+}
+
+
+/* =========================================================
+   ADMIN DASHBOARD PAGE
+========================================================= */
+
+.adminDashboardPage {
+    background:
+        radial-gradient(circle at top left,
+            rgba(88, 28, 255, 0.18),
+            transparent 35%),
+        radial-gradient(circle at bottom right,
+            rgba(0, 255, 170, 0.10),
+            transparent 35%),
+        #040b17 !important;
+
+    min-height: 100vh;
+    color: white;
+    font-family: "72", Arial, sans-serif;
+}
+
+
+/* =========================================================
+   TOP NAVBAR
+========================================================= */
+
+.adminNavbar {
+    height: 60px;
+    padding: 0 2rem;
+
+    background: rgba(13, 19, 33, 0.92);
+
+    border-bottom: 1px solid rgba(124, 58, 237, 0.18);
+
+    backdrop-filter: blur(18px);
+
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.adminLogoBox {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #7c3aed,
+            #4f46e5
+        );
+
+    box-shadow:
+        0 0 24px rgba(124, 58, 237, 0.55);
+
+    margin-right: 0.8rem;
+
+    flex-shrink: 0;
+}
+
+.adminNavBrand {
+    color: white !important;
+
+    font-size: 1.05rem !important;
+
+    font-weight: 800 !important;
+
+    letter-spacing: 0.05em;
+}
+
+.adminNavProfileText {
+    color: #cbd5e1 !important;
+
+    font-size: 0.9rem !important;
+}
+
+
+/* =========================================================
+   NAV TABS
+========================================================= */
+
+.adminNavTabs {
+    height: 52px;
+
+    padding: 0 1rem;
+
+    background: rgba(13, 19, 33, 0.82);
+
+    border-bottom:
+        1px solid rgba(255,255,255,0.06);
+
+    gap: 0.4rem;
+}
+
+.adminNavTab.sapMBtn {
+    height: 52px !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+.adminNavTab .sapMBtnInner {
+
+    background: transparent !important;
+
+    border: none !important;
+
+    border-radius: 0 !important;
+
+    color: #94a3b8 !important;
+
+    height: 52px !important;
+
+    font-size: 0.88rem !important;
+
+    font-weight: 600 !important;
+}
+
+.adminNavTab .sapMBtnInner:hover,
+.adminNavTabActive .sapMBtnInner {
+
+    color: #a78bfa !important;
+
+    border-bottom:
+        2px solid #7c3aed !important;
+
+    background:
+        rgba(124, 58, 237, 0.08) !important;
+}
+
+.adminNavTabLogout .sapMBtnInner {
+    color: #f87171 !important;
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.adminDashboardContent {
+    padding: 1.5rem 2rem 2rem;
+    gap: 1.5rem;
+}
+
+
+/* =========================================================
+   WELCOME BANNER
+========================================================= */
+
+.adminWelcomeBanner {
+
+    padding: 1.6rem 2rem;
+
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(91, 33, 182, 0.32),
+            rgba(79, 70, 229, 0.18)
+        );
+
+    border:
+        1px solid rgba(124,58,237,0.22);
+}
+
+.adminWelcomeTitle {
+
+    color: white !important;
+
+    font-size: 1.7rem !important;
+
+    font-weight: 800 !important;
+}
+
+.adminWelcomeSubtitle {
+
+    color: #94a3b8 !important;
+
+    font-size: 0.95rem !important;
+}
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.adminStatsRow {
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+
+.adminStatCard {
+
+    flex: 1;
+
+    min-width: 230px;
+
+    padding: 1.4rem;
+
+    border-radius: 18px;
+
+    border:
+        1px solid rgba(255,255,255,0.08);
+
+    backdrop-filter: blur(14px);
+
+    transition: all 0.25s ease;
+}
+
+.adminStatCard:hover {
+
+    transform: translateY(-5px);
+
+    box-shadow:
+        0 14px 38px rgba(0,0,0,0.35);
+}
+
+.adminStatCardBlue {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(91,33,182,0.40),
+            rgba(79,70,229,0.22)
+        );
+}
+
+.adminStatCardGreen {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(5,150,105,0.40),
+            rgba(16,185,129,0.22)
+        );
+}
+
+.adminStatCardOrange {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(217,119,6,0.40),
+            rgba(245,158,11,0.22)
+        );
+}
+
+.adminStatLabel {
+
+    color: #94a3b8 !important;
+
+    font-size: 0.78rem !important;
+
+    text-transform: uppercase;
+}
+
+.adminStatValue {
+
+    color: white !important;
+
+    font-size: 2rem !important;
+
+    font-weight: 800 !important;
+}
+
+
+/* =========================================================
+   SECTION BLOCK
+========================================================= */
+
+.adminSectionBlock {
+
+    padding: 1.5rem;
+
+    border-radius: 18px;
+
+    background:
+        rgba(13,19,33,0.60);
+
+    border:
+        1px solid rgba(255,255,255,0.08);
+
+    backdrop-filter: blur(14px);
+}
+
+.adminSectionTitle {
+
+    color: #e2e8f0 !important;
+
+    font-size: 0.85rem !important;
+
+    font-weight: 800 !important;
+
+    text-transform: uppercase;
+}
+
+
+/* =========================================================
+   ACTION CARDS
+========================================================= */
+
+.adminActionsRow {
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.adminActionCard {
+
+    flex: 1;
+
+    min-width: 200px;
+
+    padding: 1.4rem;
+
+    border-radius: 18px;
+
+    border:
+        1px solid rgba(255,255,255,0.08);
+
+    transition: all 0.25s ease;
+}
+
+.adminActionCard:hover {
+
+    transform: translateY(-5px);
+
+    box-shadow:
+        0 18px 45px rgba(0,0,0,0.38);
+}
+
+.adminActionCardCreate {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(91,33,182,0.35),
+            rgba(124,58,237,0.18)
+        );
+}
+
+.adminActionCardManage {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(37,99,235,0.35),
+            rgba(59,130,246,0.18)
+        );
+}
+
+.adminActionCardAnalytics {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(8,145,178,0.35),
+            rgba(14,165,233,0.18)
+        );
+}
+
+.adminActionCardTrends {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(5,150,105,0.35),
+            rgba(16,185,129,0.18)
+        );
+}
+
+.adminActionLabel {
+
+    color: white !important;
+
+    font-size: 1rem !important;
+
+    font-weight: 700 !important;
+}
+
+.adminActionDesc {
+
+    color: #94a3b8 !important;
+
+    font-size: 0.82rem !important;
+}
+
+.adminActionCardBtn .sapMBtnInner {
+
+    margin-top: 1rem;
+
+    border-radius: 12px !important;
+
+    background:
+        rgba(255,255,255,0.08) !important;
+
+    border:
+        1px solid rgba(255,255,255,0.12) !important;
+
+    color: white !important;
+}
+
+
+/* =========================================================
+   CHART
+========================================================= */
+
+.adminChartContainer {
+
+    padding: 1rem;
+
+    border-radius: 16px;
+
+    background:
+        rgba(255,255,255,0.03);
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.adminRecentTable {
+
+    background: transparent !important;
+
+    border-radius: 14px;
+
+    overflow: hidden;
+}
+
+.adminRecentTable .sapMListTblHeaderCell {
+
+    background:
+        rgba(124,58,237,0.10) !important;
+}
+
+.adminRecentTable .sapMLIB {
+
+    background:
+        rgba(255,255,255,0.02) !important;
+
+    border-bottom:
+        1px solid rgba(255,255,255,0.05) !important;
+}
+
+.adminRecentTable .sapMLIB:hover {
+
+    background:
+        rgba(124,58,237,0.06) !important;
+}
+
+.adminTableHeader {
+
+    color: #c4b5fd !important;
+
+    font-size: 0.78rem !important;
+
+    font-weight: 800 !important;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.adminDashboardFooter {
+
+    padding: 1.2rem;
+
+    margin-top: 1rem;
+
+    border-top:
+        1px solid rgba(255,255,255,0.06);
+
+    background:
+        rgba(13,19,33,0.55);
+}
+
+.adminFooterText {
+
+    color: #64748b !important;
+
+    font-size: 0.8rem !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE ADMIN
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .adminDashboardContent {
+        padding: 1rem;
+    }
+
+    .adminStatsRow {
+        flex-direction: column;
+    }
+
+    .adminActionsRow {
+        flex-direction: column;
+    }
+
+    .adminNavTabs {
+        overflow-x: auto;
+    }
+}

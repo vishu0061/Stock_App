@@ -1,0 +1,17 @@
+{
+  "xsappname": "sap-stock-trading",
+  "tenant-mode": "dedicated",
+  "description": "Security configuration for SAP Stock Trading Application",
+  "scopes": [
+    { "name": "$XSAPPNAME.admin",    "description": "Administrator – full CRUD on stocks" },
+    { "name": "$XSAPPNAME.customer", "description": "Customer – buy/sell stocks" }
+  ],
+  "role-templates": [
+    { "name": "Admin",    "description": "Full admin access",       "scope-references": ["$XSAPPNAME.admin"]    },
+    { "name": "Customer", "description": "Customer trading access", "scope-references": ["$XSAPPNAME.customer"] }
+  ],
+  "role-collections": [
+    { "name": "StockTrading_Admin",    "description": "Stock Trading Administrator", "role-template-references": ["$XSAPPNAME.Admin"]    },
+    { "name": "StockTrading_Customer", "description": "Stock Trading Customer",      "role-template-references": ["$XSAPPNAME.Customer"] }
+  ]
+}
