@@ -55,47 +55,67 @@ sap.ui.define([
             });
 
             // Fetch transactions for Buy/Sell distribution
-            $.ajax({
-                url: "/api/Transactions",
-                method: "GET",
-                success: function (data) {
-                    if (data && data.value) {
-                        var buys = 0;
-                        var sells = 0;
-                        data.value.forEach(function (t) {
-                            if (t.transactionType === "BUY") buys += t.quantity;
-                            else sells += t.quantity;
-                        });
-                        
-                        oModel.setProperty("/buySellDistribution", [
-                            { type: "Buy Orders", count: buys },
-                            { type: "Sell Orders", count: sells }
-                        ]);
-                    }
-                }
-            });
+                    $.ajax({
+                        url: "/api/Transactions",
+                        method: "GET",
+                        success: function (data) {
+                            var txs = data.value || data || [];
+                            var buys = 0;
+                            var sells = 0;
+                            txs.forEach(function (t) {
+                                if (t.transactionType === "BUY") buys += 1;
+                                else if (t.transactionType === "SELL") sells += 1;
+                            });
+                            
+                            oModel.setProperty("/buySellDistribution", [
+                                { type: "Buy Orders", count: buys },
+                                { type: "Sell Orders", count: sells }
+                            ]);
+                        }
+                    });
 
             // Fetch products for Top Traded Stocks
             $.ajax({
                 url: "/api/Products",
                 method: "GET",
-                success: function (data) {
-                    if (data && data.value) {
-                        var stocks = data.value.map(function(p) {
-                            return {
-                                stockName: p.productName,
-                                tradeCount: (p.buyPressure || 0) + (p.sellPressure || 0)
-                            };
-                        });
-                        
-                        // Sort descending
-                        stocks.sort(function(a, b) {
-                            return b.tradeCount - a.tradeCount;
-                        });
+                success: function (productData) {
+                    var products = productData.value || productData || [];
+                    var productMap = {};
+                    products.forEach(function(p) {
+                        productMap[p.ID] = p.productName;
+                    });
 
-                        // Take top 5
-                        oModel.setProperty("/topStocks", stocks.slice(0, 5));
-                    }
+                    $.ajax({
+                        url: "/api/Transactions",
+                        method: "GET",
+                        success: function (txData) {
+                            var txs = txData.value || txData || [];
+                            var stockCounts = {};
+                            
+                            txs.forEach(function(t) {
+                                if (!stockCounts[t.product_ID]) {
+                                    stockCounts[t.product_ID] = 0;
+                                }
+                                stockCounts[t.product_ID] += 1; // Count each trade as 1 transaction
+                            });
+                            
+                            var stocks = [];
+                            for (var id in stockCounts) {
+                                stocks.push({
+                                    stockName: productMap[id] || "Unknown",
+                                    tradeCount: stockCounts[id]
+                                });
+                            }
+                            
+                            // Sort descending
+                            stocks.sort(function(a, b) {
+                                return b.tradeCount - a.tradeCount;
+                            });
+
+                            // Take top 5
+                            oModel.setProperty("/topStocks", stocks.slice(0, 5));
+                        }
+                    });
                 }
             });
         }

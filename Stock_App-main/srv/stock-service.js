@@ -40,28 +40,33 @@ module.exports = cds.service.impl(async function () {
                     daysWithoutBuy = (now - new Date(p.lastBoughtAt)) / (1000 * 60 * 60 * 24);
                 }
 
-                // STEP 1 - NET FLOW
-                const netFlow = (buyQty - sellQty) / (buyQty + sellQty + 1);
+                // STEP 1 - MARKET FORCE
+                const marketForce = (buyQty - sellQty) / (buyQty + sellQty + stockQuantity + 1);
 
-                // STEP 2 - LIQUIDITY IMPACT
-                const liquidityImpact = (buyQty + sellQty) / (stockQuantity + 1);
+                // STEP 2 - DEMAND SCORE UPDATE
+                const newDemandScore = (demandScore * 0.9) + (marketForce * 0.1);
 
-                // STEP 3 - MARKET SENTIMENT
-                const marketSentiment = (netFlow * 0.5) + (demandScore * 0.3) + (globalMarketTrend * 0.2);
+                // STEP 3 - INACTIVITY PENALTY (capped at 5%)
+                const inactivityPenalty = Math.min(daysWithoutBuy * 0.002, 0.05);
 
-                // STEP 4 - VOLATILITY NOISE
-                const noise = (Math.random() - 0.5) * volatility * 0.01;
+                // STEP 4 - RANDOM NOISE
+                const randomNoise = (Math.random() - 0.5) * 0.01;
 
-                // STEP 5 - INACTIVITY PENALTY
-                const inactivityPenalty = daysWithoutBuy * 0.002;
+                // STEP 5 - FINAL PRICE CHANGE PERCENT
+                let priceChangePercent = (
+                    (marketForce * 0.45) +
+                    (newDemandScore * 0.25) +
+                    (globalMarketTrend * 0.20) +
+                    (randomNoise * 0.10) -
+                    inactivityPenalty
+                ) * (volatility * 0.01);
 
-                // STEP 6 & 7 - PRICE CHANGE %
-                let priceChangePercent = ((marketSentiment * liquidityImpact * volatility) + noise - inactivityPenalty);
-                priceChangePercent = Math.max(-0.1, Math.min(0.1, priceChangePercent));
+                // STEP 6 - CLAMP PRICE MOVEMENT
+                priceChangePercent = Math.max(-0.10, Math.min(priceChangePercent, 0.10));
 
-                // STEP 8 & 9 - FINAL PRICE
+                // STEP 7 & 8 - CURRENT PRICE
                 let newPrice = previousPrice * (1 + priceChangePercent);
-                newPrice = Number(Math.max(0.01, newPrice).toFixed(2));
+                newPrice = Number(Math.max(newPrice, 1).toFixed(2));
 
                 // Decay the pressures so they don't compound forever
                 const newBuyQty = Math.floor(buyQty * 0.8);
@@ -74,6 +79,7 @@ module.exports = cds.service.impl(async function () {
                     buyPressure: newBuyQty,
                     sellPressure: newSellQty,
                     trend: newTrend,
+                    demandScore: newDemandScore,
                     lastMarketTickAt: now.toISOString()
                 }).where({ ID: p.ID }));
 

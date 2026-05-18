@@ -24,29 +24,23 @@ sap.ui.define([
         },
 
         _onRouteMatched: function () {
-            // Check if products are loaded
-            var oSelect = this.byId("stockSelector");
-            var oBinding = oSelect.getBinding("items");
-            if (oBinding) {
-                oBinding.attachEventOnce("dataReceived", function() {
-                    var sFirstKey = oSelect.getItems()[0] && oSelect.getItems()[0].getKey();
-                    if (sFirstKey) {
+            var oModel = this.getOwnerComponent().getModel();
+            var oListBinding = oModel.bindList("/Products");
+            
+            oListBinding.requestContexts(0, 1).then(function (aContexts) {
+                if (aContexts.length > 0) {
+                    var sFirstKey = aContexts[0].getProperty("ID");
+                    var oSelect = this.byId("stockSelector");
+                    
+                    // Allow UI to render the items first
+                    setTimeout(function() {
                         oSelect.setSelectedKey(sFirstKey);
                         this._selectedStockId = sFirstKey;
                         this._loadStockData();
                         this._startPolling();
-                    }
-                }.bind(this));
-            } else {
-                // If already bound and has items
-                var sFirstKey = oSelect.getItems()[0] && oSelect.getItems()[0].getKey();
-                if (sFirstKey) {
-                    oSelect.setSelectedKey(sFirstKey);
-                    this._selectedStockId = sFirstKey;
-                    this._loadStockData();
-                    this._startPolling();
+                    }.bind(this), 100);
                 }
-            }
+            }.bind(this));
         },
 
         onNavBack: function () {
@@ -94,30 +88,73 @@ sap.ui.define([
                 method: "GET",
                 success: function (data) {
                     if (data) {
-                        oModel.setProperty("/currentPrice", data.currency + " " + (data.price || 0).toFixed(2));
-                        oModel.setProperty("/volume", (data.buyPressure || 0) + (data.sellPressure || 0));
-                        oModel.setProperty("/trend", data.trend || "NEUTRAL");
+                        var d = data;
+                        if (data.value && Array.isArray(data.value) && data.value.length > 0) d = data.value[0];
+                        else if (data.value) d = data.value;
+
+                        oModel.setProperty("/currentPrice", (d.currency || "$") + " " + Number(d.price || 0).toFixed(2));
+                        oModel.setProperty("/trend", d.trend || "NEUTRAL");
                     }
+                },
+                error: function(err) {
+                    console.error("Failed to fetch product:", err);
                 }
             });
 
-            // Fetch price history (latest 50 points)
+            // Fetch actual historical trading volume from transactions
             $.ajax({
-                url: "/api/PriceHistory?$filter=product_ID eq " + this._selectedStockId + "&$orderby=timestamp desc&$top=50",
+                url: "/api/Transactions?$filter=product_ID eq " + this._selectedStockId,
                 method: "GET",
                 success: function (data) {
-                    if (data && data.value) {
-                        // Reverse so oldest is first for the chart left-to-right
-                        var history = data.value.reverse().map(function(h) {
-                            var d = new Date(h.timestamp);
-                            return {
-                                timeLabel: timeFormat.format(d),
-                                price: h.close
-                            };
-                        });
-                        oModel.setProperty("/history", history);
-                    }
+                    var txs = data.value || data || [];
+                    var totalVol = 0;
+                    txs.forEach(function(t) {
+                        totalVol += (t.quantity || 0);
+                    });
+                    oModel.setProperty("/volume", totalVol);
                 }
+            });
+
+            // Fetch Legacy Historical Mock Data first
+            var sHistoricalUrl = "/api/HistoricalPrices?$filter=product_ID eq " + this._selectedStockId + "&$orderby=createdAt desc&$top=30";
+            var sLiveUrl = "/api/PriceHistory?$filter=product_ID eq " + this._selectedStockId + "&$orderby=timestamp desc&$top=50";
+
+            $.when(
+                $.ajax({ url: sHistoricalUrl, method: "GET" }),
+                $.ajax({ url: sLiveUrl, method: "GET" })
+            ).done(function (resHistorical, resLive) {
+                var dataHist = resHistorical[0];
+                var dataLive = resLive[0];
+                var combinedHistory = [];
+
+                if (dataHist && dataHist.value) {
+                    var histMapped = dataHist.value.reverse().map(function(h) {
+                        return {
+                            timeLabel: timeFormat.format(new Date(h.createdAt)),
+                            price: Number(h.price || 0)
+                        };
+                    });
+                    combinedHistory = combinedHistory.concat(histMapped);
+                }
+
+                if (dataLive && dataLive.value) {
+                    var liveMapped = dataLive.value.reverse().map(function(h) {
+                        return {
+                            timeLabel: timeFormat.format(new Date(h.timestamp)),
+                            price: Number(h.close || 0)
+                        };
+                    });
+                    combinedHistory = combinedHistory.concat(liveMapped);
+                }
+
+                // Keep only the latest 60 points to keep chart clean
+                if (combinedHistory.length > 60) {
+                    combinedHistory = combinedHistory.slice(combinedHistory.length - 60);
+                }
+
+                oModel.setProperty("/history", combinedHistory);
+            }).fail(function(err) {
+                console.error("Failed to fetch price history:", err);
             });
         }
 
