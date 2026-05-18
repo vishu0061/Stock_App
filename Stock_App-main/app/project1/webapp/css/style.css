@@ -492,12 +492,27 @@
     letter-spacing: 0.05em;
 }
 
-.adminNavProfileText {
-    color: #cbd5e1 !important;
+/* =========================================================
+   PROFILE MENU
+========================================================= */
 
-    font-size: 0.9rem !important;
+.adminProfileBtn .sapMBtnInner {
+
+    background: transparent !important;
+
+    border: none !important;
+
+    color: #e2e8f0 !important;
+
+    font-weight: 600 !important;
 }
 
+.adminProfileBtn .sapMBtnInner:hover {
+
+    background: rgba(124, 58, 237, 0.08) !important;
+
+    border-radius: 10px !important;
+}
 
 /* =========================================================
    NAV TABS
@@ -971,4 +986,475 @@
 .adminVizFrame {
     border-radius: 12px;
     overflow: hidden;
+}
+
+
+/* =========================================================
+   CREATE STOCK PAGE
+========================================================= */
+
+.csRootPage {
+    background: #0f111a !important;
+}
+
+.csPageWrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* Top Bar */
+.csTopBar {
+    margin-bottom: 2rem;
+}
+
+.csBackBtn.sapMBtn .sapMBtnInner {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    color: #a78bfa !important;
+}
+
+.csBackBtn.sapMBtn .sapMBtnInner:hover {
+    background: rgba(139, 92, 246, 0.2) !important;
+    border-color: #8b5cf6 !important;
+    color: white !important;
+}
+
+.csTopBarTitle {
+    color: #94a3b8 !important;
+    margin-left: 1rem !important;
+    font-weight: 500 !important;
+}
+
+/* Hero Section */
+.csHero {
+    margin-bottom: 3rem;
+}
+
+.csHeroIcon {
+    color: #a78bfa !important;
+    margin-bottom: 1rem;
+    background: rgba(139, 92, 246, 0.15);
+    padding: 1.5rem;
+    border-radius: 20px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.csHeroTitle {
+    color: white !important;
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.csHeroSub {
+    color: #94a3b8 !important;
+    font-size: 1.1rem !important;
+}
+
+/* Form Card */
+.csFormCard {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.csSectionTitle {
+    color: #a78bfa !important;
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 1rem !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+.csSectionTitle:not(:first-child) {
+    margin-top: 2.5rem !important;
+}
+
+.csFieldRow {
+    margin-bottom: 1.5rem;
+}
+
+.csDoubleRow {
+    margin-bottom: 1.5rem;
+}
+
+.csHalfCol {
+    width: 50%;
+}
+
+.csHalfRight {
+    padding-left: 1.5rem;
+}
+
+.csLabel {
+    color: #cbd5e1 !important;
+    margin-bottom: 0.5rem !important;
+    font-weight: 500 !important;
+}
+
+/* Input Styling Override for Form */
+/* =========================================================
+   INPUT STYLING OVERRIDE FOR FORM
+========================================================= */
+
+/* OUTER WRAPPER */
+
+.csInput .sapMInputBaseContentWrapper,
+.csInput .sapMSlt {
+
+    background: rgba(15, 23, 42, 0.75) !important;
+
+    border: 1px solid rgba(148, 163, 184, 0.18) !important;
+
+    border-radius: 10px !important;
+
+    height: 44px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    transition: all 0.2s ease !important;
+}
+
+/* INNER INPUT */
+
+.csInput .sapMInputBaseInner {
+
+    background: transparent !important;
+
+    border: none !important;
+
+    color: white !important;
+
+    height: 100% !important;
+
+    padding: 0 0.9rem !important;
+
+    margin: 0 !important;
+
+    line-height: normal !important;
+
+    font-size: 0.95rem !important;
+
+    box-shadow: none !important;
+}
+
+/* PLACEHOLDER */
+
+.csInput .sapMInputBaseInner::placeholder {
+
+    color: #64748b !important;
+
+    opacity: 1;
+}
+
+/* SELECT LABEL */
+
+.csInput .sapMSltLabel {
+
+    color: white !important;
+
+    height: 100% !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    padding-left: 0.9rem !important;
+
+    font-size: 0.95rem !important;
+
+    box-sizing: border-box !important;
+}
+
+.csInput .sapMSltArrow {
+
+    color: #cbd5e1 !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    justify-content: center !important;
+
+    height: 100% !important;
+}
+
+/* HOVER EFFECT */
+
+.csInput .sapMInputBaseContentWrapper:hover,
+.csInput .sapMSlt:hover {
+
+    border-color: rgba(139, 92, 246, 0.45) !important;
+}
+
+/* FOCUS EFFECT */
+
+.csInput.sapMFocus .sapMInputBaseContentWrapper {
+
+    border-color: #8b5cf6 !important;
+
+    box-shadow:
+        0 0 0 2px rgba(139, 92, 246, 0.18) !important;
+}
+
+/* Actions */
+.csActionRow {
+    margin-top: 2rem;
+    padding-top: 0rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.csCancelBtn.sapMBtn .sapMBtnInner {
+    color: #94a3b8 !important;
+    margin-right: 1rem;
+}
+
+.csSubmitBtn.sapMBtn .sapMBtnInner {
+
+    background:
+        linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+
+    border: none !important;
+
+    border-radius: 6px !important;
+
+    color: white !important;
+
+    font-weight: 400 !important;
+
+    height: 22px !important;
+
+    padding: 0 0.5rem  !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    justify-content: center !important;
+
+    text-shadow: none !important;
+
+    box-shadow:
+        0 8px 20px rgba(100, 102, 191, 0.35) !important;
+
+    transition: all 0.2s ease !important;
+}
+
+/* BUTTON TEXT ALIGNMENT */
+
+.csSubmitBtn .sapMBtnContent {
+
+    line-height: normal !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    gap: 0.45rem !important;
+
+    font-size: 1rem !important;
+}
+
+.csSubmitBtn.sapMBtn .sapMBtnInner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 6px rgba(99, 102, 241, 0.5) !important;
+}
+
+/* =========================================================
+   MANAGE STOCKS PAGE
+========================================================= */
+
+.msRootPage {
+    background: #0f111a !important;
+}
+
+.msPageWrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* Top Bar */
+.msTopBar {
+    margin-bottom: 2rem;
+}
+
+.msBackBtn.sapMBtn .sapMBtnInner {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    color: #a78bfa !important;
+}
+
+.msBackBtn.sapMBtn .sapMBtnInner:hover {
+    background: rgba(139, 92, 246, 0.2) !important;
+    border-color: #8b5cf6 !important;
+    color: white !important;
+}
+
+.msTopBarTitle {
+    color: white !important;
+    margin-left: 1rem !important;
+    font-weight: 600 !important;
+    font-size: 1.5rem !important;
+}
+
+.msAddNewBtn.sapMBtn .sapMBtnInner {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 0 1.5rem !important;
+    height: 38px !important;
+    text-shadow: none !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+
+.msAddNewBtn.sapMBtn .sapMBtnInner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5) !important;
+}
+
+/* Stats Strip */
+.msStatsStrip {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.msStatItem {
+    flex: 1;
+    border-right: 1px solid rgba(148, 163, 184, 0.1);
+    padding: 0 1.5rem;
+}
+
+.msStatItem:last-child {
+    border-right: none;
+}
+
+.msStatLabel {
+    color: #94a3b8 !important;
+    font-size: 0.9rem !important;
+    margin-bottom: 0.5rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.msStatValue {
+    color: white !important;
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+}
+
+.msStatGreen { color: #34d399 !important; }
+.msStatYellow { color: #fbbf24 !important; }
+.msStatRed { color: #f87171 !important; }
+
+/* Table Section */
+.msTableWrapper {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 16px;
+    padding: 1.5rem;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.msTableToolbar {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+    padding-bottom: 1rem !important;
+    margin-bottom: 1rem !important;
+}
+
+.msTableTitle {
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 1.2rem !important;
+}
+
+.msSearchField .sapMSF {
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    border-radius: 8px !important;
+}
+
+.msSearchField .sapMSF:hover {
+    border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+/* Table overrides */
+.msTable {
+    background: transparent !important;
+}
+
+.msTable .sapMListTblHeader {
+    background: transparent !important;
+}
+
+.msTable .sapMColumnHeader {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+}
+
+.msTableRow {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.05) !important;
+}
+
+.msTableRow:hover {
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.msStockName {
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+}
+
+.msStockCurr {
+    color: #64748b !important;
+    font-size: 0.8rem !important;
+}
+
+/* Action Buttons */
+.msEditBtn.sapMBtn .sapMBtnInner {
+    background: rgba(5, 150, 105, 0.1) !important;
+    border: 1px solid rgba(5, 150, 105, 0.3) !important;
+    color: #34d399 !important;
+    border-radius: 6px !important;
+    margin-right: 0.5rem;
+}
+
+.msEditBtn.sapMBtn .sapMBtnInner:hover {
+    background: rgba(5, 150, 105, 0.2) !important;
+    border-color: #059669 !important;
+}
+
+.msDeleteBtn.sapMBtn .sapMBtnInner {
+    background: rgba(220, 38, 38, 0.1) !important;
+    border: 1px solid rgba(220, 38, 38, 0.3) !important;
+    color: #f87171 !important;
+    border-radius: 6px !important;
+    min-width: 32px !important;
+}
+
+.msDeleteBtn.sapMBtn .sapMBtnInner:hover {
+    background: rgba(220, 38, 38, 0.2) !important;
+    border-color: #dc2626 !important;
 }

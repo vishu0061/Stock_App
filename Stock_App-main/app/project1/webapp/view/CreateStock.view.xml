@@ -1,0 +1,102 @@
+<mvc:View
+    controllerName="sap.stocktrading.app.controller.CreateStock"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    displayBlock="true">
+
+    <Page showHeader="false" class="csRootPage">
+        <content>
+            <VBox class="csPageWrapper">
+
+                <!-- ── Top navigation bar ─────────────────────────── -->
+                <HBox class="csTopBar" alignItems="Center">
+                    <Button icon="sap-icon://nav-back" type="Transparent"
+                            press=".onNavBack" tooltip="Back to Dashboard"
+                            class="csBackBtn"/>
+                    <Title text="Admin  ›  Create Stock" level="H5" class="csTopBarTitle"/>
+                </HBox>
+
+                <!-- ── Page body ───────────────────────────────────── -->
+                <VBox class="csContent" alignItems="Center">
+
+                    <!-- Hero -->
+                    <VBox class="csHero" alignItems="Center">
+                        <core:Icon src="sap-icon://add-product" size="3rem" class="csHeroIcon"/>
+                        <Title text="List a New Stock" level="H1" class="csHeroTitle"/>
+                        <Text text="Add a new tradable asset to the platform" class="csHeroSub"/>
+                    </VBox>
+
+                    <!-- Form card -->
+                    <VBox class="csFormCard">
+
+                        <Title text="Basic Information" level="H5" class="csSectionTitle"/>
+
+                        <VBox class="csFieldRow">
+                            <Label text="Product Name" required="true" class="csLabel"/>
+                            <Input id="csName"
+                                   placeholder="e.g. Reliance Industries, HDFC Bank…"
+                                   width="100%" class="csInput"/>
+                        </VBox>
+
+                        <VBox class="csFieldRow">
+                            <Label text="Category" required="true" class="csLabel"/>
+                            <Select id="csCategory" width="100%" class="csInput"/>
+                        </VBox>
+
+                        <Title text="Pricing &amp; Market Parameters" level="H5" class="csSectionTitle"/>
+
+                        <!-- Price + Currency -->
+                        <HBox class="csDoubleRow">
+                            <VBox class="csHalfCol">
+                                <Label text="Initial Price" required="true" class="csLabel"/>
+                                <Input id="csPrice" type="Number"
+                                       placeholder="e.g. 2800.00"
+                                       width="100%" class="csInput"/>
+                            </VBox>
+                            <VBox class="csHalfCol csHalfRight">
+                                <Label text="Currency" class="csLabel"/>
+                                <Select id="csCurrency" width="100%" class="csInput">
+                                    <items>
+                                        <core:Item key="INR" text="₹  INR — Indian Rupee"/>
+                                        <core:Item key="USD" text="$  USD — US Dollar"/>
+                                        <core:Item key="EUR" text="€  EUR — Euro"/>
+                                    </items>
+                                </Select>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Quantity + Volatility -->
+                        <HBox class="csDoubleRow">
+                            <VBox class="csHalfCol">
+                                <Label text="Available Quantity" required="true" class="csLabel"/>
+                                <Input id="csQty" type="Number"
+                                       placeholder="e.g. 500"
+                                       width="100%" class="csInput"/>
+                            </VBox>
+                            <VBox class="csHalfCol csHalfRight">
+                                <Label text="Volatility %" class="csLabel"/>
+                                <Input id="csVol" type="Number" value="2.5"
+                                       placeholder="0.5 – 25"
+                                       width="100%" class="csInput"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Actions -->
+                        <HBox class="csActionRow" justifyContent="End">
+                            <Button text="Cancel" type="Transparent"
+                                    press=".onNavBack" class="csCancelBtn"/>
+                            <Button id="csSubmitBtn"
+                                    text="Create Stock"
+                                    type="Emphasized"
+                                    press=".onSubmitCreate"
+                                    class="csSubmitBtn"/>
+                        </HBox>
+
+                    </VBox>
+                </VBox>
+            </VBox>
+        </content>
+    </Page>
+
+</mvc:View>

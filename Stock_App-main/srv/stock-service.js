@@ -6,31 +6,129 @@ module.exports = cds.service.impl(async function () {
         Products,
         Transactions,
         Portfolio,
-        HistoricalPrices
+        HistoricalPrices,
+        PriceHistory
     } = this.entities;
+
+    let globalMarketTrend = 0;
+
+    // ================= REAL-TIME PRICE ENGINE =================
+    setInterval(async () => {
+        try {
+            globalMarketTrend = Math.sin(Date.now() / 100000); // Simple oscillating trend
+            const aProducts = await SELECT.from(Products).where({ status: "ACTIVE" });
+            const now = new Date();
+
+            for (const p of aProducts) {
+                const buyQty = p.buyPressure || 0;
+                const sellQty = p.sellPressure || 0;
+                const stockQuantity = p.stockQuantity || 0;
+                const demandScore = p.demandScore || 1.0;
+                const volatility = p.volatilityPct || 2.5;
+                const previousPrice = Number(p.price || 0);
+
+                let daysWithoutBuy = 0;
+                if (p.lastBoughtAt) {
+                    daysWithoutBuy = (now - new Date(p.lastBoughtAt)) / (1000 * 60 * 60 * 24);
+                }
+
+                // STEP 1 - NET FLOW
+                const netFlow = (buyQty - sellQty) / (buyQty + sellQty + 1);
+
+                // STEP 2 - LIQUIDITY IMPACT
+                const liquidityImpact = (buyQty + sellQty) / (stockQuantity + 1);
+
+                // STEP 3 - MARKET SENTIMENT
+                const marketSentiment = (netFlow * 0.5) + (demandScore * 0.3) + (globalMarketTrend * 0.2);
+
+                // STEP 4 - VOLATILITY NOISE
+                const noise = (Math.random() - 0.5) * volatility * 0.01;
+
+                // STEP 5 - INACTIVITY PENALTY
+                const inactivityPenalty = daysWithoutBuy * 0.002;
+
+                // STEP 6 & 7 - PRICE CHANGE %
+                let priceChangePercent = ((marketSentiment * liquidityImpact * volatility) + noise - inactivityPenalty);
+                priceChangePercent = Math.max(-0.1, Math.min(0.1, priceChangePercent));
+
+                // STEP 8 & 9 - FINAL PRICE
+                let newPrice = previousPrice * (1 + priceChangePercent);
+                newPrice = Number(Math.max(0.01, newPrice).toFixed(2));
+
+                // Decay the pressures so they don't compound forever
+                const newBuyQty = Math.floor(buyQty * 0.8);
+                const newSellQty = Math.floor(sellQty * 0.8);
+                const newTrend = priceChangePercent > 0 ? "BULL" : (priceChangePercent < 0 ? "BEAR" : "NEUTRAL");
+
+                await UPDATE(Products).set({
+                    previousPrice: previousPrice,
+                    price: newPrice,
+                    buyPressure: newBuyQty,
+                    sellPressure: newSellQty,
+                    trend: newTrend,
+                    lastMarketTickAt: now.toISOString()
+                }).where({ ID: p.ID });
+
+                const high = Math.max(previousPrice, newPrice);
+                const low = Math.min(previousPrice, newPrice);
+                
+                await INSERT.into(PriceHistory).entries({
+                    ID: cds.utils.uuid(),
+                    product_ID: p.ID,
+                    open: previousPrice,
+                    high: Number((high + (high * 0.001)).toFixed(2)),
+                    low: Number((low - (low * 0.001)).toFixed(2)),
+                    close: newPrice,
+                    volume: buyQty + sellQty,
+                    timestamp: now.toISOString()
+                });
+            }
+        } catch (e) {
+            console.error("Market Engine Error:", e);
+        }
+    }, 5000);
 
     // ================= GET ANALYTICS =================
 
     this.on("getAnalytics", async () => {
 
-        const aProducts     = await SELECT.from(Products);
+        const aProducts = await SELECT.from(Products);
         const aTransactions = await SELECT.from(Transactions);
 
-        let iMarketValue    = 0;
+        let iMarketValue = 0;
         let iAvailableStocks = 0;
 
         aProducts.forEach((oProduct) => {
-            iMarketValue     += Number(oProduct.price || 0) * Number(oProduct.stockQuantity || 0);
+            iMarketValue += Number(oProduct.price || 0) * Number(oProduct.stockQuantity || 0);
             iAvailableStocks += Number(oProduct.stockQuantity || 0);
         });
 
+        let revenue = 0;
+        let totalTrades = 0;
+        let marketVolume = 0;
+        const activeUsers = new Set();
+        
+        aTransactions.forEach(t => {
+            totalTrades++;
+            marketVolume += Number(t.quantity || 0);
+            activeUsers.add(t.customerName);
+            // roughly mock platform revenue as 1% of buy volume
+            if (t.transactionType === "BUY") {
+               revenue += Number(t.totalPrice || 0) * 0.01;
+            }
+        });
+
         return {
-            totalProducts:   aProducts.length,
+            totalProducts: aProducts.length,
             availableStocks: iAvailableStocks,
-            transactions:    aTransactions.length,
-            marketValue:     iMarketValue.toFixed(2),
-            revenueGrowth:   12.5,
-            liveVolatility:  2.4
+            transactions: aTransactions.length,
+            marketValue: iMarketValue.toFixed(2),
+            revenueGrowth: 12.5,
+            liveVolatility: 2.4,
+            totalTrades: totalTrades,
+            marketVolume: marketVolume,
+            activeUsers: activeUsers.size,
+            revenue: revenue.toFixed(2)
         };
 
     });
@@ -40,17 +138,18 @@ module.exports = cds.service.impl(async function () {
     this.on("createProduct", async (req) => {
 
         try {
-            const { productName, stockQuantity, price, currency, category_ID } = req.data;
+            const { productName, stockQuantity, price, currency, category_ID, volatilityPct } = req.data;
 
             const newProduct = {
-                ID:            cds.utils.uuid(),
+                ID: cds.utils.uuid(),
                 productName,
                 stockQuantity,
                 price,
                 currency,
                 category_ID,
-                status:        "ACTIVE",
-                trend:         "NEUTRAL"
+                status: "ACTIVE",
+                trend: "NEUTRAL",
+                volatilityPct: volatilityPct || 2.5
             };
 
             await INSERT.into(Products).entries(newProduct);
@@ -69,11 +168,13 @@ module.exports = cds.service.impl(async function () {
     this.on("updateProduct", async (req) => {
 
         try {
-            const { id, productName, stockQuantity, price, currency, category_ID } = req.data;
+            const { id, productName, stockQuantity, price, currency, category_ID, status, volatilityPct } = req.data;
 
-            await UPDATE(Products)
-                .set({ productName, stockQuantity, price, currency, category_ID })
-                .where({ ID: id });
+            const oUpdate = { productName, stockQuantity, price, currency, category_ID };
+            if (status)        { oUpdate.status       = status; }
+            if (volatilityPct) { oUpdate.volatilityPct = volatilityPct; }
+
+            await UPDATE(Products).set(oUpdate).where({ ID: id });
 
             return { success: true, message: "Product updated" };
 
@@ -113,79 +214,61 @@ module.exports = cds.service.impl(async function () {
                 return { success: false, message: `Only ${oProduct.stockQuantity} units available`, totalPrice: 0, remainingQty: oProduct.stockQuantity, newPrice: oProduct.price };
             }
 
-            const unitPrice  = Number(oProduct.price);
+            const unitPrice = Number(oProduct.price);
             const totalPrice = unitPrice * quantity;
-            const newQty     = oProduct.stockQuantity - quantity;
+            const newQty = oProduct.stockQuantity - quantity;
 
             // Update stock quantity and buy pressure
-            const newBuyPressure  = (oProduct.buyPressure || 0) + quantity;
-            const newSellPressure = oProduct.sellPressure || 0;
-            const newPrice = _computeNewPrice(unitPrice, oProduct.volatilityPct || 2.5,"BUY", newBuyPressure, newSellPressure, false);
-            const newTrend        = newBuyPressure > newSellPressure ? "BULL" : (newBuyPressure < newSellPressure ? "BEAR" : "NEUTRAL");
-            const newStatus       = newQty === 0 ? "OUT" : (newQty < 20 ? "LOW" : "ACTIVE");
+            const newBuyPressure = (oProduct.buyPressure || 0) + quantity;
+            const newStatus = newQty === 0 ? "OUT" : (newQty < 20 ? "LOW" : "ACTIVE");
 
             await UPDATE(Products).set({
                 stockQuantity: newQty,
-                buyPressure:   newBuyPressure,
-                price:         newPrice,
-                previousPrice: unitPrice,
-                trend:         newTrend,
-                status:        newStatus
+                buyPressure: newBuyPressure,
+                status: newStatus,
+                lastBoughtAt: new Date().toISOString()
             }).where({ ID: productId });
 
             // Record transaction
             await INSERT.into(Transactions).entries({
-                ID:              cds.utils.uuid(),
-                product_ID:      productId,
+                ID: cds.utils.uuid(),
+                product_ID: productId,
                 customerName,
                 transactionType: "BUY",
                 quantity,
                 unitPrice,
                 totalPrice,
-                status:          "COMPLETED"
-            });
-
-            // Record historical price
-            await INSERT.into(HistoricalPrices).entries({
-                ID:           cds.utils.uuid(),
-                product_ID:   productId,
-                price:        newPrice,
-                prevPrice:    unitPrice,
-                changePct:    Number((((newPrice - unitPrice) / unitPrice) * 100).toFixed(3)),
-                volume:       quantity,
-                reason:       "BUY",
-                buyPressure:  newBuyPressure,
-                sellPressure: newSellPressure
+                status: "COMPLETED"
             });
 
             // Upsert portfolio
             const [existing] = await SELECT.from(Portfolio).where({ customerName, product_ID: productId });
             if (existing) {
-                const newTotalQty    = existing.quantity + quantity;
+                const newTotalQty = existing.quantity + quantity;
                 const newAvgBuyPrice = ((existing.avgBuyPrice * existing.quantity) + (unitPrice * quantity)) / newTotalQty;
                 await UPDATE(Portfolio).set({
-                    quantity:     newTotalQty,
-                    avgBuyPrice:  Number(newAvgBuyPrice.toFixed(2)),
-                    lastTradeAt:  new Date().toISOString()
+                    quantity: newTotalQty,
+                    avgBuyPrice: Number(newAvgBuyPrice.toFixed(2)),
+                    lastTradeAt: new Date().toISOString()
                 }).where({ ID: existing.ID });
             } else {
                 await INSERT.into(Portfolio).entries({
-                    ID:           cds.utils.uuid(),
+                    ID: cds.utils.uuid(),
                     customerName,
-                    product_ID:   productId,
+                    product_ID: productId,
                     quantity,
-                    avgBuyPrice:  unitPrice,
-                    currency:     oProduct.currency,
-                    lastTradeAt:  new Date().toISOString()
+                    avgBuyPrice: unitPrice,
+                    currency: oProduct.currency,
+                    lastTradeAt: new Date().toISOString()
                 });
             }
 
             return {
-                success:      true,
-                message:      `Bought ${quantity} x ${oProduct.productName} for ${oProduct.currency} ${totalPrice.toFixed(2)}`,
+                success: true,
+                message: `Bought ${quantity} x ${oProduct.productName} for ${oProduct.currency} ${totalPrice.toFixed(2)}`,
                 totalPrice,
                 remainingQty: newQty,
-                newPrice
+                newPrice: unitPrice // Price hasn't ticked yet
             };
 
         } catch (err) {
@@ -211,47 +294,28 @@ module.exports = cds.service.impl(async function () {
                 return { success: false, message: `Not enough shares. You own ${holding ? holding.quantity : 0}`, totalPrice: 0, remainingQty: oProduct.stockQuantity, newPrice: oProduct.price };
             }
 
-            const unitPrice    = Number(oProduct.price);
-            const totalPrice   = unitPrice * quantity;
-            const newStockQty  = oProduct.stockQuantity + quantity;
+            const unitPrice = Number(oProduct.price);
+            const totalPrice = unitPrice * quantity;
+            const newStockQty = oProduct.stockQuantity + quantity;
 
             const newSellPressure = (oProduct.sellPressure || 0) + quantity;
-            const newBuyPressure  = oProduct.buyPressure || 0;
-            const newPrice = _computeNewPrice(   unitPrice,  oProduct.volatilityPct || 2.5,"SELL", newBuyPressure, newSellPressure,false);
-            const newTrend        = newBuyPressure > newSellPressure ? "BULL" : (newBuyPressure < newSellPressure ? "BEAR" : "NEUTRAL");
 
             await UPDATE(Products).set({
                 stockQuantity: newStockQty,
-                sellPressure:  newSellPressure,
-                price:         newPrice,
-                previousPrice: unitPrice,
-                trend:         newTrend,
-                status:        "ACTIVE"
+                sellPressure: newSellPressure,
+                status: "ACTIVE"
             }).where({ ID: productId });
 
             // Record transaction
             await INSERT.into(Transactions).entries({
-                ID:              cds.utils.uuid(),
-                product_ID:      productId,
+                ID: cds.utils.uuid(),
+                product_ID: productId,
                 customerName,
                 transactionType: "SELL",
                 quantity,
                 unitPrice,
                 totalPrice,
-                status:          "COMPLETED"
-            });
-
-            // Record historical price
-            await INSERT.into(HistoricalPrices).entries({
-                ID:           cds.utils.uuid(),
-                product_ID:   productId,
-                price:        newPrice,
-                prevPrice:    unitPrice,
-                changePct:    Number((((newPrice - unitPrice) / unitPrice) * 100).toFixed(3)),
-                volume:       quantity,
-                reason:       "SELL",
-                buyPressure:  newBuyPressure,
-                sellPressure: newSellPressure
+                status: "COMPLETED"
             });
 
             // Update portfolio
@@ -260,17 +324,17 @@ module.exports = cds.service.impl(async function () {
                 await DELETE.from(Portfolio).where({ ID: holding.ID });
             } else {
                 await UPDATE(Portfolio).set({
-                    quantity:    newHoldingQty,
+                    quantity: newHoldingQty,
                     lastTradeAt: new Date().toISOString()
                 }).where({ ID: holding.ID });
             }
 
             return {
-                success:      true,
-                message:      `Sold ${quantity} x ${oProduct.productName} for ${oProduct.currency} ${totalPrice.toFixed(2)}`,
+                success: true,
+                message: `Sold ${quantity} x ${oProduct.productName} for ${oProduct.currency} ${totalPrice.toFixed(2)}`,
                 totalPrice,
                 remainingQty: newStockQty,
-                newPrice
+                newPrice: unitPrice
             };
 
         } catch (err) {
@@ -295,22 +359,22 @@ module.exports = cds.service.impl(async function () {
                 const [prod] = await SELECT.from(Products).where({ ID: h.product_ID });
                 if (!prod) continue;
 
-                const currentPrice  = Number(prod.price || 0);
-                const avgBuy        = Number(h.avgBuyPrice || 0);
-                const qty           = Number(h.quantity || 0);
-                const totalValue    = currentPrice * qty;
-                const profitLoss    = (currentPrice - avgBuy) * qty;
+                const currentPrice = Number(prod.price || 0);
+                const avgBuy = Number(h.avgBuyPrice || 0);
+                const qty = Number(h.quantity || 0);
+                const totalValue = currentPrice * qty;
+                const profitLoss = (currentPrice - avgBuy) * qty;
                 const profitLossPct = avgBuy > 0 ? ((currentPrice - avgBuy) / avgBuy) * 100 : 0;
 
                 result.push({
-                    productId:     h.product_ID,
-                    productName:   prod.productName || "",
-                    quantity:      qty,
-                    avgBuyPrice:   avgBuy,
-                    currentPrice:  currentPrice,
-                    currency:      h.currency || prod.currency || "INR",
-                    totalValue:    Number(totalValue.toFixed(2)),
-                    profitLoss:    Number(profitLoss.toFixed(2)),
+                    productId: h.product_ID,
+                    productName: prod.productName || "",
+                    quantity: qty,
+                    avgBuyPrice: avgBuy,
+                    currentPrice: currentPrice,
+                    currency: h.currency || prod.currency || "INR",
+                    totalValue: Number(totalValue.toFixed(2)),
+                    profitLoss: Number(profitLoss.toFixed(2)),
                     profitLossPct: Number(profitLossPct.toFixed(2))
                 });
             }
@@ -333,11 +397,11 @@ module.exports = cds.service.impl(async function () {
         try {
             let dFrom = new Date();
             switch (range) {
-                case "1D": dFrom.setDate(dFrom.getDate() - 1);    break;
-                case "1W": dFrom.setDate(dFrom.getDate() - 7);    break;
-                case "1M": dFrom.setMonth(dFrom.getMonth() - 1);  break;
+                case "1D": dFrom.setDate(dFrom.getDate() - 1); break;
+                case "1W": dFrom.setDate(dFrom.getDate() - 7); break;
+                case "1M": dFrom.setMonth(dFrom.getMonth() - 1); break;
                 case "1Y": dFrom.setFullYear(dFrom.getFullYear() - 1); break;
-                default:   dFrom.setDate(dFrom.getDate() - 7);
+                default: dFrom.setDate(dFrom.getDate() - 7);
             }
 
             const aHistory = await SELECT.from(HistoricalPrices)
@@ -346,10 +410,10 @@ module.exports = cds.service.impl(async function () {
 
             return aHistory.map((h) => ({
                 createdAt: h.createdAt,
-                price:     Number(h.price),
+                price: Number(h.price),
                 changePct: Number(h.changePct || 0),
-                volume:    Number(h.volume || 0),
-                reason:    h.reason || "TICK"
+                volume: Number(h.volume || 0),
+                reason: h.reason || "TICK"
             }));
 
         } catch (err) {
@@ -358,139 +422,5 @@ module.exports = cds.service.impl(async function () {
         }
 
     });
-
-    // ================= SIMULATE MARKET TICK =================
-
-    this.on("simulateMarketTick", async (req) => {
-
-        const { volatilityOverridePct } = req.data;
-
-        try {
-            const aProducts = await SELECT.from(Products);
-            let updated     = 0;
-
-            for (const p of aProducts) {
-                const vol      = volatilityOverridePct || p.volatilityPct || 2.5;
-                const noActivity =
-    (p.buyPressure || 0)
-    ===
-    (p.sellPressure || 0);
-
-const newPrice = _computeNewPrice( Number(p.price),    vol,  "TICK",  p.buyPressure || 0, p.sellPressure || 0,   noActivity);
-
-                await UPDATE(Products).set({
-                    previousPrice:   Number(p.price),
-                    price:           newPrice,
-                    lastMarketTickAt: new Date().toISOString()
-                }).where({ ID: p.ID });
-
-                await INSERT.into(HistoricalPrices).entries({
-                    ID:           cds.utils.uuid(),
-                    product_ID:   p.ID,
-                    price:        newPrice,
-                    prevPrice:    Number(p.price),
-                    changePct:    Number((((newPrice - p.price) / p.price) * 100).toFixed(3)),
-                    volume:       Math.floor(Math.random() * 500) + 50,
-                    reason:       "TICK",
-                    buyPressure:  p.buyPressure || 0,
-                    sellPressure: p.sellPressure || 0
-                });
-
-                updated++;
-            }
-
-            return { updated, message: `Market tick applied to ${updated} products` };
-
-        } catch (err) {
-            console.error("SIMULATE MARKET TICK ERROR:", err);
-            req.error(500, err.message);
-        }
-
-    });
-
-    // ================= HELPER =================
-
-   function _computeNewPrice(
-    currentPrice,
-    volatilityPct,
-    direction,
-    buyPressure = 0,
-    sellPressure = 0,
-    noActivity = false
-) {
-
-    currentPrice  = Number(currentPrice || 0);
-    volatilityPct = Number(volatilityPct || 2.5);
-
-    // ============================================
-    // RANDOM MARKET VOLATILITY
-    // ============================================
-
-    const randomVolatility =
-        (Math.random() * volatilityPct) / 10;
-
-    // ============================================
-    // BUY / SELL PRESSURE IMPACT
-    // ============================================
-
-    let pressureImpact = 0;
-
-    pressureImpact += (buyPressure  * 0.03);
-
-    pressureImpact -= (sellPressure * 0.04);
-
-    // ============================================
-    // BASE PRICE MOVEMENT
-    // ============================================
-
-    let newPrice = currentPrice;
-
-    if (direction === "BUY") {
-
-        newPrice += pressureImpact;
-        newPrice += randomVolatility;
-
-    } else if (direction === "SELL") {
-
-        newPrice += pressureImpact;
-        newPrice -= randomVolatility;
-
-    } else {
-
-        // ========================================
-        // MARKET TICK / NATURAL MOVEMENT
-        // ========================================
-
-        newPrice += pressureImpact;
-
-        const drift =
-            (Math.random() - 0.5)
-            * volatilityPct;
-
-        newPrice += drift;
-
-    }
-
-    // ============================================
-    // NO ACTIVITY DECAY
-    // ============================================
-
-    if (noActivity) {
-
-        // -0.3% decay
-        newPrice = newPrice * 0.997;
-
-    }
-
-    // ============================================
-    // SAFETY FLOOR
-    // ============================================
-
-    if (newPrice < 1) {
-        newPrice = 1;
-    }
-
-    return Number(newPrice.toFixed(2));
-}
 
 });

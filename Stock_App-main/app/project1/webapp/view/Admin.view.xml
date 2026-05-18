@@ -2,6 +2,7 @@
     controllerName="sap.stocktrading.app.controller.AdminDashboard"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
+xmlns:unified="sap.ui.unified"
     xmlns:core="sap.ui.core"
     xmlns:viz="sap.viz.ui5.controls"
     xmlns:feeds="sap.viz.ui5.controls.common.feeds"
@@ -26,11 +27,34 @@
                     <Title text="SAP STOCK TRADING APP" class="adminNavBrand" wrapping="false"/>
                 </HBox>
 
-                <HBox alignItems="Center">
-                    <core:Icon src="sap-icon://customer" size="1.2rem" color="white" class="adminNavProfileIcon"/>
-                    <Text text="Admin Profile" class="adminNavProfileText"/>
-                    <core:Icon src="sap-icon://slim-arrow-down" size="0.8rem" color="#94a3b8" class="adminNavChevron"/>
-                </HBox>
+                <MenuButton
+    text="Admin Profile"
+    icon="sap-icon://customer"
+    type="Transparent"
+    class="adminProfileMenuBtn">
+
+    <menu>
+
+        <Menu>
+
+            <MenuItem
+                text="Profile"
+                icon="sap-icon://employee"/>
+
+            <MenuItem
+                text="Settings"
+                icon="sap-icon://action-settings"/>
+
+            <MenuItem
+                text="Logout"
+                icon="sap-icon://log"
+                press=".onLogout"/>
+
+        </Menu>
+
+    </menu>
+
+</MenuButton>
 
             </HBox>
 
@@ -42,7 +66,7 @@
                 <Button id="tabTrends"    text="📈 Trends"    type="Transparent" class="adminNavTab" press=".onTabTrends"/>
                 <Button id="tabSettings"  text="⚙ Settings"  type="Transparent" class="adminNavTab" press=".onTabSettings"/>
                 <ToolbarSpacer/>
-                <Button id="tabLogout"    text="🚪 Logout"    type="Transparent" class="adminNavTab adminNavTabLogout" press=".onLogout"/>
+                
             </HBox>
 
             <!-- ── MAIN CONTENT ───────────────────────────────────── -->
@@ -93,11 +117,6 @@
                 <VBox class="adminSectionBlock">
                     <Title text="QUICK ACTIONS" class="adminSectionTitle"/>
                     <HBox wrap="Wrap" class="adminActionsRow">
-
-                        <!-- FIX: VBox does not support press — use Button instead -->
-                        <Button type="Transparent" press=".onQuickCreateStock" class="adminActionBtn">
-                            <customData><core:CustomData key="style" value="adminActionCardCreate"/></customData>
-                        </Button>
 
                         <VBox class="adminActionCard adminActionCardCreate">
                             <core:Icon src="sap-icon://add-product" size="1.8rem" color="#7c3aed" class="adminActionIcon"/>
@@ -187,6 +206,7 @@
                             <Column><Text text="Name"/></Column>
                             <Column><Text text="Category"/></Column>
                             <Column hAlign="End"><Text text="Price"/></Column>
+                            <Column hAlign="End"><Text text="Change"/></Column>
                             <Column hAlign="Center"><Text text="Currency"/></Column>
                             <Column hAlign="Center"><Text text="Quantity"/></Column>
                             <Column hAlign="Center"><Text text="Trend"/></Column>
@@ -203,6 +223,17 @@
                                     <ObjectStatus text="{category/name}" state="Information"/>
 
                                     <ObjectNumber number="{price}" unit="{currency}"/>
+
+                                    <!-- Change % -->
+                                    <ObjectStatus
+                                        text="{
+                                            parts: ['price', 'previousPrice'],
+                                            formatter: '.formatChangePercent'
+                                        }"
+                                        state="{
+                                            parts: ['price', 'previousPrice'],
+                                            formatter: '.formatChangeState'
+                                        }"/>
 
                                     <ObjectStatus text="{currency}" state="Information"/>
 
@@ -235,7 +266,6 @@
                                         }"
                                         icon="sap-icon://inventory"/>
 
-                                    <!-- View Graph button -->
                                     <Button
                                         text="📊 Graph"
                                         type="Transparent"

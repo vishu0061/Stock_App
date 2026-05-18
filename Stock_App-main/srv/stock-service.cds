@@ -10,6 +10,8 @@ service StockTradingService @(path: '/api') {
 
   entity HistoricalPrices as projection on db.HistoricalPrices;
 
+  entity PriceHistory as projection on db.PriceHistory;
+
   entity Transactions as projection on db.Transactions;
 
   entity Portfolio as projection on db.Portfolio;
@@ -21,7 +23,8 @@ service StockTradingService @(path: '/api') {
     stockQuantity : Integer,
     price         : Decimal,
     currency      : String,
-    category_ID   : UUID
+    category_ID   : UUID,
+    volatilityPct : Decimal
   ) returns {
     success : Boolean;
     message : String;
@@ -33,7 +36,9 @@ service StockTradingService @(path: '/api') {
     stockQuantity : Integer,
     price         : Decimal,
     currency      : String,
-    category_ID   : UUID
+    category_ID   : UUID,
+    status        : String,
+    volatilityPct : Decimal
   ) returns {
     success : Boolean;
     message : String;
@@ -95,18 +100,18 @@ service StockTradingService @(path: '/api') {
   // ================= ANALYTICS =================
 
   function getAnalytics() returns {
-
     totalProducts   : Integer;
-
     availableStocks : Integer;
-
     transactions    : Integer;
-
     marketValue     : Decimal;
-
     revenueGrowth   : Decimal;
-
     liveVolatility  : Decimal;
+    
+    // New metrics for UI dashboard
+    totalTrades     : Integer;
+    marketVolume    : Integer;
+    activeUsers     : Integer;
+    revenue         : Decimal;
   };
 
   function getPriceHistory(

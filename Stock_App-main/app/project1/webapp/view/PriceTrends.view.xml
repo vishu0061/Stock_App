@@ -1,0 +1,107 @@
+<mvc:View
+    controllerName="sap.stocktrading.app.controller.PriceTrends"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:viz.data="sap.viz.ui5.data"
+    xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
+    displayBlock="true">
+
+    <Page showHeader="false" class="msRootPage">
+        <content>
+            <VBox class="msPageWrapper">
+
+                <!-- ── Top navigation bar ─────────────────────────── -->
+                <HBox class="msTopBar" alignItems="Center" justifyContent="SpaceBetween">
+                    <HBox alignItems="Center">
+                        <Button icon="sap-icon://nav-back" type="Transparent"
+                                press=".onNavBack" tooltip="Back to Dashboard"
+                                class="msBackBtn"/>
+                        <Title text="Admin  ›  Live Price Trends" level="H5" class="msTopBarTitle"/>
+                    </HBox>
+                    
+                    <HBox alignItems="Center">
+                        <Label text="Select Stock: " class="sapUiSmallMarginEnd"/>
+                        <Select
+                            id="stockSelector"
+                            items="{
+                                path: '/Products'
+                            }"
+                            change=".onStockSelect"
+                            class="sapUiSmallMarginEnd">
+                            <core:Item key="{ID}" text="{productName} ({currency})"/>
+                        </Select>
+                        <Button icon="sap-icon://refresh" text="Refresh" type="Transparent" press=".onRefreshChart"/>
+                    </HBox>
+                </HBox>
+
+                <HBox class="adminStatsRow" wrap="Wrap">
+                    <VBox class="adminStatCard adminStatCardBlue">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://lead" size="1.6rem" color="#2563eb" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Current Price" class="adminStatLabel"/>
+                                <Title text="{trends>/currentPrice}" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox class="adminStatCard adminStatCardGreen">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://business-objects-experience" size="1.6rem" color="#059669" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Trading Volume" class="adminStatLabel"/>
+                                <Title text="{trends>/volume}" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                    
+                    <VBox class="adminStatCard adminStatCardPurple">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://trend-up" size="1.6rem" color="#7c3aed" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Market Trend" class="adminStatLabel"/>
+                                <Title text="{trends>/trend}" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </HBox>
+
+                <!-- ── Live Line Chart ────────────────────────────── -->
+                <VBox class="adminSectionBlock">
+                    <HBox alignItems="Center" class="adminSectionHeaderRow">
+                        <core:Icon src="sap-icon://line-chart" size="1.1rem" color="#059669" class="adminSectionIcon"/>
+                        <Title text="Live Time vs Price Graph" class="adminSectionTitle"/>
+                        <ToolbarSpacer/>
+                        <ObjectStatus text="Auto-updates every 5s" state="Success" icon="sap-icon://sys-enter"/>
+                    </HBox>
+                    
+                    <viz:VizFrame
+                        id="priceTrendChart"
+                        vizType="line"
+                        width="100%"
+                        height="450px"
+                        uiConfig="{applicationSet:'fiori'}"
+                        class="adminVizFrame">
+                        <viz:dataset>
+                            <viz.data:FlattenedDataset data="{trends>/history}">
+                                <viz.data:dimensions>
+                                    <viz.data:DimensionDefinition name="Time" value="{trends>timeLabel}"/>
+                                </viz.data:dimensions>
+                                <viz.data:measures>
+                                    <viz.data:MeasureDefinition name="Price" value="{trends>price}"/>
+                                </viz.data:measures>
+                            </viz.data:FlattenedDataset>
+                        </viz:dataset>
+                        <viz:feeds>
+                            <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Price"/>
+                            <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Time"/>
+                        </viz:feeds>
+                    </viz:VizFrame>
+                </VBox>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

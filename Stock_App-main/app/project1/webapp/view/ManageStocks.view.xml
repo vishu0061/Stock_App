@@ -1,0 +1,164 @@
+<mvc:View
+    controllerName="sap.stocktrading.app.controller.ManageStocks"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    displayBlock="true">
+
+    <Page showHeader="false" class="msRootPage">
+        <content>
+            <VBox class="msPageWrapper">
+
+                <!-- ── Top navigation bar ─────────────────────────── -->
+                <HBox class="msTopBar" alignItems="Center" justifyContent="SpaceBetween">
+                    <HBox alignItems="Center">
+                        <Button icon="sap-icon://nav-back" type="Transparent"
+                                press=".onNavBack" tooltip="Back to Dashboard"
+                                class="msBackBtn"/>
+                        <Title text="Admin  ›  Manage Stocks" level="H5" class="msTopBarTitle"/>
+                    </HBox>
+                    <Button text="➕  Add New Stock" type="Emphasized"
+                            press=".onAddNew" class="msAddNewBtn"/>
+                </HBox>
+
+                <!-- ── Stats strip ────────────────────────────────── -->
+                <HBox class="msStatsStrip">
+                    <VBox class="msStatItem">
+                        <Text text="Total Stocks"  class="msStatLabel"/>
+                        <Text id="msTotalCount"    text="—" class="msStatValue"/>
+                    </VBox>
+                    <VBox class="msStatItem">
+                        <Text text="Active"        class="msStatLabel"/>
+                        <Text id="msActiveCount"   text="—" class="msStatValue msStatGreen"/>
+                    </VBox>
+                    <VBox class="msStatItem">
+                        <Text text="Low Inventory" class="msStatLabel"/>
+                        <Text id="msLowCount"      text="—" class="msStatValue msStatYellow"/>
+                    </VBox>
+                    <VBox class="msStatItem">
+                        <Text text="Out of Stock"  class="msStatLabel"/>
+                        <Text id="msOutCount"      text="—" class="msStatValue msStatRed"/>
+                    </VBox>
+                </HBox>
+
+                <!-- ── Stocks table ───────────────────────────────── -->
+                <VBox class="msTableWrapper">
+                    <Table id="msStocksTable"
+                           items="{
+                               path: '/Products',
+                               parameters: { $expand: 'category' }
+                           }"
+                           class="msTable"
+                           growing="true"
+                           growingThreshold="20"
+                           updateFinished=".onTableUpdated">
+
+                        <headerToolbar>
+                            <Toolbar class="msTableToolbar">
+                                <Title text="All Stocks" class="msTableTitle"/>
+                                <ToolbarSpacer/>
+                                <SearchField id="msSearch"
+                                             placeholder="Search by name…"
+                                             width="18rem"
+                                             search=".onSearch"
+                                             liveChange=".onSearch"
+                                             class="msSearchField"/>
+                            </Toolbar>
+                        </headerToolbar>
+
+                        <columns>
+                            <Column minScreenWidth="Tablet" demandPopin="true">
+                                <Text text="Stock"/>
+                            </Column>
+                            <Column minScreenWidth="Tablet" demandPopin="true">
+                                <Text text="Category"/>
+                            </Column>
+                            <Column hAlign="End" minScreenWidth="Tablet" demandPopin="true">
+                                <Text text="Price"/>
+                            </Column>
+                            <Column hAlign="End" minScreenWidth="Tablet" demandPopin="true">
+                                <Text text="Change"/>
+                            </Column>
+                            <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                                <Text text="Qty"/>
+                            </Column>
+                            <Column hAlign="Center" minScreenWidth="Desktop" demandPopin="true">
+                                <Text text="Trend"/>
+                            </Column>
+                            <Column hAlign="Center">
+                                <Text text="Status"/>
+                            </Column>
+                            <Column hAlign="Center" width="10rem">
+                                <Text text="Actions"/>
+                            </Column>
+                        </columns>
+
+                        <items>
+                            <ColumnListItem class="msTableRow">
+                                <cells>
+
+                                    <!-- Stock name + currency badge -->
+                                    <VBox>
+                                        <Text text="{productName}" class="msStockName"/>
+                                        <Text text="{currency}"    class="msStockCurr"/>
+                                    </VBox>
+
+                                    <!-- Category -->
+                                    <ObjectStatus text="{category/name}" state="Information"/>
+
+                                    <!-- Price -->
+                                    <ObjectNumber number="{price}" unit="{currency}"/>
+
+                                    <!-- Change % -->
+                                    <ObjectStatus
+                                        text="{
+                                            parts: ['price', 'previousPrice'],
+                                            formatter: '.formatChangePercent'
+                                        }"
+                                        state="{
+                                            parts: ['price', 'previousPrice'],
+                                            formatter: '.formatChangeState'
+                                        }"/>
+
+                                    <!-- Quantity with colour state -->
+                                    <ObjectStatus
+                                        text="{stockQuantity}"
+                                        state="{path: 'stockQuantity', formatter: '.formatQtyState'}"/>
+
+                                    <!-- Trend with icon -->
+                                    <ObjectStatus
+                                        text="{trend}"
+                                        state="{path: 'trend', formatter: '.formatTrendState'}"
+                                        icon="{path: 'trend',  formatter: '.formatTrendIcon'}"/>
+
+                                    <!-- Status badge -->
+                                    <ObjectStatus
+                                        text="{status}"
+                                        state="{path: 'status', formatter: '.formatStatusState'}"
+                                        icon="sap-icon://inventory"/>
+
+                                    <!-- Edit + Delete buttons -->
+                                    <HBox alignItems="Center" justifyContent="Center">
+                                        <Button text="✏️ Edit"
+                                                type="Transparent"
+                                                press=".onEditStock"
+                                                class="msEditBtn"/>
+                                        <Button text="🗑️"
+                                                tooltip="Delete Stock"
+                                                type="Transparent"
+                                                press=".onDeleteStock"
+                                                class="msDeleteBtn"/>
+                                    </HBox>
+
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+
+                    </Table>
+                </VBox>
+
+            </VBox>
+        </content>
+    </Page>
+
+</mvc:View>

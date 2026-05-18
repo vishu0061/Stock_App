@@ -149,90 +149,26 @@
 
       "routes": [
 
-        {
-
-          "name": "home",
-
-          "pattern": "",
-
-          "target": "home"
-
-        },
-
-        {
-
-          "name": "admin",
-
-          "pattern": "admin",
-
-          "target": "admin"
-
-        },
-
-        {
-
-          "name": "customer",
-
-          "pattern": "customer",
-
-          "target": "customer"
-
-        },
-
-        {
-
-          "name": "portfolio",
-
-          "pattern": "portfolio",
-
-          "target": "portfolio"
-
-        }
+        { "name": "home",         "pattern": "",                      "target": "home" },
+        { "name": "admin",        "pattern": "admin",                  "target": "admin" },
+        { "name": "customer",     "pattern": "customer",               "target": "customer" },
+        { "name": "portfolio",    "pattern": "portfolio",              "target": "portfolio" },
+        { "name": "createStock",  "pattern": "admin/create-stock",     "target": "createStock" },
+        { "name": "manageStocks", "pattern": "admin/manage-stocks",    "target": "manageStocks" },
+        { "name": "analytics",    "pattern": "admin/analytics",        "target": "analytics" },
+        { "name": "priceTrends",  "pattern": "admin/price-trends",     "target": "priceTrends" }
 
       ],
 
       "targets": {
-
-        "home": {
-
-          "viewId": "home",
-
-          "viewName": "Home",
-
-          "viewLevel": 1
-
-        },
-
-        "admin": {
-
-          "viewId": "admin",
-
-          "viewName": "Admin",
-
-          "viewLevel": 2
-
-        },
-
-        "customer": {
-
-          "viewId": "customer",
-
-          "viewName": "Customer",
-
-          "viewLevel": 2
-
-        },
-
-        "portfolio": {
-
-          "viewId": "portfolio",
-
-          "viewName": "Portfolio",
-
-          "viewLevel": 3
-
-        }
-
+        "home":         { "viewId": "home",         "viewName": "Home",         "viewLevel": 1 },
+        "admin":        { "viewId": "admin",        "viewName": "Admin",        "viewLevel": 2 },
+        "customer":     { "viewId": "customer",     "viewName": "Customer",     "viewLevel": 2 },
+        "portfolio":    { "viewId": "portfolio",    "viewName": "Portfolio",    "viewLevel": 3 },
+        "createStock":  { "viewId": "createStock",  "viewName": "CreateStock",  "viewLevel": 3 },
+        "manageStocks": { "viewId": "manageStocks", "viewName": "ManageStocks", "viewLevel": 3 },
+        "analytics":    { "viewId": "analytics",    "viewName": "Analytics",    "viewLevel": 3 },
+        "priceTrends":  { "viewId": "priceTrends",  "viewName": "PriceTrends",  "viewLevel": 3 }
       }
 
     }

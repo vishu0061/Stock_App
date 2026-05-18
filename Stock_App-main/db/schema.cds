@@ -42,6 +42,20 @@ entity Products : cuid, managed {
     lastPriceAt      : Timestamp @cds.on.insert : $now;
 
     lastMarketTickAt : Timestamp;
+
+    demandScore      : Decimal(5,2) default 1.00;
+
+    lastBoughtAt     : Timestamp;
+}
+
+entity PriceHistory : cuid {
+    product          : Association to Products @mandatory;
+    timestamp        : Timestamp @cds.on.insert : $now;
+    open             : Decimal(15,2);
+    high             : Decimal(15,2);
+    low              : Decimal(15,2);
+    close            : Decimal(15,2);
+    volume           : Integer default 0;
 }
 
 entity HistoricalPrices : cuid {

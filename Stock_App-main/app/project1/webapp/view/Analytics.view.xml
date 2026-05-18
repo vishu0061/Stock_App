@@ -1,0 +1,136 @@
+<mvc:View
+    controllerName="sap.stocktrading.app.controller.Analytics"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:viz.data="sap.viz.ui5.data"
+    xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
+    displayBlock="true">
+
+    <Page showHeader="false" class="msRootPage">
+        <content>
+            <VBox class="msPageWrapper">
+
+                <!-- ── Top navigation bar ─────────────────────────── -->
+                <HBox class="msTopBar" alignItems="Center" justifyContent="SpaceBetween">
+                    <HBox alignItems="Center">
+                        <Button icon="sap-icon://nav-back" type="Transparent"
+                                press=".onNavBack" tooltip="Back to Dashboard"
+                                class="msBackBtn"/>
+                        <Title text="Admin  ›  View Analytics" level="H5" class="msTopBarTitle"/>
+                    </HBox>
+                </HBox>
+
+                <!-- ── Summary Cards ──────────────────────────────── -->
+                <HBox class="adminStatsRow" wrap="Wrap">
+                    <VBox class="adminStatCard adminStatCardBlue">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://money-bills" size="1.6rem" color="#2563eb" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Platform Revenue" class="adminStatLabel"/>
+                                <Title text="{analytics>/revenue}" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox class="adminStatCard adminStatCardGreen">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://business-objects-experience" size="1.6rem" color="#059669" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Total Trades" class="adminStatLabel"/>
+                                <Title text="{analytics>/totalTrades}" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox class="adminStatCard adminStatCardPurple">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://group" size="1.6rem" color="#7c3aed" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Active Users" class="adminStatLabel"/>
+                                <Title text="{analytics>/activeUsers}" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox class="adminStatCard adminStatCardOrange">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://stock-tasks" size="1.6rem" color="#d97706" class="adminStatIcon"/>
+                            <VBox class="adminStatTextBlock">
+                                <Text text="Market Volume" class="adminStatLabel"/>
+                                <Title text="{analytics>/marketVolume}" class="adminStatValue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </HBox>
+
+                <!-- ── Charts Section ──────────────────────────────── -->
+                <HBox class="adminActionsRow" wrap="Wrap">
+                    
+                    <!-- Buy vs Sell Doughnut Chart -->
+                    <VBox class="adminSectionBlock" width="45%">
+                        <HBox alignItems="Center" class="adminSectionHeaderRow">
+                            <core:Icon src="sap-icon://pie-chart" size="1.1rem" color="#0891b2" class="adminSectionIcon"/>
+                            <Title text="Buy vs Sell Distribution" class="adminSectionTitle"/>
+                        </HBox>
+                        <viz:VizFrame
+                            id="buySellChart"
+                            vizType="donut"
+                            width="100%"
+                            height="300px"
+                            uiConfig="{applicationSet:'fiori'}"
+                            class="adminVizFrame">
+                            <viz:dataset>
+                                <viz.data:FlattenedDataset data="{analytics>/buySellDistribution}">
+                                    <viz.data:dimensions>
+                                        <viz.data:DimensionDefinition name="Order Type" value="{analytics>type}"/>
+                                    </viz.data:dimensions>
+                                    <viz.data:measures>
+                                        <viz.data:MeasureDefinition name="Count" value="{analytics>count}"/>
+                                    </viz.data:measures>
+                                </viz.data:FlattenedDataset>
+                            </viz:dataset>
+                            <viz:feeds>
+                                <viz.feeds:FeedItem uid="size" type="Measure" values="Count"/>
+                                <viz.feeds:FeedItem uid="color" type="Dimension" values="Order Type"/>
+                            </viz:feeds>
+                        </viz:VizFrame>
+                    </VBox>
+
+                    <!-- Most Traded Stocks Bar Chart -->
+                    <VBox class="adminSectionBlock" width="50%">
+                        <HBox alignItems="Center" class="adminSectionHeaderRow">
+                            <core:Icon src="sap-icon://bar-chart" size="1.1rem" color="#7c3aed" class="adminSectionIcon"/>
+                            <Title text="Most Traded Stocks" class="adminSectionTitle"/>
+                        </HBox>
+                        <viz:VizFrame
+                            id="topStocksChart"
+                            vizType="column"
+                            width="100%"
+                            height="300px"
+                            uiConfig="{applicationSet:'fiori'}"
+                            class="adminVizFrame">
+                            <viz:dataset>
+                                <viz.data:FlattenedDataset data="{analytics>/topStocks}">
+                                    <viz.data:dimensions>
+                                        <viz.data:DimensionDefinition name="Stock" value="{analytics>stockName}"/>
+                                    </viz.data:dimensions>
+                                    <viz.data:measures>
+                                        <viz.data:MeasureDefinition name="Trade Volume" value="{analytics>tradeCount}"/>
+                                    </viz.data:measures>
+                                </viz.data:FlattenedDataset>
+                            </viz:dataset>
+                            <viz:feeds>
+                                <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Trade Volume"/>
+                                <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Stock"/>
+                            </viz:feeds>
+                        </viz:VizFrame>
+                    </VBox>
+
+                </HBox>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>
