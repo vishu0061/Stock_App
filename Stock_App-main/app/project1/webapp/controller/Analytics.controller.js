@@ -44,8 +44,8 @@ sap.ui.define([
                 url: "/api/getAnalytics()",
                 method: "GET",
                 success: function (data) {
-                    if (data && data.value) {
-                        var d = data.value;
+                    if (data) {
+                        var d = data.value || data;
                         oModel.setProperty("/totalTrades", d.totalTrades);
                         oModel.setProperty("/activeUsers", d.activeUsers);
                         oModel.setProperty("/marketVolume", d.marketVolume);

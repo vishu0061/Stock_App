@@ -14,9 +14,17 @@ module.exports = cds.service.impl(async function () {
 
     // ================= REAL-TIME PRICE ENGINE =================
     setInterval(async () => {
+        const tx = cds.tx();
         try {
+            const entities = cds.entities("sap.stocktrading");
+            if (!entities || !entities.Products) {
+                await tx.rollback();
+                return; // Wait until loaded
+            }
+            const { Products, PriceHistory } = entities;
+
             globalMarketTrend = Math.sin(Date.now() / 100000); // Simple oscillating trend
-            const aProducts = await SELECT.from(Products).where({ status: "ACTIVE" });
+            const aProducts = await tx.run(SELECT.from(Products).where({ status: "ACTIVE" }));
             const now = new Date();
 
             for (const p of aProducts) {
@@ -60,19 +68,19 @@ module.exports = cds.service.impl(async function () {
                 const newSellQty = Math.floor(sellQty * 0.8);
                 const newTrend = priceChangePercent > 0 ? "BULL" : (priceChangePercent < 0 ? "BEAR" : "NEUTRAL");
 
-                await UPDATE(Products).set({
+                await tx.run(UPDATE(Products).set({
                     previousPrice: previousPrice,
                     price: newPrice,
                     buyPressure: newBuyQty,
                     sellPressure: newSellQty,
                     trend: newTrend,
                     lastMarketTickAt: now.toISOString()
-                }).where({ ID: p.ID });
+                }).where({ ID: p.ID }));
 
                 const high = Math.max(previousPrice, newPrice);
                 const low = Math.min(previousPrice, newPrice);
                 
-                await INSERT.into(PriceHistory).entries({
+                await tx.run(INSERT.into(PriceHistory).entries({
                     ID: cds.utils.uuid(),
                     product_ID: p.ID,
                     open: previousPrice,
@@ -81,9 +89,11 @@ module.exports = cds.service.impl(async function () {
                     close: newPrice,
                     volume: buyQty + sellQty,
                     timestamp: now.toISOString()
-                });
+                }));
             }
+            await tx.commit();
         } catch (e) {
+            await tx.rollback();
             console.error("Market Engine Error:", e);
         }
     }, 5000);
