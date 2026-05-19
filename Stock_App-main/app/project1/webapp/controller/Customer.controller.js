@@ -13,6 +13,8 @@ sap.ui.define([
                 customerName: "Demo Customer",
                 range: "1W",
                 selectedProductId: null,
+                watchlist: [],
+                watchlistData: [],
                 summary: {
                     portfolioValue: "—",
                     unrealizedText: "—",
@@ -33,7 +35,10 @@ sap.ui.define([
  
             /* ── Load daily chart on init ─────────────────────── */
             this._refreshDailyChart();
- 
+
+            /* ── Apply Price Chart Style ──────────────────────── */
+            this._applyPriceChartStyle();
+
             /* ── Auto-refresh table + charts every 7s ─────────── */
             setInterval(() => {
                 const oTable = this.byId("stockTable");
@@ -107,6 +112,87 @@ sap.ui.define([
             this._openTradeDialog("SELL", oData);
         },
  
+        /* ═══════════════════════════════════════════════════════
+           WATCHLIST
+        ═══════════════════════════════════════════════════════ */
+
+        formatWatchlistIcon: function(sId) {
+            if (!sId) return "sap-icon://add-favorite";
+            const oVM = this.getView().getModel("custVM");
+            if (!oVM) return "sap-icon://add-favorite";
+            const aWatchlist = oVM.getProperty("/watchlist") || [];
+            return aWatchlist.includes(sId) ? "sap-icon://favorite" : "sap-icon://add-favorite";
+        },
+
+        onToggleWatchlist: function (oEvent) {
+            oEvent.cancelBubble();
+            const oCtx = oEvent.getSource().getBindingContext();
+            const oData = oCtx.getObject();
+            if (!oData || !oData.ID) return;
+
+            const oVM = this.getView().getModel("custVM");
+            let aWatchlist = oVM.getProperty("/watchlist") || [];
+
+            if (aWatchlist.includes(oData.ID)) {
+                aWatchlist = aWatchlist.filter(id => id !== oData.ID);
+                MessageToast.show(oData.productName + " removed from Watchlist");
+            } else {
+                aWatchlist.push(oData.ID);
+                MessageToast.show(oData.productName + " added to Watchlist");
+            }
+            oVM.setProperty("/watchlist", aWatchlist);
+            this._refreshWatchlistData();
+        },
+
+        onRemoveWatchlist: function (oEvent) {
+            const oCtx = oEvent.getSource().getBindingContext("custVM");
+            const oData = oCtx.getObject();
+            if (!oData || !oData.ID) return;
+
+            const oVM = this.getView().getModel("custVM");
+            let aWatchlist = oVM.getProperty("/watchlist") || [];
+            aWatchlist = aWatchlist.filter(id => id !== oData.ID);
+            oVM.setProperty("/watchlist", aWatchlist);
+            this._refreshWatchlistData();
+        },
+
+        onBuyFromWatchlist: function (oEvent) {
+            const oCtx = oEvent.getSource().getBindingContext("custVM");
+            const oData = oCtx.getObject();
+            // Map the watchlist item properties to match the TradeDialog expectations
+            const oProduct = {
+                ID: oData.ID,
+                productName: oData.productName,
+                currency: oData.currency,
+                price: oData.price,
+                stockQuantity: oData.stockQuantity || 100 // Fallback if not loaded
+            };
+            this._openTradeDialog("BUY", oProduct);
+        },
+
+        _refreshWatchlistData: function () {
+            const oVM = this.getView().getModel("custVM");
+            const aWatchlist = oVM.getProperty("/watchlist") || [];
+            if (aWatchlist.length === 0) {
+                oVM.setProperty("/watchlistData", []);
+                return;
+            }
+
+            const oTable = this.byId("stockTable");
+            const oBinding = oTable.getBinding("items");
+            if (!oBinding) return;
+
+            const aContexts = oBinding.getCurrentContexts();
+            const aData = [];
+            aContexts.forEach(oCtx => {
+                const oProduct = oCtx.getObject();
+                if (aWatchlist.includes(oProduct.ID)) {
+                    aData.push(oProduct);
+                }
+            });
+            oVM.setProperty("/watchlistData", aData);
+        },
+
         /* ═══════════════════════════════════════════════════════
            TRADE DIALOG
            KEY CHANGE: after successful trade, also call
@@ -244,22 +330,22 @@ sap.ui.define([
             });
  
             const aDates = Object.keys(oByDate).sort();
- 
+
             /* Always end at today */
             const oToday = new Date();
             oToday.setHours(0, 0, 0, 0);
- 
+
             /* Start from first transaction, or 14 days ago if none */
             let oStart = aDates.length
                 ? new Date(aDates[0])
                 : new Date(oToday.getTime() - 13 * 24 * 60 * 60 * 1000);
- 
+
             /* Cap at 60 days so chart stays readable */
             const iDays = Math.round((oToday - oStart) / (24 * 60 * 60 * 1000));
             if (iDays > 60) {
                 oStart = new Date(oToday.getTime() - 59 * 24 * 60 * 60 * 1000);
             }
- 
+
             const aResult = [];
             for (let d = new Date(oStart); d <= oToday; d.setDate(d.getDate() + 1)) {
                 const sKey = d.toISOString().substring(0, 10);
@@ -271,24 +357,22 @@ sap.ui.define([
             }
             return aResult;
         },
- 
+
         /* ═══════════════════════════════════════════════════════
            STYLE DAILY CHART
-           Green line = Buys, Red line = Sells
-           Dark bg, white axis labels — matches screenshot
         ═══════════════════════════════════════════════════════ */
- 
+
         _applyDailyChartStyle: function () {
             const oViz = this.byId("customerDailyChart");
             if (!oViz) { return; }
             oViz.setVizProperties({
                 title: {
                     text: "Daily Buys vs Sells",
-                    style: { color: "#ffffff", fontSize: "14px", fontWeight: "bold" }
+                    style: { color: "#ffffff", fontSize: "14px", fontWeight: "bold", fontFamily: "Inter" }
                 },
                 legend: {
                     visible: true,
-                    label: { style: { color: "#94a3b8" } }
+                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } }
                 },
                 categoryAxis: {
                     title: { visible: true, text: "Date", style: { color: "#94a3b8" } },
@@ -299,19 +383,51 @@ sap.ui.define([
                 valueAxis: {
                     title: { visible: true, text: "Transactions", style: { color: "#94a3b8" } },
                     label: { style: { color: "#94a3b8" } },
-                    gridLine: { visible: true, color: "#1e293b", size: 1 },
+                    gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
                     axisLine:  { visible: false }
                 },
                 plotArea: {
                     background:   { visible: false },
                     dataLabel:    { visible: false },
                     colorPalette: ["#10b981", "#ef4444"],
-                    line: { marker: { visible: true, size: 6 }, width: 2 }
+                    line: { marker: { visible: true, size: 6 }, width: 3 }
                 },
                 background: { visible: false }
             });
         },
- 
+
+        /* ═══════════════════════════════════════════════════════
+           STYLE PRICE CHART
+        ═══════════════════════════════════════════════════════ */
+
+        _applyPriceChartStyle: function () {
+            const oViz = this.byId("priceChart");
+            if (!oViz) { return; }
+            oViz.setVizProperties({
+                title: { visible: false },
+                legend: { visible: false },
+                categoryAxis: {
+                    title: { visible: false },
+                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } },
+                    gridLine: { visible: false },
+                    axisLine:  { visible: true, color: "rgba(255,255,255,0.1)" }
+                },
+                valueAxis: {
+                    title: { visible: false },
+                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } },
+                    gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
+                    axisLine:  { visible: false }
+                },
+                plotArea: {
+                    background:   { visible: false },
+                    dataLabel:    { visible: false },
+                    colorPalette: ["#00ffaa"],
+                    line: { marker: { visible: false }, width: 3 }
+                },
+                background: { visible: false }
+            });
+        },
+
         /* ═══════════════════════════════════════════════════════
            CHART MODEL (price history)
         ═══════════════════════════════════════════════════════ */

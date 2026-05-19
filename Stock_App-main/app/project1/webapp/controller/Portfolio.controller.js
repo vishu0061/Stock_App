@@ -28,6 +28,29 @@ sap.ui.define([
             });
             this.getView().setModel(oVM, "pfVM");
             this._loadAll();
+            this._applyChartStyle();
+        },
+
+        _applyChartStyle: function () {
+            const oViz = this.byId("allocationChart");
+            if (!oViz) return;
+            oViz.setVizProperties({
+                title: { visible: false },
+                legend: {
+                    visible: true,
+                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } }
+                },
+                plotArea: {
+                    colorPalette: ["#10b981", "#38bdf8", "#a78bfa", "#fbbf24", "#ef4444", "#8b5cf6", "#ec4899"],
+                    background: { visible: false },
+                    dataLabel: {
+                        visible: true,
+                        style: { color: "#ffffff" },
+                        hideWhenOverlap: true
+                    }
+                },
+                background: { visible: false }
+            });
         },
 
         // ================= BACK =================
@@ -171,6 +194,15 @@ sap.ui.define([
             oVM.setProperty("/summary/plSub", "Unrealized across holdings");
             oVM.setProperty("/summary/holdings", `${a.length}`);
             oVM.setProperty("/summary/holdingsSub", `${a.length} stocks owned`);
+
+            const sortedHoldings = [...a].sort((x, y) => Number(y.profitLoss || 0) - Number(x.profitLoss || 0));
+            let topPerformers = [];
+            if(sortedHoldings.length > 0) topPerformers.push(sortedHoldings[0]);
+            if(sortedHoldings.length > 1) topPerformers.push(sortedHoldings[1]);
+            if(sortedHoldings.length > 3) topPerformers.push(sortedHoldings[sortedHoldings.length - 2]);
+            if(sortedHoldings.length > 2) topPerformers.push(sortedHoldings[sortedHoldings.length - 1]);
+            topPerformers = [...new Set(topPerformers)];
+            oVM.setProperty("/topPerformers", topPerformers);
         }
 
     });

@@ -3,6 +3,9 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:viz.data="sap.viz.ui5.data"
+    xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
     displayBlock="true">
 
     <Page
@@ -87,6 +90,69 @@
                             <ObjectStatus text="{pfVM>/summary/holdingsBadge}" state="Information"/>
                         </HBox>
                         <Text text="{pfVM>/summary/holdingsSub}" class="pfSub sapUiTinyMarginTop"/>
+                    </VBox>
+                </HBox>
+
+                <!-- ─────────────────────────────────────────────────
+                     PORTFOLIO ANALYTICS (CHARTS & TOP/WORST)
+                ───────────────────────────────────────────────── -->
+                <HBox class="pfCardsRow" wrap="Wrap" justifyContent="SpaceBetween">
+                    <VBox class="pfCard" width="48%">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginBottom">
+                            <VBox>
+                                <Title text="Asset Allocation" level="H3" class="pfTitle" />
+                                <Text text="Distribution by Value" class="pfSub" />
+                            </VBox>
+                            <core:Icon src="sap-icon://pie-chart" class="stStatIconWrap stIconPurple" color="white" />
+                        </HBox>
+                        <!-- We use VizFrame for pie chart -->
+                        <viz:VizFrame id="allocationChart" vizType="donut" width="100%" height="250px"
+                            uiConfig="{applicationSet:'fiori'}">
+                            <viz:dataset>
+                                <viz.data:FlattenedDataset data="{pfVM>/holdings}">
+                                    <viz.data:dimensions>
+                                        <viz.data:DimensionDefinition name="Stock" value="{pfVM>productName}" />
+                                    </viz.data:dimensions>
+                                    <viz.data:measures>
+                                        <viz.data:MeasureDefinition name="Value" value="{pfVM>totalValue}" />
+                                    </viz.data:measures>
+                                </viz.data:FlattenedDataset>
+                            </viz:dataset>
+                            <viz:feeds>
+                                <viz.feeds:FeedItem uid="size" type="Measure" values="Value" />
+                                <viz.feeds:FeedItem uid="color" type="Dimension" values="Stock" />
+                            </viz:feeds>
+                        </viz:VizFrame>
+                    </VBox>
+
+                    <VBox class="pfCard" width="48%">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginBottom">
+                            <VBox>
+                                <Title text="Top Performers" level="H3" class="pfTitle" />
+                                <Text text="Highest gains &amp; worst drops" class="pfSub" />
+                            </VBox>
+                            <core:Icon src="sap-icon://bar-chart" class="stStatIconWrap stIconBlue" color="white" />
+                        </HBox>
+                        
+                        <List id="performersList" items="{pfVM>/topPerformers}" showSeparators="Inner" class="sapUiTinyMarginTop">
+                            <CustomListItem>
+                                <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiTinyMarginTopBottom">
+                                    <HBox alignItems="Center">
+                                        <VBox class="{= ${pfVM>profitLoss} >= 0 ? 'stStatIconWrap cdIconGreen' : 'stStatIconWrap cdIconAmber' }">
+                                            <core:Icon src="{= ${pfVM>profitLoss} >= 0 ? 'sap-icon://trend-up' : 'sap-icon://trend-down' }" />
+                                        </VBox>
+                                        <VBox class="sapUiSmallMarginBegin">
+                                            <Text text="{pfVM>productName}" class="cdStockSymbol" />
+                                            <Text text="{pfVM>quantity} shares" class="cdStockName" />
+                                        </VBox>
+                                    </HBox>
+                                    <VBox alignItems="End">
+                                        <Text text="{= ${pfVM>profitLoss} >= 0 ? '+' : '' }{pfVM>profitLoss}" class="{= ${pfVM>profitLoss} >= 0 ? 'cdChangeUp' : 'cdChangeDown' }" />
+                                        <Text text="{pfVM>currency} {pfVM>totalValue}" class="cdPrice" />
+                                    </VBox>
+                                </HBox>
+                            </CustomListItem>
+                        </List>
                     </VBox>
                 </HBox>
 

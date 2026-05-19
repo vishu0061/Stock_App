@@ -1458,3 +1458,656 @@
     background: rgba(220, 38, 38, 0.2) !important;
     border-color: #dc2626 !important;
 }
+
+/* =========================================================
+   CUSTOMER DASHBOARD & PORTFOLIO REDESIGN (FUTURISTIC DARK)
+========================================================= */
+
+/* Page Backgrounds */
+.cdPage, .stPage {
+    background: radial-gradient(circle at top center, rgba(16, 25, 48, 1) 0%, rgba(4, 11, 23, 1) 80%) !important;
+    min-height: 100vh;
+    color: #e2e8f0;
+    font-family: "Inter", "72", Arial, sans-serif;
+}
+
+.cdPageContent, .pfPageContent {
+    padding: 1rem 2rem 3rem 2rem;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+/* Typography & Neon Accents */
+.cdHeroTitle {
+    color: #ffffff !important;
+    font-size: 3.5rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -1px;
+    text-shadow: 0 0 30px rgba(0, 255, 170, 0.3);
+    margin-bottom: 0.5rem !important;
+}
+
+.cdHeroSub {
+    color: #94a3b8 !important;
+    font-size: 1.2rem !important;
+}
+
+.cdLiveBadge {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 20px;
+    padding: 6px 16px;
+    margin-top: 1rem;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    animation: pulseGlow 2s infinite alternate;
+}
+
+@keyframes pulseGlow {
+    from { box-shadow: 0 0 10px rgba(16, 185, 129, 0.1); }
+    to { box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+}
+
+.cdLiveIcon {
+    color: #10b981 !important;
+    margin-right: 8px;
+    animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.cdLiveBadgeText {
+    color: #10b981 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 0.8rem !important;
+    letter-spacing: 1px;
+}
+
+/* Glassmorphism Navigation Bar */
+.cdNavBar, .stGlassBar {
+    background: rgba(10, 15, 30, 0.7) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    height: 70px !important;
+}
+
+.cdNavBrandName, .stBrandTitle {
+    background: linear-gradient(135deg, #00ffaa, #00b8ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+}
+
+.cdNavBrandSub, .stBrandSub {
+    color: #64748b !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.cdNavLogoWrap, .stBrandLogoWrap {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0,255,170,0.1), rgba(0,184,255,0.1));
+    border: 1px solid rgba(0, 255, 170, 0.2);
+    box-shadow: 0 0 15px rgba(0, 255, 170, 0.15);
+    margin-right: 12px;
+}
+
+.cdNavLogoIcon, .stBrandIcon {
+    color: #00ffaa !important;
+    font-size: 1.4rem !important;
+}
+
+.cdNavSearchField .sapMSFI {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 0 15px !important;
+    transition: all 0.3s ease;
+}
+
+.cdNavSearchField .sapMSFI:focus {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: #00ffaa !important;
+    box-shadow: 0 0 15px rgba(0, 255, 170, 0.2) !important;
+}
+
+.cdNavBellBtn .sapMBtnInner {
+    color: #94a3b8 !important;
+    background: transparent !important;
+    border: none !important;
+    font-size: 1.2rem !important;
+}
+
+.cdNavBellBtn .sapMBtnInner:hover {
+    color: #ffffff !important;
+}
+
+.cdNavAvatar {
+    border: 2px solid rgba(0, 255, 170, 0.5) !important;
+    box-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
+    margin-left: 15px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.cdNavAvatar:hover {
+    transform: scale(1.1);
+}
+
+/* Glassmorphism Cards */
+.cdSummaryCard, .cdCard, .pfCard, .pfTableCard, .stPanel {
+    background: rgba(18, 25, 43, 0.6) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 24px !important;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease !important;
+}
+
+.cdSummaryCard:hover, .pfCard:hover {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.cdCardsRow {
+    gap: 20px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+.cdSummaryCard, .pfCard {
+    flex: 1;
+    min-width: 250px;
+}
+
+/* Card Icons */
+.cdCardIconWrap, .stStatIconWrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cdIconGreen {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #10b981 !important;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+}
+
+.cdIconBlue {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(2, 132, 199, 0.1));
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8 !important;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
+}
+
+.cdIconPurple {
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(124, 58, 237, 0.1));
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    color: #a78bfa !important;
+    box-shadow: 0 0 15px rgba(167, 139, 250, 0.1);
+}
+
+.cdIconAmber {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(217, 119, 6, 0.1));
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #fbbf24 !important;
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.1);
+}
+
+.cdCardIconWrap .sapUiIcon, .stStatIconWrap .sapUiIcon {
+    font-size: 1.4rem !important;
+}
+
+/* Card Text */
+.cdCardValue, .pfTitle {
+    color: #ffffff !important;
+    font-size: 2.2rem !important;
+    font-weight: 700 !important;
+    margin-top: 15px !important;
+    margin-bottom: 5px !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.cdValueGreen { color: #10b981 !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+.cdValueBlue { color: #38bdf8 !important; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+.cdValuePurple { color: #a78bfa !important; text-shadow: 0 0 10px rgba(167, 139, 250, 0.3); }
+
+.cdCardLabel, .pfSub {
+    color: #cbd5e1 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+}
+
+.cdCardSub {
+    color: #64748b !important;
+    font-size: 0.8rem !important;
+    margin-top: 4px;
+}
+
+/* Progress Indicators */
+.cdCardProgress .sapMPIBar {
+    border-radius: 10px;
+    height: 6px !important;
+}
+
+.cdCardProgress {
+    margin-top: 15px;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 10px;
+    height: 6px !important;
+    border: none !important;
+}
+
+/* Layout for Main Section */
+.cdMainContent {
+    gap: 20px;
+}
+
+.cdLeftPanel {
+    flex: 2;
+    min-width: 600px;
+    gap: 20px;
+}
+
+.cdRightPanel {
+    flex: 1;
+    min-width: 350px;
+    gap: 20px;
+}
+
+/* Section Headers */
+.cdCardTitleRow {
+    gap: 12px;
+}
+
+.cdCardTitle {
+    color: #ffffff !important;
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+}
+
+.cdCardSubtitle {
+    color: #94a3b8 !important;
+    font-size: 0.85rem !important;
+}
+
+.cdSectionIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Stock Table Styling */
+.cdStockTable, .pfTable {
+    background: transparent !important;
+    margin-top: 20px;
+}
+
+.cdStockTable .sapMListTblHeader, .pfTable .sapMListTblHeader {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.cdColHeader {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.cdTableRow, .pfTable .sapMListTblRow {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    transition: background 0.2s ease;
+}
+
+.cdTableRow:hover, .pfTable .sapMListTblRow:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
+    cursor: pointer;
+}
+
+.cdStockAvatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.cdAvatarGreen { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+.cdStockSymbol {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+}
+
+.cdStockName {
+    color: #64748b !important;
+    font-size: 0.8rem !important;
+}
+
+.cdPrice {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+}
+
+.cdChangeUp { color: #10b981 !important; font-weight: 600; text-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+.cdChangeDown { color: #ef4444 !important; font-weight: 600; text-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+
+.cdQty {
+    color: #e2e8f0 !important;
+    font-weight: 600 !important;
+}
+
+/* Action Buttons (Buy/Sell) */
+.cdBuyBtn.sapMBtn .sapMBtnInner {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important;
+    transition: all 0.2s ease !important;
+    font-weight: 700 !important;
+    padding: 0 15px !important;
+}
+
+.cdBuyBtn.sapMBtn .sapMBtnInner:hover {
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.5) !important;
+    transform: translateY(-2px);
+}
+
+.cdSellBtn.sapMBtn .sapMBtnInner {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3) !important;
+    transition: all 0.2s ease !important;
+    font-weight: 700 !important;
+    padding: 0 15px !important;
+    margin-left: 8px;
+}
+
+.cdSellBtn.sapMBtn .sapMBtnInner:hover {
+    box-shadow: 0 6px 15px rgba(239, 68, 68, 0.5) !important;
+    transform: translateY(-2px);
+}
+
+.stBtnPrimary.sapMBtn .sapMBtnInner {
+    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4) !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease !important;
+}
+
+.stBtnPrimary.sapMBtn .sapMBtnInner:hover {
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6) !important;
+    transform: translateY(-2px);
+}
+
+.stBtnGhost.sapMBtn .sapMBtnInner {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+.stBtnGhost.sapMBtn .sapMBtnInner:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: #38bdf8 !important;
+    color: #ffffff !important;
+}
+
+.stBtnDanger.sapMBtn .sapMBtnInner {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    color: #f87171 !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+}
+
+.stBtnDanger.sapMBtn .sapMBtnInner:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: #ef4444 !important;
+}
+
+/* Graph Section */
+.cdSegmentedBtn .sapMSegBBtn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+}
+
+.cdSegmentedBtn .sapMSegBBtnSel {
+    background: rgba(56, 189, 248, 0.2) !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.cdGraphStats {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cdGraphStatLabel {
+    color: #64748b !important;
+    font-size: 0.8rem !important;
+    text-transform: uppercase;
+}
+
+.cdGraphStatVal {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.2rem !important;
+    margin-top: 5px;
+}
+
+.cdBullishRow {
+    margin-top: 5px;
+}
+
+.cdBullishIcon { color: #10b981 !important; margin-right: 5px; }
+.cdBullishText { color: #10b981 !important; font-weight: 700 !important; }
+
+/* Holdings Sidebar */
+.cdHoldingItem {
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cdHoldingItem:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.cdHoldingSymbol { color: #ffffff !important; font-weight: 700 !important; }
+.cdHoldingName { color: #64748b !important; font-size: 0.8rem !important; }
+.cdHoldingShares { color: #94a3b8 !important; font-size: 0.9rem !important; margin-top: 5px;}
+.cdHoldingValue { color: #ffffff !important; font-weight: 600 !important; font-size: 1.1rem !important; margin-top: 5px;}
+
+.cdHoldingBar { margin-top: 10px; margin-bottom: 5px; }
+.cdHoldingBar .sapMPIBar { border-radius: 5px; height: 4px !important; }
+
+.cdHoldingGain { font-size: 0.85rem !important; text-align: right; display: block; }
+
+/* Activity & Insights */
+.cdActivityItem {
+    padding: 12px 0;
+}
+
+.cdActivityRow {
+    gap: 15px;
+}
+
+.cdActivityDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.cdDotGreen { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+.cdDotRed { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+.cdDotBlue { background: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+.cdDotAmber { background: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+
+.cdActivityContent { flex-grow: 1; }
+.cdActivityTitle { color: #ffffff !important; font-weight: 600 !important; }
+.cdActivityTime { color: #64748b !important; font-size: 0.8rem !important; }
+.cdActivityDetail { color: #94a3b8 !important; font-size: 0.85rem !important; margin-top: 3px;}
+
+.cdInsightItem {
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 12px;
+}
+
+.cdInsightTitle { color: #ffffff !important; font-weight: 600 !important; }
+.cdInsightDesc { color: #94a3b8 !important; font-size: 0.85rem !important; margin-top: 8px; margin-bottom: 8px; }
+.cdInsightBar .sapMPIBar { height: 4px !important; border-radius: 5px; }
+
+/* Footer */
+.cdFooter {
+    background: rgba(4, 11, 23, 0.9) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.cdFooterBrand {
+    background: linear-gradient(135deg, #00ffaa, #00b8ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700 !important;
+}
+
+.cdFooterText { color: #64748b !important; font-size: 0.8rem !important; }
+
+/* Dialog Overrides for Trade Dialog */
+.sapMDialog {
+    background: rgba(18, 25, 43, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.sapMDialog > header.sapMDialogTitle {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.sapMDialog > header .sapMTitle {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.sapMDialogSection {
+    background: transparent !important;
+}
+
+.sapMDialogScrollCont {
+    padding: 20px !important;
+}
+
+.sapMDialog .sapMLabel, .sapMDialog .sapMText {
+    color: #cbd5e1 !important;
+}
+
+.sapMDialog .sapMInputBaseInner {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+}
+
+.sapMDialog .sapMInputBaseInner:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+}
+
+.sapMDialog footer {
+    background: transparent !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Portfolio Page Additions */
+.pfCardsRow {
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.pfTableCard {
+    margin-bottom: 30px;
+}
+
+.stPanel .sapMPanelHdr {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    color: #ffffff !important;
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+    padding: 15px 20px !important;
+}
+
+.stPanel .sapMPanelContent {
+    padding: 0 !important;
+}
+
+/* Custom Scrollbar for Dark Mode Panels */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .cdLeftPanel { min-width: 100%; flex: auto; }
+    .cdRightPanel { min-width: 100%; flex: auto; }
+    .cdHeroTitle { font-size: 2.5rem !important; }
+}

@@ -254,9 +254,10 @@
                                         <Text text="{stockQuantity}" class="cdQty"/>
                                         <ObjectStatus text="{trend}" state="{= ${trend} === 'BULL' ? 'Success' : (${trend} === 'BEAR' ? 'Error' : 'Warning') }" class="cdChangeStatus"/>
                                         <ObjectStatus text="{status}" state="{= ${status} === 'ACTIVE' ? 'Success' : (${status} === 'LOW' ? 'Warning' : 'Error') }" class="cdStatusBadge"/>
-                                        <HBox class="cdActionBtns">
+                                        <HBox class="cdActionBtns" alignItems="Center">
                                             <Button text="Buy" type="Accept" press=".onBuyStock" class="cdBuyBtn"/>
                                             <Button text="Sell" type="Reject" press=".onSellStock" class="cdSellBtn"/>
+                                            <Button icon="{path: 'ID', formatter: '.formatWatchlistIcon'}" type="Transparent" press=".onToggleWatchlist" class="sapUiTinyMarginBegin" tooltip="Toggle Watchlist" />
                                         </HBox>
                                     </cells>
                                 </ColumnListItem>
@@ -340,6 +341,34 @@
 
                 <!-- RIGHT: Portfolio Side Panel -->
                 <VBox class="cdRightPanel">
+
+                    <!-- ─────────────────────────────────────────
+                         WATCHLIST SECTION
+                    ───────────────────────────────────────────── -->
+                    <VBox class="cdCard cdHoldingsCard sapUiSmallMarginBottom">
+                        <HBox alignItems="Center" class="cdCardHeader">
+                            <core:Icon src="sap-icon://favorite" class="cdSectionIcon cdIconAmber"/>
+                            <VBox>
+                                <Title text="Watchlist" level="H4" class="cdCardTitle"/>
+                                <Text text="Your favorite stocks" class="cdCardSubtitle"/>
+                            </VBox>
+                        </HBox>
+
+                        <List id="watchlistList" items="{custVM>/watchlistData}" showSeparators="None" noDataText="No stocks in watchlist" class="sapUiTinyMarginTop">
+                            <CustomListItem class="cdHoldingItem">
+                                <HBox justifyContent="SpaceBetween" alignItems="Center" width="100%">
+                                    <VBox>
+                                        <Text text="{custVM>productName}" class="cdHoldingSymbol"/>
+                                        <Text text="{custVM>currency} {custVM>price}" class="cdHoldingShares"/>
+                                    </VBox>
+                                    <HBox>
+                                        <Button text="Buy" type="Accept" press=".onBuyFromWatchlist" class="cdBuyBtn sapUiTinyMarginEnd"/>
+                                        <Button icon="sap-icon://decline" type="Transparent" press=".onRemoveWatchlist" />
+                                    </HBox>
+                                </HBox>
+                            </CustomListItem>
+                        </List>
+                    </VBox>
 
                     <!-- ─────────────────────────────────────────
                          6a. HOLDINGS BREAKDOWN
