@@ -104,6 +104,27 @@ module.exports = cds.service.impl(async function () {
         }
     }, 5000);
 
+    // ================= DATA CLEANUP ENGINE =================
+    // Runs every 1 hour to prevent the PriceHistory database from growing infinitely
+    setInterval(async () => {
+        const tx = cds.tx();
+        try {
+            const entities = cds.entities("sap.stocktrading");
+            if (!entities || !entities.PriceHistory) {
+                await tx.rollback();
+                return;
+            }
+            const { PriceHistory } = entities;
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            
+            await tx.run(DELETE.from(PriceHistory).where('timestamp <', sevenDaysAgo));
+            await tx.commit();
+        } catch (e) {
+            await tx.rollback();
+            console.error("Cleanup Engine Error:", e);
+        }
+    }, 60 * 60 * 1000); // 1 Hour
+
     // ================= GET ANALYTICS =================
 
     this.on("getAnalytics", async () => {

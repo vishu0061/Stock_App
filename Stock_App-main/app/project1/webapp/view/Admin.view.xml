@@ -60,11 +60,9 @@ xmlns:unified="sap.ui.unified"
 
             <!-- ── NAV TABS ───────────────────────────────────────── -->
             <HBox class="adminNavTabs" alignItems="Center">
-                <Button id="tabDashboard" text="🏠 Dashboard" type="Transparent" class="adminNavTab adminNavTabActive" press=".onTabDashboard"/>
-                <Button id="tabStocks"    text="📦 Stocks"    type="Transparent" class="adminNavTab" press=".onTabStocks"/>
+                <Button id="tabManage"    text="📦 Manage"    type="Transparent" class="adminNavTab" press=".onTabStocks"/>
                 <Button id="tabAnalytics" text="📊 Analytics" type="Transparent" class="adminNavTab" press=".onTabAnalytics"/>
                 <Button id="tabTrends"    text="📈 Trends"    type="Transparent" class="adminNavTab" press=".onTabTrends"/>
-                <Button id="tabSettings"  text="⚙ Settings"  type="Transparent" class="adminNavTab" press=".onTabSettings"/>
                 <ToolbarSpacer/>
                 
             </HBox>

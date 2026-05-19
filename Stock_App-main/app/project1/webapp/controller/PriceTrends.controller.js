@@ -11,7 +11,7 @@ sap.ui.define([
 
         onInit: function () {
             this.getOwnerComponent().getRouter().getRoute("priceTrends").attachPatternMatched(this._onRouteMatched, this);
-            
+
             this.getView().setModel(new JSONModel({
                 currentPrice: "0.00",
                 volume: "0",
@@ -26,14 +26,14 @@ sap.ui.define([
         _onRouteMatched: function () {
             var oModel = this.getOwnerComponent().getModel();
             var oListBinding = oModel.bindList("/Products");
-            
+
             oListBinding.requestContexts(0, 1).then(function (aContexts) {
                 if (aContexts.length > 0) {
                     var sFirstKey = aContexts[0].getProperty("ID");
                     var oSelect = this.byId("stockSelector");
-                    
+
                     // Allow UI to render the items first
-                    setTimeout(function() {
+                    setTimeout(function () {
                         oSelect.setSelectedKey(sFirstKey);
                         this._selectedStockId = sFirstKey;
                         this._loadStockData();
@@ -78,7 +78,7 @@ sap.ui.define([
 
         _loadStockData: function () {
             if (!this._selectedStockId) return;
-            
+
             var oModel = this.getView().getModel("trends");
             var timeFormat = DateFormat.getTimeInstance({ pattern: "HH:mm:ss" });
 
@@ -86,6 +86,7 @@ sap.ui.define([
             $.ajax({
                 url: "/api/Products(" + this._selectedStockId + ")",
                 method: "GET",
+                cache: false,
                 success: function (data) {
                     if (data) {
                         var d = data;
@@ -96,7 +97,7 @@ sap.ui.define([
                         oModel.setProperty("/trend", d.trend || "NEUTRAL");
                     }
                 },
-                error: function(err) {
+                error: function (err) {
                     console.error("Failed to fetch product:", err);
                 }
             });
@@ -105,10 +106,11 @@ sap.ui.define([
             $.ajax({
                 url: "/api/Transactions?$filter=product_ID eq " + this._selectedStockId,
                 method: "GET",
+                cache: false,
                 success: function (data) {
                     var txs = data.value || data || [];
                     var totalVol = 0;
-                    txs.forEach(function(t) {
+                    txs.forEach(function (t) {
                         totalVol += (t.quantity || 0);
                     });
                     oModel.setProperty("/volume", totalVol);
@@ -120,17 +122,17 @@ sap.ui.define([
             var sLiveUrl = "/api/PriceHistory?$filter=product_ID eq " + this._selectedStockId + "&$orderby=timestamp desc&$top=50";
 
             $.when(
-                $.ajax({ url: sHistoricalUrl, method: "GET" }),
-                $.ajax({ url: sLiveUrl, method: "GET" })
+                $.ajax({ url: sHistoricalUrl, method: "GET", cache: false }),
+                $.ajax({ url: sLiveUrl, method: "GET", cache: false })
             ).done(function (resHistorical, resLive) {
                 var dataHist = resHistorical[0];
                 var dataLive = resLive[0];
                 var combinedHistory = [];
 
                 if (dataHist && dataHist.value) {
-                    var histMapped = dataHist.value.reverse().map(function(h) {
+                    var histMapped = dataHist.value.map(function (h) {
                         return {
-                            timeLabel: timeFormat.format(new Date(h.createdAt)),
+                            rawDate: new Date(h.createdAt),
                             price: Number(h.price || 0)
                         };
                     });
@@ -138,22 +140,35 @@ sap.ui.define([
                 }
 
                 if (dataLive && dataLive.value) {
-                    var liveMapped = dataLive.value.reverse().map(function(h) {
+                    var liveMapped = dataLive.value.map(function (h) {
                         return {
-                            timeLabel: timeFormat.format(new Date(h.timestamp)),
+                            rawDate: new Date(h.timestamp),
                             price: Number(h.close || 0)
                         };
                     });
                     combinedHistory = combinedHistory.concat(liveMapped);
                 }
 
-                // Keep only the latest 60 points to keep chart clean
-                if (combinedHistory.length > 60) {
-                    combinedHistory = combinedHistory.slice(combinedHistory.length - 60);
+                // Sort chronologically by actual Date
+                combinedHistory.sort(function (a, b) {
+                    return a.rawDate - b.rawDate;
+                });
+
+                // Format time labels after sorting
+                var finalHistory = combinedHistory.map(function (item) {
+                    return {
+                        timeLabel: timeFormat.format(item.rawDate),
+                        price: item.price
+                    };
+                });
+
+                // Keep only the latest 50 points to keep chart clean and readable
+                if (finalHistory.length > 50) {
+                    finalHistory = finalHistory.slice(finalHistory.length - 50);
                 }
 
-                oModel.setProperty("/history", combinedHistory);
-            }).fail(function(err) {
+                oModel.setProperty("/history", finalHistory);
+            }).fail(function (err) {
                 console.error("Failed to fetch price history:", err);
             });
         }

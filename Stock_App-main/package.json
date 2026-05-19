@@ -1,11 +1,7 @@
 {
-
   "name": "Stock_App",
-
   "version": "1.0.0",
-
   "dependencies": {
-
     "@cap-js/hana": "^2",
 
     "@cap-js/sqlite": "^2.4.0",
@@ -15,38 +11,23 @@
     "@sap/hana-client": "^2"
 
   },
-
   "devDependencies": {
-
     "@sap/cds-dk": "^9",
-
     "mbt": "^1.2.29",
-
     "rimraf": "^5.0.5"
-
   },
-
   "scripts": {
-
     "start": "cds serve",
-
     "watch-project1": "cds watch --open project1/index.html?sap-ui-xx-viewCache=false --livereload false",
-
     "undeploy": "cf undeploy Stock_App --delete-services --delete-service-keys --delete-service-brokers",
-
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
-
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1"
-
   },
-
   "cds": {
-
     "requires": {
-
       "db": {
 
-        "kind": "sqlite",
+        "kind": "hana",
 
         "[production]": {
 
@@ -55,30 +36,16 @@
         }
 
       },
-
       "auth": {
-
         "kind": "mocked",
-
         "[production]": {
-
           "kind": "xsuaa"
-
         }
-
       }
-
     }
-
   },
-
   "private": true,
-
   "workspaces": [
-
     "app/*"
-
   ]
-
 }
-

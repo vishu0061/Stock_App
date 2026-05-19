@@ -59,7 +59,7 @@
                     
                     <VBox class="adminStatCard adminStatCardPurple">
                         <HBox alignItems="Center">
-                            <core:Icon src="sap-icon://trend-up" size="1.6rem" color="#7c3aed" class="adminStatIcon"/>
+                            <core:Icon src="{= ${trends>/trend} === 'BULL' ? 'sap-icon://trend-up' : (${trends>/trend} === 'BEAR' ? 'sap-icon://trend-down' : 'sap-icon://minus') }" size="1.6rem" color="{= ${trends>/trend} === 'BULL' ? '#10b981' : (${trends>/trend} === 'BEAR' ? '#ef4444' : '#7c3aed') }" class="adminStatIcon"/>
                             <VBox class="adminStatTextBlock">
                                 <Text text="Market Trend" class="adminStatLabel"/>
                                 <Title text="{trends>/trend}" class="adminStatValue"/>

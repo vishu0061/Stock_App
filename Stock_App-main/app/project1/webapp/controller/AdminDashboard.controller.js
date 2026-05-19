@@ -5,26 +5,26 @@ sap.ui.define([
     "sap/m/MessageBox"
 ], function (Controller, JSONModel, MessageToast, MessageBox) {
     "use strict";
- 
+
     return Controller.extend("sap.stocktrading.app.controller.AdminDashboard", {
- 
+
         onInit: function () {
             this._loadDashboardData();
             var oRoute = this.getOwnerComponent().getRouter().getRoute("admin");
             if (oRoute) { oRoute.attachPatternMatched(this._onRouteMatched, this); }
         },
- 
+
         _onRouteMatched: function () { this._loadDashboardData(); },
- 
+
         /* ═══ LOAD DATA ═══════════════════════════════════════════════════ */
- 
+
         _loadDashboardData: async function () {
             try {
                 var oModel = this.getOwnerComponent().getModel();
- 
+
                 var aProducts = await oModel.bindList("/Products").requestContexts(0, 1000);
                 this.byId("statTotalStocks").setText(String(aProducts.length));
- 
+
                 var aTx = await oModel.bindList("/Transactions").requestContexts(0, 5000);
                 var iBuyers = 0, iSellers = 0;
                 aTx.forEach(function (c) {
@@ -32,13 +32,13 @@ sap.ui.define([
                     if (t === "BUY") { iBuyers++; }
                     if (t === "SELL") { iSellers++; }
                 });
- 
+
                 this.byId("statTotalBuyers").setText(String(iBuyers));
                 this.byId("statTotalSellers").setText(String(iSellers));
- 
+
                 var aDailyData = this._buildDailyData(aTx);
                 this.getView().setModel(new JSONModel({ dailyData: aDailyData }), "dashboard");
- 
+
                 setTimeout(function () {
                     var oViz = this.byId("dailyTradeChart");
                     if (oViz) {
@@ -55,63 +55,48 @@ sap.ui.define([
                         });
                     }
                 }.bind(this), 400);
- 
+
             } catch (e) {
                 console.error("Dashboard load error:", e);
                 MessageToast.show("Failed to load dashboard data");
             }
         },
- 
-     /* ═══ BUILD DAILY CHART DATA ═══════════════════════════════════════
+
+        /* ═══ BUILD DAILY CHART DATA ═══════════════════════════════════════
            Groups transactions by calendar date.
-           - Always starts from earliest transaction date
-           - Always ends at TODAY (so current date is always visible)
-           - Fills gaps with buys:0, sells:0
-           - Automatically updates when customer buys/sells (via _loadDashboardData refresh)
+           Fills gaps (inactive days) with buys:0, sells:0.
         ═══════════════════════════════════════════════════════════════════ */
         _buildDailyData: function (aTx) {
             var oByDate = {};
- 
             aTx.forEach(function (c) {
                 var t = c.getObject();
                 if (!t || !t.createdAt) { return; }
                 var sDate = String(t.createdAt).substring(0, 10);
                 if (!oByDate[sDate]) { oByDate[sDate] = { buys: 0, sells: 0 }; }
-                if (t.transactionType === "BUY")  { oByDate[sDate].buys++;  }
+                if (t.transactionType === "BUY") { oByDate[sDate].buys++; }
                 if (t.transactionType === "SELL") { oByDate[sDate].sells++; }
             });
- 
+
             var aDates = Object.keys(oByDate).sort();
- 
-            /* Always end at today regardless of last transaction date */
-            var oToday = new Date();
-            oToday.setHours(0, 0, 0, 0);
- 
-            /* Start from earliest transaction, or last 14 days if no transactions */
-            var oStart = aDates.length
-                ? new Date(aDates[0])
-                : new Date(oToday.getTime() - 13 * 24 * 60 * 60 * 1000);
- 
-            /* Safety: if data spans more than 60 days, show only last 60 */
-            var iDays = Math.round((oToday - oStart) / (24 * 60 * 60 * 1000));
-            if (iDays > 60) {
-                oStart = new Date(oToday.getTime() - 59 * 24 * 60 * 60 * 1000);
-            }
- 
+            if (!aDates.length) { return []; }
+
+            var oStart = new Date(aDates[0]);
+            var oEnd = new Date(aDates[aDates.length - 1]);
             var aResult = [];
-            for (var d = new Date(oStart); d <= oToday; d.setDate(d.getDate() + 1)) {
+
+            for (var d = new Date(oStart); d <= oEnd; d.setDate(d.getDate() + 1)) {
                 var sKey = d.toISOString().substring(0, 10);
                 aResult.push({
-                    date:  (d.getMonth() + 1) + "/" + d.getDate(),
-                    buys:  (oByDate[sKey] || {}).buys  || 0,
+                    date: (d.getMonth() + 1) + "/" + d.getDate(),
+                    buys: (oByDate[sKey] || {}).buys || 0,
                     sells: (oByDate[sKey] || {}).sells || 0
                 });
             }
             return aResult;
         },
- 
+
         /* ═══ FORMATTERS ═══════════════════════════════════════════════════ */
- 
+
         formatQtyState: function (v) {
             return v > 100 ? "Success" : v > 20 ? "Warning" : "Error";
         },
@@ -136,32 +121,32 @@ sap.ui.define([
         formatStatusState: function (v) {
             return v === "ACTIVE" ? "Success" : v === "LOW" ? "Warning" : "Error";
         },
- 
+
         /* ═══ NAV TABS ══════════════════════════════════════════════════════ */
- 
-        onTabDashboard: function () { this._setActiveTab("tabDashboard"); this._loadDashboardData(); },
-        onTabStocks: function () { this._setActiveTab("tabStocks"); this.getOwnerComponent().getRouter().navTo("admin"); },
+
+        onTabDashboard: function () { this._setActiveTab("tabManage"); this._loadDashboardData(); },
+        onTabStocks: function () { this._setActiveTab("tabManage"); this.getOwnerComponent().getRouter().navTo("manageStocks"); },
         onTabAnalytics: function () { this._setActiveTab("tabAnalytics"); this.getOwnerComponent().getRouter().navTo("analytics"); },
         onTabTrends: function () { this._setActiveTab("tabTrends"); this.getOwnerComponent().getRouter().navTo("priceTrends"); },
-        onTabSettings: function () { this._setActiveTab("tabSettings"); MessageToast.show("Settings coming soon"); },
- 
+        onTabSettings: function () { this._setActiveTab("tabTrends"); MessageToast.show("Settings coming soon"); },
+
         _setActiveTab: function (sId) {
-            ["tabDashboard", "tabStocks", "tabAnalytics", "tabTrends", "tabSettings"].forEach(function (id) {
+            ["tabManage", "tabAnalytics", "tabTrends"].forEach(function (id) {
                 var o = this.byId(id);
                 if (o) { o[id === sId ? "addStyleClass" : "removeStyleClass"]("adminNavTabActive"); }
             }.bind(this));
         },
- 
+
         /* ═══ QUICK ACTIONS ════════════════════════════════════════════════ */
- 
+
         onQuickCreateStock:  function () { this.getOwnerComponent().getRouter().navTo("createStock"); },
         onQuickManageStocks: function () { this.getOwnerComponent().getRouter().navTo("manageStocks"); },
         onQuickViewAnalytics: function () { this.getOwnerComponent().getRouter().navTo("analytics"); },
         onQuickPriceTrends: function () { this.getOwnerComponent().getRouter().navTo("priceTrends"); },
- 
- 
+
+
         /* ═══ TABLE ROW ════════════════════════════════════════════════════ */
- 
+
         onStockRowPress: function (oEvent) {
             var oCtx = oEvent.getSource().getBindingContext();
             if (!oCtx) { return; }
@@ -172,12 +157,12 @@ sap.ui.define([
                 { title: d.productName }
             );
         },
- 
+
         onRefresh: function () { this._loadDashboardData(); MessageToast.show("Dashboard refreshed"); },
- 
- 
+
+
         /* ═══ LOGOUT ═══════════════════════════════════════════════════════ */
- 
+
         onLogout: function () {
             MessageBox.confirm("Are you sure you want to logout?", {
                 title: "Confirm Logout",
@@ -187,7 +172,7 @@ sap.ui.define([
                 }.bind(this)
             });
         },
- 
+
         /* ═══ STOCK GRAPH DIALOG ════════════════════════════════════════════
            Price Fluctuation Logic:
            - BUY  day  → price rises   by volatilityPct × random(0.5–1.0)
@@ -196,7 +181,7 @@ sap.ui.define([
            - Inactive day (no trade)  → natural decay −0.1% to −0.3%
              (represented as TICK with equal pressure in HistoricalPrices)
         ═══════════════════════════════════════════════════════════════════ */
- 
+
         onViewStockGraph: function (oEvent) {
             oEvent.cancelBubble();
             var oCtx = oEvent.getSource().getBindingContext();
@@ -205,7 +190,7 @@ sap.ui.define([
             if (!oProduct || !oProduct.ID) { MessageToast.show("No product data"); return; }
             this._loadAndShowStockGraph(oProduct);
         },
- 
+
         _loadAndShowStockGraph: function (oProduct) {
             var self = this;
             sap.ui.require([
@@ -229,27 +214,27 @@ sap.ui.define([
             ], function (Filter, FilterOperator, Sorter,
                 VizFrame, FlattenedDataset, DimDef, MeasDef, FeedItem,
                 Dialog, MButton, VBox, HBox, MLabel, MTitle, MText, ObjectStatus, MToast) {
- 
+
                 var oModel = self.getOwnerComponent().getModel();
- 
+
                 // OData v4: use Filter objects, NOT $filter string
                 var oFilter = new Filter("product_ID", FilterOperator.EQ, oProduct.ID);
                 var oSorter = new Sorter("createdAt", false); // ascending
- 
+
                 var oBinding = oModel.bindList(
                     "/HistoricalPrices",
                     null,
                     [oSorter],   // aSorters
                     [oFilter]    // aFilters — no mParameters needed, $top handled by requestContexts
                 );
- 
+
                 oBinding.requestContexts().then(function (aCtx) {
- 
+
                     if (!aCtx.length) {
                         MToast.show("No price history for " + oProduct.productName + ". Try buying/selling first.");
                         return;
                     }
- 
+
                     var aData = aCtx.map(function (c) {
                         var h = c.getObject();
                         var dt = h.createdAt ? new Date(h.createdAt) : new Date();
@@ -261,38 +246,38 @@ sap.ui.define([
                             reason: h.reason || "TICK"
                         };
                     });
- 
+
                     var aPrices = aData.map(function (r) { return r.price; });
                     var fMax = Math.max.apply(null, aPrices);
                     var fMin = Math.min.apply(null, aPrices);
                     var fFirst = aData[0].price;
                     var fLast = aData[aData.length - 1].price;
                     var fChangePct = ((fLast - fFirst) / fFirst * 100).toFixed(2);
- 
+
                     self._renderStockDialog(
                         oProduct, aData, fMax, fMin, fChangePct,
                         VizFrame, FlattenedDataset, DimDef, MeasDef, FeedItem,
                         Dialog, MButton, VBox, HBox, MLabel, MTitle, MText, ObjectStatus
                     );
- 
+
                 }).catch(function (e) {
                     console.error("[StockGraph] bindList error:", e);
                     MToast.show("Failed to load stock history: " + (e.message || e));
                 });
- 
+
             });
         },
- 
+
         _renderStockDialog: function (oProduct, aData, fMax, fMin, fChangePct,
             VizFrame, FlattenedDataset, DimDef, MeasDef, FeedItem,
             Dialog, MButton, VBox, HBox, MLabel, MTitle, MText, ObjectStatus) {
- 
+
             var bUp = Number(fChangePct) >= 0;
             var sColor = bUp ? "#059669" : "#dc2626";
             var sArrow = bUp ? "\u25b2" : "\u25bc";
             var sState = bUp ? "Success" : "Error";
             var oGM = new JSONModel({ rows: aData });
- 
+
             var oViz = new VizFrame({ vizType: "line", width: "100%", height: "250px", uiConfig: { applicationSet: "fiori" } });
             oViz.setModel(oGM, "gm");
             oViz.setDataset(new FlattenedDataset({
@@ -309,7 +294,7 @@ sap.ui.define([
                 categoryAxis: { title: { visible: true, text: "Date" } },
                 valueAxis: { title: { visible: true, text: "Price (" + oProduct.currency + ")" } }
             });
- 
+
             var oStats = new HBox({
                 justifyContent: "SpaceBetween",
                 items: [
@@ -321,12 +306,12 @@ sap.ui.define([
                 ]
             });
             oStats.addStyleClass("sapUiSmallMarginBottom sapUiSmallMarginTop");
- 
+
             var oContentBox = new VBox({
                 items: [oStats, oViz]
             });
             oContentBox.addStyleClass("sapUiSmallMarginBeginEnd");
- 
+
             var oDialog = new Dialog({
                 title: "\ud83d\udcc8  " + oProduct.productName + " \u2014 Stock Price Graph",
                 contentWidth: "680px",
@@ -336,6 +321,6 @@ sap.ui.define([
             });
             oDialog.open();
         }
- 
+
     });
 });
