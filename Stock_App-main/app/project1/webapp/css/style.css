@@ -1099,7 +1099,6 @@
     font-weight: 500 !important;
 }
 
-/* Input Styling Override for Form */
 /* =========================================================
    INPUT STYLING OVERRIDE FOR FORM
 ========================================================= */
@@ -1480,11 +1479,12 @@
 /* Typography & Neon Accents */
 .cdHeroTitle {
     color: #ffffff !important;
-    font-size: 3.5rem !important;
+    font-size: 3rem !important;
     font-weight: 800 !important;
     letter-spacing: -1px;
     text-shadow: 0 0 30px rgba(0, 255, 170, 0.3);
-    margin-bottom: 0.5rem !important;
+    margin-top: 2rem !important;
+    margin-bottom: 1rem !important;
 }
 
 .cdHeroSub {
@@ -1526,84 +1526,136 @@
     letter-spacing: 1px;
 }
 
-/* Glassmorphism Navigation Bar */
-.cdNavBar, .stGlassBar {
-    background: rgba(10, 15, 30, 0.7) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+
+
+/* =========================================================
+   NAVBAR LAYOUT FIX
+========================================================= */
+
+.cdNavBar.sapMBar {
+    height: 70px !important;
+    min-height: 70px !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    overflow: hidden !important;
+    padding: 0 1rem !important;
+ 
+}
+
+/* LEFT / CENTER / RIGHT */
+.cdNavBar .sapMBarLeft,
+.cdNavBar .sapMBarMiddle,
+.cdNavBar .sapMBarRight {
+    height: 70px !important;
+
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* =========================================================
+   LEFT SECTION
+========================================================= */
+
+.cdNavBar .sapMBarLeft {
+    width: auto !important;
+    flex: 0 0 auto !important;
+    gap: 12px !important;
+}
+
+/* BRAND */
+.cdNavBrand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+
     height: 70px !important;
 }
 
-.cdNavBrandName, .stBrandTitle {
-    background: linear-gradient(135deg, #00ffaa, #00b8ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 1.5rem !important;
-    font-weight: 800 !important;
+/* =========================================================
+   CENTER SECTION
+========================================================= */
+
+.cdNavBar .sapMBarMiddle {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+
+    justify-content: center !important;
+
+    padding: 0 1rem !important;
 }
 
-.cdNavBrandSub, .stBrandSub {
-    color: #64748b !important;
-    font-size: 0.85rem !important;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+/* SEARCH */
+.cdNavSearchField {
+    width: 300px !important;
+    max-width: 100% !important;
 }
 
-.cdNavLogoWrap, .stBrandLogoWrap {
-    width: 45px;
-    height: 45px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(0,255,170,0.1), rgba(0,184,255,0.1));
-    border: 1px solid rgba(0, 255, 170, 0.2);
-    box-shadow: 0 0 15px rgba(0, 255, 170, 0.15);
-    margin-right: 12px;
+/* =========================================================
+   RIGHT SECTION
+========================================================= */
+
+.cdNavBar .sapMBarRight {
+    width: auto !important;
+    min-width: 130px !important;
+
+    flex: 0 0 auto !important;
+
+    justify-content: flex-end !important;
+
+    padding-right: 5rem !important;
 }
 
-.cdNavLogoIcon, .stBrandIcon {
-    color: #00ffaa !important;
-    font-size: 1.4rem !important;
+/* ACTIONS */
+.cdNavActions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+
+    gap: 14px !important;
 }
 
-.cdNavSearchField .sapMSFI {
-    background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: #ffffff !important;
-    border-radius: 20px !important;
-    padding: 0 15px !important;
-    transition: all 0.3s ease;
+/* =========================================================
+   LOGO
+========================================================= */
+
+.cdNavLogoWrap {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-.cdNavSearchField .sapMSFI:focus {
-    background: rgba(255, 255, 255, 0.07) !important;
-    border-color: #00ffaa !important;
-    box-shadow: 0 0 15px rgba(0, 255, 170, 0.2) !important;
+/* =========================================================
+   TITLE FIX
+========================================================= */
+
+.cdNavBrandText {
+    justify-content: center !important;
 }
 
-.cdNavBellBtn .sapMBtnInner {
-    color: #94a3b8 !important;
-    background: transparent !important;
-    border: none !important;
-    font-size: 1.2rem !important;
+.cdNavBrandName {
+    font-size: 1rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.1 !important;
 }
 
-.cdNavBellBtn .sapMBtnInner:hover {
-    color: #ffffff !important;
+.cdNavBrandSub {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.1 !important;
 }
 
-.cdNavAvatar {
-    border: 2px solid rgba(0, 255, 170, 0.5) !important;
-    box-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
-    margin-left: 15px;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
+/* =========================================================
+   GLASSMORPHISM CARDS
+========================================================= */
 
-.cdNavAvatar:hover {
-    transform: scale(1.1);
-}
-
-/* Glassmorphism Cards */
 .cdSummaryCard, .cdCard, .pfCard, .pfTableCard, .stPanel {
     background: rgba(18, 25, 43, 0.6) !important;
     backdrop-filter: blur(12px) !important;
@@ -1685,8 +1737,8 @@
 }
 
 .cdValueGreen { color: #10b981 !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
-.cdValueBlue { color: #38bdf8 !important; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
-.cdValuePurple { color: #a78bfa !important; text-shadow: 0 0 10px rgba(167, 139, 250, 0.3); }
+.cdValueBlue  { color: #38bdf8 !important; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+.cdValuePurple{ color: #a78bfa !important; text-shadow: 0 0 10px rgba(167, 139, 250, 0.3); }
 
 .cdCardLabel, .pfSub {
     color: #cbd5e1 !important;
@@ -1817,13 +1869,25 @@
     font-size: 1.05rem !important;
 }
 
-.cdChangeUp { color: #10b981 !important; font-weight: 600; text-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+.cdChangeUp   { color: #10b981 !important; font-weight: 600; text-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
 .cdChangeDown { color: #ef4444 !important; font-weight: 600; text-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
 
 .cdQty {
     color: #e2e8f0 !important;
     font-weight: 600 !important;
 }
+
+/* Live pill */
+.cdLivePill {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    gap: 6px;
+}
+
+.cdPillDot { color: #10b981 !important; font-size: 0.7rem !important; }
+.cdPillText { color: #10b981 !important; font-size: 0.8rem !important; font-weight: 700 !important; }
 
 /* Action Buttons (Buy/Sell) */
 .cdBuyBtn.sapMBtn .sapMBtnInner {
@@ -1935,10 +1999,7 @@
     margin-top: 5px;
 }
 
-.cdBullishRow {
-    margin-top: 5px;
-}
-
+.cdBullishRow  { margin-top: 5px; }
 .cdBullishIcon { color: #10b981 !important; margin-right: 5px; }
 .cdBullishText { color: #10b981 !important; font-weight: 700 !important; }
 
@@ -1954,9 +2015,9 @@
 }
 
 .cdHoldingSymbol { color: #ffffff !important; font-weight: 700 !important; }
-.cdHoldingName { color: #64748b !important; font-size: 0.8rem !important; }
-.cdHoldingShares { color: #94a3b8 !important; font-size: 0.9rem !important; margin-top: 5px;}
-.cdHoldingValue { color: #ffffff !important; font-weight: 600 !important; font-size: 1.1rem !important; margin-top: 5px;}
+.cdHoldingName   { color: #64748b !important; font-size: 0.8rem !important; }
+.cdHoldingShares { color: #94a3b8 !important; font-size: 0.9rem !important; margin-top: 5px; }
+.cdHoldingValue  { color: #ffffff !important; font-weight: 600 !important; font-size: 1.1rem !important; margin-top: 5px; }
 
 .cdHoldingBar { margin-top: 10px; margin-bottom: 5px; }
 .cdHoldingBar .sapMPIBar { border-radius: 5px; height: 4px !important; }
@@ -1964,29 +2025,25 @@
 .cdHoldingGain { font-size: 0.85rem !important; text-align: right; display: block; }
 
 /* Activity & Insights */
-.cdActivityItem {
-    padding: 12px 0;
-}
-
-.cdActivityRow {
-    gap: 15px;
-}
+.cdActivityItem { padding: 12px 0; }
+.cdActivityRow  { gap: 15px; }
 
 .cdActivityDot {
     width: 12px;
     height: 12px;
     border-radius: 50%;
+    flex-shrink: 0;
 }
 
 .cdDotGreen { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
-.cdDotRed { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
-.cdDotBlue { background: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+.cdDotRed   { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+.cdDotBlue  { background: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
 .cdDotAmber { background: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
 
-.cdActivityContent { flex-grow: 1; }
-.cdActivityTitle { color: #ffffff !important; font-weight: 600 !important; }
-.cdActivityTime { color: #64748b !important; font-size: 0.8rem !important; }
-.cdActivityDetail { color: #94a3b8 !important; font-size: 0.85rem !important; margin-top: 3px;}
+.cdActivityContent  { flex-grow: 1; }
+.cdActivityTitle    { color: #ffffff !important; font-weight: 600 !important; }
+.cdActivityTime     { color: #64748b !important; font-size: 0.8rem !important; }
+.cdActivityDetail   { color: #94a3b8 !important; font-size: 0.85rem !important; margin-top: 3px; }
 
 .cdInsightItem {
     padding: 15px;
@@ -1997,7 +2054,7 @@
 }
 
 .cdInsightTitle { color: #ffffff !important; font-weight: 600 !important; }
-.cdInsightDesc { color: #94a3b8 !important; font-size: 0.85rem !important; margin-top: 8px; margin-bottom: 8px; }
+.cdInsightDesc  { color: #94a3b8 !important; font-size: 0.85rem !important; margin-top: 8px; margin-bottom: 8px; }
 .cdInsightBar .sapMPIBar { height: 4px !important; border-radius: 5px; }
 
 /* Footer */
@@ -2015,7 +2072,10 @@
 
 .cdFooterText { color: #64748b !important; font-size: 0.8rem !important; }
 
-/* Dialog Overrides for Trade Dialog */
+/* =========================================================
+   DIALOG OVERRIDES FOR TRADE DIALOG
+========================================================= */
+
 .sapMDialog {
     background: rgba(18, 25, 43, 0.95) !important;
     backdrop-filter: blur(20px) !important;
@@ -2034,15 +2094,11 @@
     font-weight: 700 !important;
 }
 
-.sapMDialogSection {
-    background: transparent !important;
-}
+.sapMDialogSection { background: transparent !important; }
+.sapMDialogScrollCont { padding: 20px !important; }
 
-.sapMDialogScrollCont {
-    padding: 20px !important;
-}
-
-.sapMDialog .sapMLabel, .sapMDialog .sapMText {
+.sapMDialog .sapMLabel,
+.sapMDialog .sapMText {
     color: #cbd5e1 !important;
 }
 
@@ -2063,15 +2119,16 @@
     border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Portfolio Page Additions */
+/* =========================================================
+   PORTFOLIO PAGE ADDITIONS
+========================================================= */
+
 .pfCardsRow {
     gap: 20px;
     margin-bottom: 30px;
 }
 
-.pfTableCard {
-    margin-bottom: 30px;
-}
+.pfTableCard { margin-bottom: 30px; }
 
 .stPanel .sapMPanelHdr {
     background: transparent !important;
@@ -2082,32 +2139,32 @@
     padding: 15px 20px !important;
 }
 
-.stPanel .sapMPanelContent {
-    padding: 0 !important;
-}
+.stPanel .sapMPanelContent { padding: 0 !important; }
 
-/* Custom Scrollbar for Dark Mode Panels */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
+/* =========================================================
+   CUSTOM SCROLLBAR
+========================================================= */
 
-::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
+/* =========================================================
+   RESPONSIVE
+========================================================= */
 
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* Responsive */
 @media (max-width: 1024px) {
-    .cdLeftPanel { min-width: 100%; flex: auto; }
+    .cdLeftPanel  { min-width: 100%; flex: auto; }
     .cdRightPanel { min-width: 100%; flex: auto; }
-    .cdHeroTitle { font-size: 2.5rem !important; }
+    .cdHeroTitle  { font-size: 2.5rem !important; }
+}
+
+@media (max-width: 768px) {
+    .cdPageContent, .pfPageContent { padding: 0.5rem 1rem 2rem 1rem; }
+    .cdHeroTitle  { font-size: 2rem !important; }
+    .cdNavBar.sapMBar { height: auto !important; min-height: 60px !important; }
+    .cdNavBar .sapMBarLeft,
+    .cdNavBar .sapMBarMiddle,
+    .cdNavBar .sapMBarRight { height: auto !important; min-height: 60px !important; }
 }

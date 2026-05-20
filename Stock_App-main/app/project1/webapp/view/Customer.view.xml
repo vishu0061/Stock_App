@@ -8,59 +8,112 @@
     xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
     displayBlock="true">
 
-    <Page id="customerPage" showHeader="false" backgroundDesign="List" class="cdPage">
+    <Page id="customerPage" backgroundDesign="List" class="cdPage">
 
         <!-- ═══════════════════════════════════════════════════════
              1. TOP NAVIGATION BAR
         ═══════════════════════════════════════════════════════ -->
         <customHeader>
-            <Bar id="customerNavBar" design="Header" class="cdNavBar">
+    <Bar
+        id="customerNavBar"
+        design="Header"
+        class="cdNavBar"
+        width="100%">
 
-                <contentLeft>
-                    <Button
-                        icon="sap-icon://nav-back"
-                        type="Transparent"
-                        press=".onNavBack"
-                        class="cdNavBackBtn"/>
+        <!-- LEFT -->
+        <contentLeft>
+    <HBox
+        alignItems="Center"
+        class="cdLeftSection">
 
-                    <HBox alignItems="Center" class="cdNavBrand">
-                        <VBox justifyContent="Center" alignItems="Center" class="cdNavLogoWrap">
-                            <core:Icon src="sap-icon://bar-chart" class="cdNavLogoIcon"/>
-                        </VBox>
-                        <VBox justifyContent="Center" class="cdNavBrandText">
-                            <Title text="StockTrade Pro" level="H5" class="cdNavBrandName"/>
-                            <Text text="Customer Portal" class="cdNavBrandSub"/>
-                        </VBox>
-                    </HBox>
-                </contentLeft>
+        <!-- BACK BUTTON -->
+        <Button
+            icon="sap-icon://nav-back"
+            type="Transparent"
+            press=".onNavBack"
+            class="cdNavBackBtn"/>
 
-                <contentMiddle>
-                    <SearchField
-                        id="stockSearchField"
-                        placeholder="Search stocks, companies..."
-                        width="380px"
-                        search=".onStockSearch"
-                        class="cdNavSearchField"/>
-                </contentMiddle>
+        <!-- BRAND -->
+        <HBox
+            alignItems="Center"
+            class="cdNavBrand">
 
-                <contentRight>
-                    <HBox alignItems="Center" class="cdNavActions">
-                        <Button
-                            icon="sap-icon://bell"
-                            type="Transparent"
-                            press=".onNotificationsPress"
-                            class="cdNavBellBtn"/>
-                        <Avatar
-                            id="userAvatar"
-                            initials="JD"
-                            displaySize="XS"
-                            press=".onAvatarPress"
-                            class="cdNavAvatar"/>
-                    </HBox>
-                </contentRight>
+            <!-- LOGO -->
+            <VBox
+                justifyContent="Center"
+                alignItems="Center"
+                class="cdNavLogoWrap">
 
-            </Bar>
-        </customHeader>
+                <core:Icon
+                    src="sap-icon://business-objects-experience"
+                    size="1.4rem"
+                    color="#00ffaa"
+                    class="cdNavLogoIcon"/>
+
+            </VBox>
+
+            <!-- TEXT -->
+            <VBox
+                justifyContent="Center"
+                class="cdNavBrandText">
+
+                <Title
+                    text="StockTrade Pro"
+                    level="H5"
+                    class="cdNavBrandName"/>
+
+                <Text
+                    text="Customer Portal"
+                    class="cdNavBrandSub"/>
+
+            </VBox>
+
+        </HBox>
+
+    </HBox>
+</contentLeft>
+        <!-- CENTER -->
+        <contentMiddle>
+            <HBox
+                justifyContent="Center"
+                width="100%">
+
+               <SearchField
+    id="stockSearchField"
+    placeholder="Search stocks, companies..."
+    width="100%"
+    search=".onStockSearch"
+    class="cdNavSearchField"/>
+            </HBox>
+        </contentMiddle>
+
+        <!-- RIGHT -->
+        <contentRight>
+            <HBox
+                alignItems="Center"
+                justifyContent="End"
+                width="100%"
+                class="cdNavActions">
+
+                <Button
+                    icon="sap-icon://bell"
+                    type="Transparent"
+                    press=".onNotificationsPress"
+                    class="cdNavBellBtn"/>
+
+                <Avatar
+                    id="userAvatar"
+                    displaySize="XS"
+                    displayShape="Circle"
+                    initials="VC"
+                    press=".onAvatarPress"
+                    class="cdNavAvatar"/>
+
+            </HBox>
+        </contentRight>
+
+    </Bar>
+</customHeader>
 
         <!-- ═══════════════════════════════════════════════════════
              PAGE CONTENT
@@ -71,24 +124,14 @@
                  2. HERO SECTION
             ───────────────────────────────────────────────── -->
             <VBox alignItems="Center" class="cdHero">
-                <Title text="Customer Trading Dashboard" level="H1" class="cdHeroTitle"/>
+                <Title text="Customer Trading Dashboard" level="H2" class="cdHeroTitle"/>
                 <Text text="Buy, Sell and Monitor Stocks in Real Time" class="cdHeroSub"/>
                 <HBox alignItems="Center" class="cdLiveBadge">
                     <core:Icon src="sap-icon://status-positive" class="cdLiveIcon"/>
                     <Text text="Live Trading Active" class="cdLiveBadgeText"/>
                 </HBox>
                 <HBox alignItems="Center" class="sapUiSmallMarginTop">
-                    <Text text="Trading as" class="cdHeroSub"/>
-                    <Input
-                        id="customerNameInput"
-                        value="{custVM>/customerName}"
-                        width="240px"
-                        class="sapUiTinyMarginBegin"/>
-                    <Button
-                        text="Load Portfolio"
-                        type="Transparent"
-                        press=".onLoadPortfolio"
-                        class="stBtnGhost sapUiTinyMarginBegin"/>
+                    
                     <Button
                         text="Portfolio"
                         icon="sap-icon://wallet"
