@@ -10,11 +10,47 @@ sap.ui.define([
 
         onInit: function () {
             this._loadDashboardData();
-            var oRoute = this.getOwnerComponent().getRouter().getRoute("admin");
+            var oRouter = this.getOwnerComponent().getRouter();
+            var oRoute = oRouter.getRoute("admin");
             if (oRoute) { oRoute.attachPatternMatched(this._onRouteMatched, this); }
+
+            // Global router listener to stop polling when navigating away from admin dashboard
+            oRouter.attachRouteMatched(function (oEvent) {
+                var sRouteName = oEvent.getParameter("name");
+                if (sRouteName !== "admin") {
+                    this._stopPolling();
+                }
+            }, this);
+
+            this._intervalId = null;
         },
 
-        _onRouteMatched: function () { this._loadDashboardData(); },
+        _onRouteMatched: function () {
+            this._loadDashboardData();
+            this._startPolling();
+        },
+
+        _startPolling: function () {
+            this._stopPolling();
+            this._intervalId = setInterval(function () {
+                this._loadDashboardData();
+                var oModel = this.getOwnerComponent().getModel();
+                if (oModel) {
+                    oModel.refresh();
+                }
+            }.bind(this), 5000);
+        },
+
+        _stopPolling: function () {
+            if (this._intervalId) {
+                clearInterval(this._intervalId);
+                this._intervalId = null;
+            }
+        },
+
+        onExit: function () {
+            this._stopPolling();
+        },
 
         /* ═══ LOAD DATA ═══════════════════════════════════════════════════ */
 

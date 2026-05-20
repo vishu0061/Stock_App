@@ -93,7 +93,7 @@ xmlns:unified="sap.ui.unified"
                         <HBox alignItems="Center">
                             <core:Icon src="sap-icon://cart" size="1.6rem" color="#059669" class="adminStatIcon"/>
                             <VBox class="adminStatTextBlock">
-                                <Text text="Total Buyers" class="adminStatLabel"/>
+                                <Text text="Total Buys" class="adminStatLabel"/>
                                 <Title id="statTotalBuyers" text="0" class="adminStatValue"/>
                             </VBox>
                         </HBox>
@@ -103,7 +103,7 @@ xmlns:unified="sap.ui.unified"
                         <HBox alignItems="Center">
                             <core:Icon src="sap-icon://sales-order" size="1.6rem" color="#d97706" class="adminStatIcon"/>
                             <VBox class="adminStatTextBlock">
-                                <Text text="Total Sellers" class="adminStatLabel"/>
+                                <Text text="Total Sells" class="adminStatLabel"/>
                                 <Title id="statTotalSellers" text="0" class="adminStatValue"/>
                             </VBox>
                         </HBox>

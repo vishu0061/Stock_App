@@ -12,37 +12,101 @@ sap.ui.define([
         onInit: function () {
             this.getOwnerComponent().getRouter().getRoute("priceTrends").attachPatternMatched(this._onRouteMatched, this);
 
+            // JSONModel for stat cards + chart data
             this.getView().setModel(new JSONModel({
-                currentPrice: "0.00",
-                volume: "0",
+                currentPrice: "Loading...",
+                volume: 0,
                 trend: "NEUTRAL",
                 history: []
             }), "trends");
 
-            this._intervalId = null;
+            this._intervalId   = null;
             this._selectedStockId = null;
+            this._stocks       = [];   // plain JS array, no UI5 model needed
         },
 
+        /* ─────────────────────────────────────────────────────────────────
+           Route matched → load the stock list first, then auto-select #1
+        ───────────────────────────────────────────────────────────────── */
         _onRouteMatched: function () {
-            var oModel = this.getOwnerComponent().getModel();
-            var oListBinding = oModel.bindList("/Products");
-
-            oListBinding.requestContexts(0, 1).then(function (aContexts) {
-                if (aContexts.length > 0) {
-                    var sFirstKey = aContexts[0].getProperty("ID");
-                    var oSelect = this.byId("stockSelector");
-
-                    // Allow UI to render the items first
-                    setTimeout(function () {
-                        oSelect.setSelectedKey(sFirstKey);
-                        this._selectedStockId = sFirstKey;
-                        this._loadStockData();
-                        this._startPolling();
-                    }.bind(this), 100);
-                }
-            }.bind(this));
+            this._stopPolling();
+            this._loadStockList();
         },
 
+        /* ─────────────────────────────────────────────────────────────────
+           Load all products via plain AJAX and populate the native <select>
+        ───────────────────────────────────────────────────────────────── */
+        _loadStockList: function () {
+            var self = this;
+
+            $.ajax({
+                url: "/api/Products?$select=ID,productName,currency&$orderby=productName",
+                method: "GET",
+                cache: false,
+                success: function (data) {
+                    self._stocks = (data && data.value) ? data.value : [];
+                    self._populateNativeSelect();
+                },
+                error: function (err) {
+                    console.error("Failed to load product list:", err);
+                }
+            });
+        },
+
+        /* ─────────────────────────────────────────────────────────────────
+           Fill the native HTML <select> with product options
+        ───────────────────────────────────────────────────────────────── */
+        _populateNativeSelect: function () {
+            var self   = this;
+            var $el    = jQuery("#nativeStockSelect");
+
+            if (!$el.length) {
+                // DOM not ready yet – wait for afterRendering callback
+                return;
+            }
+
+            // Build option HTML
+            var html = "";
+            this._stocks.forEach(function (p) {
+                html += "<option value='" + p.ID + "'>" +
+                        p.productName + " (" + p.currency + ")" +
+                        "</option>";
+            });
+            $el.html(html);
+
+            // Attach change listener (only once – unbind first to be safe)
+            $el.off("change").on("change", function () {
+                var sKey = $el.val();
+                if (sKey) {
+                    self._selectedStockId = sKey;
+                    self._stopPolling();
+                    self._loadStockData();
+                    self._startPolling();
+                }
+            });
+
+            // Auto-select first stock
+            if (this._stocks.length > 0) {
+                $el.val(this._stocks[0].ID);
+                this._selectedStockId = this._stocks[0].ID;
+                this._loadStockData();
+                this._startPolling();
+            }
+        },
+
+        /* ─────────────────────────────────────────────────────────────────
+           afterRendering hook on the core:HTML control – once the native
+           <select> is in the DOM, populate it
+        ───────────────────────────────────────────────────────────────── */
+        onStockSelectorRendered: function () {
+            if (this._stocks.length > 0) {
+                this._populateNativeSelect();
+            }
+        },
+
+        /* ─────────────────────────────────────────────────────────────────
+           Navigation
+        ───────────────────────────────────────────────────────────────── */
         onNavBack: function () {
             this._stopPolling();
             var oHistory = History.getInstance();
@@ -54,16 +118,14 @@ sap.ui.define([
             }
         },
 
-        onStockSelect: function (oEvent) {
-            this._selectedStockId = oEvent.getParameter("selectedItem").getKey();
-            this._loadStockData();
-        },
-
         onRefreshChart: function () {
             this._loadStockData();
             MessageToast.show("Chart refreshed manually");
         },
 
+        /* ─────────────────────────────────────────────────────────────────
+           Polling helpers
+        ───────────────────────────────────────────────────────────────── */
         _startPolling: function () {
             this._stopPolling();
             this._intervalId = setInterval(this._loadStockData.bind(this), 5000);
@@ -76,100 +138,113 @@ sap.ui.define([
             }
         },
 
+        onExit: function () {
+            this._stopPolling();
+        },
+
+        /* ─────────────────────────────────────────────────────────────────
+           Main data fetch – price, volume, chart history
+        ───────────────────────────────────────────────────────────────── */
         _loadStockData: function () {
-            if (!this._selectedStockId) return;
+            if (!this._selectedStockId) { return; }
 
-            var oModel = this.getView().getModel("trends");
-            var timeFormat = DateFormat.getTimeInstance({ pattern: "HH:mm:ss" });
+            var self           = this;
+            var oModel         = this.getView().getModel("trends");
+            var timeFormat     = DateFormat.getTimeInstance({ pattern: "HH:mm:ss" });
+            var shortFmt       = DateFormat.getDateTimeInstance({ pattern: "MMM dd HH:mm" });
+            var todayStr       = new Date().toDateString();
+            var sId            = this._selectedStockId;
 
-            // Fetch product details
+            // ── 1. Current price & trend ────────────────────────────────
             $.ajax({
-                url: "/api/Products(" + this._selectedStockId + ")",
+                url: "/api/Products(" + sId + ")",
                 method: "GET",
                 cache: false,
                 success: function (data) {
-                    if (data) {
-                        var d = data;
-                        if (data.value && Array.isArray(data.value) && data.value.length > 0) d = data.value[0];
-                        else if (data.value) d = data.value;
-
-                        oModel.setProperty("/currentPrice", (d.currency || "$") + " " + Number(d.price || 0).toFixed(2));
+                    var d = data;
+                    if (data && data.value) {
+                        d = Array.isArray(data.value) ? data.value[0] : data.value;
+                    }
+                    if (d) {
+                        oModel.setProperty("/currentPrice", (d.currency || "") + " " + Number(d.price || 0).toFixed(2));
                         oModel.setProperty("/trend", d.trend || "NEUTRAL");
                     }
                 },
-                error: function (err) {
-                    console.error("Failed to fetch product:", err);
-                }
+                error: function (err) { console.error("Product fetch error:", err); }
             });
 
-            // Fetch actual historical trading volume from transactions
+            // ── 2. Transaction volume ───────────────────────────────────
             $.ajax({
-                url: "/api/Transactions?$filter=product_ID eq " + this._selectedStockId,
+                url: "/api/Transactions?$filter=product_ID eq " + sId,
                 method: "GET",
                 cache: false,
                 success: function (data) {
-                    var txs = data.value || data || [];
-                    var totalVol = 0;
-                    txs.forEach(function (t) {
-                        totalVol += (t.quantity || 0);
-                    });
-                    oModel.setProperty("/volume", totalVol);
+                    var txs = (data && data.value) ? data.value : [];
+                    var vol = 0;
+                    txs.forEach(function (t) { vol += Number(t.quantity || 0); });
+                    oModel.setProperty("/volume", vol);
                 }
             });
 
-            // Fetch Legacy Historical Mock Data first
-            var sHistoricalUrl = "/api/HistoricalPrices?$filter=product_ID eq " + this._selectedStockId + "&$orderby=createdAt desc&$top=30";
-            var sLiveUrl = "/api/PriceHistory?$filter=product_ID eq " + this._selectedStockId + "&$orderby=timestamp desc&$top=50";
+            // ── 3. Historical + live ticks → chart ─────────────────────
+            var sHist = "/api/HistoricalPrices?$filter=product_ID eq " + sId + "&$orderby=createdAt asc&$top=30";
+            var sLive = "/api/PriceHistory?$filter=product_ID eq "     + sId + "&$orderby=timestamp asc&$top=50";
 
             $.when(
-                $.ajax({ url: sHistoricalUrl, method: "GET", cache: false }),
-                $.ajax({ url: sLiveUrl, method: "GET", cache: false })
-            ).done(function (resHistorical, resLive) {
-                var dataHist = resHistorical[0];
-                var dataLive = resLive[0];
-                var combinedHistory = [];
+                $.ajax({ url: sHist, method: "GET", cache: false }),
+                $.ajax({ url: sLive, method: "GET", cache: false })
+            ).done(function (resHist, resLive) {
+                var combined = [];
 
-                if (dataHist && dataHist.value) {
-                    var histMapped = dataHist.value.map(function (h) {
-                        return {
-                            rawDate: new Date(h.createdAt),
-                            price: Number(h.price || 0)
-                        };
-                    });
-                    combinedHistory = combinedHistory.concat(histMapped);
-                }
-
-                if (dataLive && dataLive.value) {
-                    var liveMapped = dataLive.value.map(function (h) {
-                        return {
-                            rawDate: new Date(h.timestamp),
-                            price: Number(h.close || 0)
-                        };
-                    });
-                    combinedHistory = combinedHistory.concat(liveMapped);
-                }
-
-                // Sort chronologically by actual Date
-                combinedHistory.sort(function (a, b) {
-                    return a.rawDate - b.rawDate;
+                ((resHist[0] && resHist[0].value) || []).forEach(function (h) {
+                    var d = new Date(h.createdAt);
+                    if (!isNaN(d) && Number(h.price) > 0) {
+                        combined.push({ rawDate: d, price: Number(h.price) });
+                    }
                 });
 
-                // Format time labels after sorting
-                var finalHistory = combinedHistory.map(function (item) {
+                ((resLive[0] && resLive[0].value) || []).forEach(function (h) {
+                    var d = new Date(h.timestamp);
+                    if (!isNaN(d) && Number(h.close) > 0) {
+                        combined.push({ rawDate: d, price: Number(h.close) });
+                    }
+                });
+
+                combined.sort(function (a, b) { return a.rawDate - b.rawDate; });
+
+                var final = combined.map(function (item) {
                     return {
-                        timeLabel: timeFormat.format(item.rawDate),
+                        timeLabel: item.rawDate.toDateString() === todayStr
+                            ? timeFormat.format(item.rawDate)
+                            : shortFmt.format(item.rawDate),
                         price: item.price
                     };
                 });
 
-                // Keep only the latest 50 points to keep chart clean and readable
-                if (finalHistory.length > 50) {
-                    finalHistory = finalHistory.slice(finalHistory.length - 50);
-                }
+                if (final.length > 50) { final = final.slice(final.length - 50); }
 
-                oModel.setProperty("/history", finalHistory);
+                oModel.setProperty("/history", final);
+
+                // Re-apply viz properties
+                setTimeout(function () {
+                    var oViz = self.byId("priceTrendChart");
+                    if (oViz) {
+                        oViz.setVizProperties({
+                            title:    { text: "Live Price Chart" },
+                            legend:   { visible: false },
+                            plotArea: {
+                                dataLabel:   { visible: false },
+                                colorPalette: ["#059669"],
+                                line: { marker: { visible: true, size: 4 } }
+                            },
+                            categoryAxis: { title: { visible: true, text: "Time" } },
+                            valueAxis:    { title: { visible: true, text: "Price" } }
+                        });
+                    }
+                }, 300);
+
             }).fail(function (err) {
-                console.error("Failed to fetch price history:", err);
+                console.error("Chart data fetch error:", err);
             });
         }
 

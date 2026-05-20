@@ -24,7 +24,7 @@ module.exports = cds.service.impl(async function () {
             const { Products, PriceHistory } = entities;
 
             globalMarketTrend = Math.sin(Date.now() / 100000); // Simple oscillating trend
-            const aProducts = await tx.run(SELECT.from(Products).where({ status: "ACTIVE" }));
+            const aProducts = await tx.run(SELECT.from(Products).where({ status: { "in": ["ACTIVE", "LOW"] } }));
             const now = new Date();
 
             for (const p of aProducts) {
@@ -85,7 +85,7 @@ module.exports = cds.service.impl(async function () {
 
                 const high = Math.max(previousPrice, newPrice);
                 const low = Math.min(previousPrice, newPrice);
-                
+
                 await tx.run(INSERT.into(PriceHistory).entries({
                     ID: cds.utils.uuid(),
                     product_ID: p.ID,
@@ -115,8 +115,8 @@ module.exports = cds.service.impl(async function () {
                 return;
             }
             const { PriceHistory } = entities;
-            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-            
+            const sevenDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
             await tx.run(DELETE.from(PriceHistory).where('timestamp <', sevenDaysAgo));
             await tx.commit();
         } catch (e) {
@@ -144,14 +144,14 @@ module.exports = cds.service.impl(async function () {
         let totalTrades = 0;
         let marketVolume = 0;
         const activeUsers = new Set();
-        
+
         aTransactions.forEach(t => {
             totalTrades++;
             marketVolume += Number(t.quantity || 0);
             activeUsers.add(t.customerName);
             // roughly mock platform revenue as 1% of buy volume
             if (t.transactionType === "BUY") {
-               revenue += Number(t.totalPrice || 0) * 0.01;
+                revenue += Number(t.totalPrice || 0) * 0.01;
             }
         });
 
@@ -208,7 +208,7 @@ module.exports = cds.service.impl(async function () {
             const { id, productName, stockQuantity, price, currency, category_ID, status, volatilityPct } = req.data;
 
             const oUpdate = { productName, stockQuantity, price, currency, category_ID };
-            if (status)        { oUpdate.status       = status; }
+            if (status) { oUpdate.status = status; }
             if (volatilityPct) { oUpdate.volatilityPct = volatilityPct; }
 
             await UPDATE(Products).set(oUpdate).where({ ID: id });

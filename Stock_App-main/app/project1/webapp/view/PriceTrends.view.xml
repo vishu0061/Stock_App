@@ -23,15 +23,7 @@
                     
                     <HBox alignItems="Center">
                         <Label text="Select Stock: " class="sapUiSmallMarginEnd"/>
-                        <Select
-                            id="stockSelector"
-                            items="{
-                                path: '/Products'
-                            }"
-                            change=".onStockSelect"
-                            class="sapUiSmallMarginEnd">
-                            <core:Item key="{ID}" text="{productName} ({currency})"/>
-                        </Select>
+                        <core:HTML id="stockSelectorHtml" content="&lt;select id='nativeStockSelect' style='background:#1e293b;color:#e2e8f0;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-size:0.875rem;min-width:220px;cursor:pointer;outline:none;'&gt;&lt;option value=''&gt;Loading stocks...&lt;/option&gt;&lt;/select&gt;" afterRendering=".onStockSelectorRendered"/>
                         <Button icon="sap-icon://refresh" text="Refresh" type="Transparent" press=".onRefreshChart"/>
                     </HBox>
                 </HBox>
@@ -90,7 +82,7 @@
                                     <viz.data:DimensionDefinition name="Time" value="{trends>timeLabel}"/>
                                 </viz.data:dimensions>
                                 <viz.data:measures>
-                                    <viz.data:MeasureDefinition name="Price" value="{trends>price}"/>
+                                    <viz.data:MeasureDefinition name="Price" value="{trends>price}"/>  
                                 </viz.data:measures>
                             </viz.data:FlattenedDataset>
                         </viz:dataset>
