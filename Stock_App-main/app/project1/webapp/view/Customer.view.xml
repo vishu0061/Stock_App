@@ -14,106 +14,109 @@
              1. TOP NAVIGATION BAR
         ═══════════════════════════════════════════════════════ -->
         <customHeader>
-    <Bar
-        id="customerNavBar"
-        design="Header"
-        class="cdNavBar"
-        width="100%">
-
-        <!-- LEFT -->
-        <contentLeft>
-    <HBox
-        alignItems="Center"
-        class="cdLeftSection">
-
-        <!-- BACK BUTTON -->
-        <Button
-            icon="sap-icon://nav-back"
-            type="Transparent"
-            press=".onNavBack"
-            class="cdNavBackBtn"/>
-
-        <!-- BRAND -->
-        <HBox
-            alignItems="Center"
-            class="cdNavBrand">
-
-            <!-- LOGO -->
-            <VBox
-                justifyContent="Center"
-                alignItems="Center"
-                class="cdNavLogoWrap">
-
-                <core:Icon
-                    src="sap-icon://business-objects-experience"
-                    size="1.4rem"
-                    color="#00ffaa"
-                    class="cdNavLogoIcon"/>
-
-            </VBox>
-
-            <!-- TEXT -->
-            <VBox
-                justifyContent="Center"
-                class="cdNavBrandText">
-
-                <Title
-                    text="StockTrade Pro"
-                    level="H5"
-                    class="cdNavBrandName"/>
-
-                <Text
-                    text="Customer Portal"
-                    class="cdNavBrandSub"/>
-
-            </VBox>
-
-        </HBox>
-
-    </HBox>
-</contentLeft>
-        <!-- CENTER -->
-        <contentMiddle>
-            <HBox
-                justifyContent="Center"
+            <Bar
+                id="customerNavBar"
+                design="Header"
+                class="cdNavBar"
                 width="100%">
 
-               <SearchField
-    id="stockSearchField"
-    placeholder="Search stocks, companies..."
-    width="100%"
-    search=".onStockSearch"
-    class="cdNavSearchField"/>
-            </HBox>
-        </contentMiddle>
+                <!-- LEFT -->
+                <contentLeft>
+                    <HBox alignItems="Center" class="cdLeftSection">
 
-        <!-- RIGHT -->
-        <contentRight>
-            <HBox
-                alignItems="Center"
-                justifyContent="End"
-                width="100%"
-                class="cdNavActions">
+                        <!-- BACK BUTTON -->
+                        <Button
+                            icon="sap-icon://nav-back"
+                            type="Transparent"
+                            press=".onNavBack"
+                            class="cdNavBackBtn"/>
 
-                <Button
-                    icon="sap-icon://bell"
-                    type="Transparent"
-                    press=".onNotificationsPress"
-                    class="cdNavBellBtn"/>
+                        <!-- BRAND -->
+                        <HBox alignItems="Center" class="cdNavBrand">
 
-                <Avatar
-                    id="userAvatar"
-                    displaySize="XS"
-                    displayShape="Circle"
-                    initials="VC"
-                    press=".onAvatarPress"
-                    class="cdNavAvatar"/>
+                            <!-- LOGO -->
+                            <VBox justifyContent="Center" alignItems="Center" class="cdNavLogoWrap">
+                                <core:Icon
+                                    src="sap-icon://business-objects-experience"
+                                    size="1.4rem"
+                                    color="#00ffaa"
+                                    class="cdNavLogoIcon"/>
+                            </VBox>
 
-            </HBox>
-        </contentRight>
+                            <!-- TEXT -->
+                            <VBox justifyContent="Center" class="cdNavBrandText">
+                                <Title text="StockTrade Pro" level="H5" class="cdNavBrandName"/>
+                                <Text text="Customer Portal" class="cdNavBrandSub"/>
+                            </VBox>
 
-    </Bar>
-</customHeader>
+                        </HBox>
+
+                    </HBox>
+                </contentLeft>
+
+                <!-- CENTER -->
+                <contentMiddle>
+                    <HBox justifyContent="Center" width="100%">
+                        <SearchField
+                            id="stockSearchField"
+                            placeholder="Search stocks, companies..."
+                            width="100%"
+                            search=".onStockSearch"
+                            class="cdNavSearchField"/>
+                    </HBox>
+                </contentMiddle>
+
+                <!-- RIGHT -->
+                <contentRight>
+                    <HBox
+                        alignItems="Center"
+                        justifyContent="End"
+                        width="100%"
+                        class="cdNavActions">
+
+                        <!-- PORTFOLIO BUTTON -->
+                        <Button
+                            id="navPortfolioBtn"
+                            text="Portfolio"
+                            icon="sap-icon://wallet"
+                            type="Emphasized"
+                            press=".onPortfolioPress"
+                            class="cdNavPortfolioBtn"/>
+
+                        <!-- NOTIFICATIONS BELL -->
+                        <Button
+                            icon="sap-icon://bell"
+                            type="Transparent"
+                            press=".onNotificationsPress"
+                            class="cdNavBellBtn"/>
+
+                        <!-- CUSTOMER PROFILE BUTTON WITH DROPDOWN ARROW -->
+                        <HBox
+                            alignItems="Center"
+                            class="cdNavProfileBtnWrap"
+                            press=".onProfileMenuPress">
+
+                            <Button
+                                id="customerProfileBtn"
+                                icon="sap-icon://customer"
+                                text="Customer Profile"
+                                type="Transparent"
+                                press=".onProfileMenuPress"
+                                class="cdNavProfileBtn"/>
+
+                            <core:Icon
+                                src="sap-icon://slim-arrow-down"
+                                size="0.7rem"
+                                class="cdNavProfileArrow"
+                                press=".onProfileMenuPress"/>
+
+                        </HBox>
+
+                    </HBox>
+                </contentRight>
+
+            </Bar>
+        </customHeader>
 
         <!-- ═══════════════════════════════════════════════════════
              PAGE CONTENT
@@ -130,15 +133,6 @@
                     <core:Icon src="sap-icon://status-positive" class="cdLiveIcon"/>
                     <Text text="Live Trading Active" class="cdLiveBadgeText"/>
                 </HBox>
-                <HBox alignItems="Center" class="sapUiSmallMarginTop">
-                    
-                    <Button
-                        text="Portfolio"
-                        icon="sap-icon://wallet"
-                        type="Transparent"
-                        press=".onPortfolioPress"
-                        class="stBtnPrimary sapUiTinyMarginBegin"/>
-                </HBox>
             </VBox>
 
             <!-- ─────────────────────────────────────────────────
@@ -152,10 +146,7 @@
                         <VBox class="cdCardIconWrap cdIconGreen">
                             <core:Icon src="sap-icon://wallet" class="cdCardIcon"/>
                         </VBox>
-                        <ObjectStatus
-                            text="+12.45%"
-                            state="Success"
-                            class="cdCardBadge"/>
+                        <ObjectStatus text="+12.45%" state="Success" class="cdCardBadge"/>
                     </HBox>
                     <Title text="{custVM>/summary/portfolioValue}" level="H2" class="cdCardValue"/>
                     <Text text="Total Portfolio Value" class="cdCardLabel"/>
@@ -173,10 +164,7 @@
                         <VBox class="cdCardIconWrap cdIconGreen">
                             <core:Icon src="sap-icon://trend-up" class="cdCardIcon"/>
                         </VBox>
-                        <ObjectStatus
-                            text="+26.47%"
-                            state="Success"
-                            class="cdCardBadge"/>
+                        <ObjectStatus text="+26.47%" state="Success" class="cdCardBadge"/>
                     </HBox>
                     <Title text="{custVM>/summary/profitLoss}" level="H2" class="cdCardValue cdValueGreen"/>
                     <Text text="Total Profit / Loss" class="cdCardLabel"/>
@@ -194,10 +182,7 @@
                         <VBox class="cdCardIconWrap cdIconBlue">
                             <core:Icon src="sap-icon://money-bills" class="cdCardIcon"/>
                         </VBox>
-                        <ObjectStatus
-                            text="Ready to invest"
-                            state="Information"
-                            class="cdCardBadge"/>
+                        <ObjectStatus text="Ready to invest" state="Information" class="cdCardBadge"/>
                     </HBox>
                     <Title text="{custVM>/summary/buyingPower}" level="H2" class="cdCardValue cdValueBlue"/>
                     <Text text="Available Balance" class="cdCardLabel"/>
@@ -215,10 +200,7 @@
                         <VBox class="cdCardIconWrap cdIconPurple">
                             <core:Icon src="sap-icon://pie-chart" class="cdCardIcon"/>
                         </VBox>
-                        <ObjectStatus
-                            text="+3 this month"
-                            state="Warning"
-                            class="cdCardBadge"/>
+                        <ObjectStatus text="+3 this month" state="Warning" class="cdCardBadge"/>
                     </HBox>
                     <Title text="{custVM>/summary/ownedStocks}" level="H2" class="cdCardValue cdValuePurple"/>
                     <Text text="Total Stocks Owned" class="cdCardLabel"/>
@@ -300,7 +282,7 @@
                                         <HBox class="cdActionBtns" alignItems="Center">
                                             <Button text="Buy" type="Accept" press=".onBuyStock" class="cdBuyBtn"/>
                                             <Button text="Sell" type="Reject" press=".onSellStock" class="cdSellBtn"/>
-                                            <Button icon="{path: 'ID', formatter: '.formatWatchlistIcon'}" type="Transparent" press=".onToggleWatchlist" class="sapUiTinyMarginBegin" tooltip="Toggle Watchlist" />
+                                            <Button icon="{path: 'ID', formatter: '.formatWatchlistIcon'}" type="Transparent" press=".onToggleWatchlist" class="sapUiTinyMarginBegin" tooltip="Toggle Watchlist"/>
                                         </HBox>
                                     </cells>
                                 </ColumnListItem>
@@ -322,7 +304,7 @@
                             </HBox>
                             <SegmentedButton
                                 id="graphTimeRange"
-                            selectedKey="{custVM>/range}"
+                                selectedKey="{custVM>/range}"
                                 selectionChange=".onTimeRangeChange"
                                 class="cdSegmentedBtn">
                                 <items>
@@ -397,7 +379,12 @@
                             </VBox>
                         </HBox>
 
-                        <List id="watchlistList" items="{custVM>/watchlistData}" showSeparators="None" noDataText="No stocks in watchlist" class="sapUiTinyMarginTop">
+                        <List
+                            id="watchlistList"
+                            items="{custVM>/watchlistData}"
+                            showSeparators="None"
+                            noDataText="No stocks in watchlist"
+                            class="sapUiTinyMarginTop">
                             <CustomListItem class="cdHoldingItem">
                                 <HBox justifyContent="SpaceBetween" alignItems="Center" width="100%">
                                     <VBox>
@@ -406,7 +393,7 @@
                                     </VBox>
                                     <HBox>
                                         <Button text="Buy" type="Accept" press=".onBuyFromWatchlist" class="cdBuyBtn sapUiTinyMarginEnd"/>
-                                        <Button icon="sap-icon://decline" type="Transparent" press=".onRemoveWatchlist" />
+                                        <Button icon="sap-icon://decline" type="Transparent" press=".onRemoveWatchlist"/>
                                     </HBox>
                                 </HBox>
                             </CustomListItem>
