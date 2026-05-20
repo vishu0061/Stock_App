@@ -8,131 +8,109 @@ sap.ui.define([
 
     return Controller.extend("sap.stocktrading.app.controller.Portfolio", {
 
+        /* ═══════════════════════════════════════════════════════
+           INIT
+        ═══════════════════════════════════════════════════════ */
         onInit: function () {
             const oVM = new JSONModel({
                 customerName: "Demo Customer",
+                range: "1W",
                 holdings: [],
                 transactions: [],
+                recentTransactions: [],
+                notifications: [],
                 summary: {
-                    value: "—",
-                    valueBadge: "Live",
-                    valueSub: "Current portfolio market value",
-                    pl: "—",
-                    plBadge: "—",
-                    plSub: "Unrealized across holdings",
-                    plState: "Information",
-                    holdings: "—",
-                    holdingsBadge: "Holdings",
-                    holdingsSub: "Stocks owned"
+                    totalPortfolio:    "—",
+                    portfolioPct:      "—",
+                    portfolioPctState: "None",
+                    totalPL:           "—",
+                    plPct:             "—",
+                    plState:           "None",
+                    todaysGain:        "—",
+                    invested:          "—",
+                    balance:           "₹78,500",
+                    stocksOwned:       "—",
+                    stocksOwnedSub:    "Holdings"
                 }
             });
             this.getView().setModel(oVM, "pfVM");
+            this.getView().setModel(new JSONModel({ data: [] }), "pfChartModel");
+
             this._loadAll();
-            this._applyChartStyle();
+
+            // Route attach
+            const oRouter = this.getOwnerComponent().getRouter();
+            oRouter.getRoute("portfolio").attachPatternMatched(this._onRouteMatched, this);
         },
 
-        _applyChartStyle: function () {
-            const oViz = this.byId("allocationChart");
-            if (!oViz) return;
-            oViz.setVizProperties({
-                title: { visible: false },
-                legend: {
-                    visible: true,
-                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } }
-                },
-                plotArea: {
-                    colorPalette: ["#10b981", "#38bdf8", "#a78bfa", "#fbbf24", "#ef4444", "#8b5cf6", "#ec4899"],
-                    background: { visible: false },
-                    dataLabel: {
-                        visible: true,
-                        style: { color: "#ffffff" },
-                        hideWhenOverlap: true
-                    }
-                },
-                background: { visible: false }
-            });
+        _onRouteMatched: function () {
+            this._loadAll();
         },
 
-        // ================= BACK =================
-
+        /* ═══════════════════════════════════════════════════════
+           NAVIGATION
+        ═══════════════════════════════════════════════════════ */
         onNavBack: function () {
-
-            window.history.go(-1);
-
-        }
-
-        ,
-
-        onRefresh: function () {
-            this._loadAll();
-        },
-
-        onGoMarket: function () {
             this.getOwnerComponent().getRouter().navTo("customer");
         },
 
-        onSellFromPortfolio: function (oEvent) {
-            const oCtx = oEvent.getSource().getBindingContext("pfVM");
-            const o = oCtx && oCtx.getObject ? oCtx.getObject() : null;
-            if (!o) return;
-
-            const oInput = new sap.m.Input({ type: "Number", placeholder: "Enter quantity to sell" });
-            const oDialog = new sap.m.Dialog({
-                title: `Sell ${o.productName}`,
-                contentWidth: "360px",
-                content: [
-                    new sap.m.VBox({
-                        class: "sapUiMediumMargin",
-                        items: [
-                            new sap.m.Text({ text: `Owned: ${o.quantity}` }),
-                            new sap.m.Text({ text: `Market: ${o.currency} ${o.currentPrice}` }),
-                            new sap.m.Label({ text: "Quantity", class: "sapUiSmallMarginTop" }),
-                            oInput
-                        ]
-                    })
-                ],
-                beginButton: new sap.m.Button({
-                    text: "Confirm Sell",
-                    type: "Reject",
-                    press: async () => {
-                        const iQty = parseInt(oInput.getValue(), 10);
-                        if (!iQty || iQty <= 0) return MessageBox.error("Enter valid quantity");
-                        if (iQty > o.quantity) return MessageBox.error("You cannot sell more than you own");
-
-                        try {
-                            const oVM = this.getView().getModel("pfVM");
-                            const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
-                            const oModel = this.getOwnerComponent().getModel();
-                            const oAct = oModel.bindContext("/sellStock(...)");
-                            oAct.setParameter("productId", o.productId);
-                            oAct.setParameter("customerName", sCustomer);
-                            oAct.setParameter("quantity", iQty);
-                            const oRes = await oAct.execute();
-                            const r = oRes && oRes.getObject ? oRes.getObject() : null;
-                            if (!r) throw new Error("No response");
-                            if (!r.success) return MessageBox.error(r.message || "Sell rejected");
-
-                            MessageToast.show(r.message || "Sold");
-                            await this._loadAll();
-                            oDialog.close();
-                        } catch (e) {
-                            // eslint-disable-next-line no-console
-                            console.error(e);
-                            MessageBox.error("Sell failed (check roles / backend)");
-                        }
-                    }
-                }),
-                endButton: new sap.m.Button({ text: "Cancel", press: () => oDialog.close() }),
-                afterClose: () => oDialog.destroy()
-            });
-            oDialog.open();
+        onNotificationsPress: function () {
+            MessageToast.show("Check the Notifications panel below ↓");
         },
 
+        onStockSearch: function (oEvent) {
+            const sQ = (oEvent.getParameter("query") || oEvent.getParameter("newValue") || "").trim();
+            const oTable = this.byId("pfHoldingsTable");
+            const oBinding = oTable && oTable.getBinding("items");
+            if (!oBinding) { return; }
+            if (sQ) {
+                const oFilter = new sap.ui.model.Filter({
+                    filters: [
+                        new sap.ui.model.Filter("productName", sap.ui.model.FilterOperator.Contains, sQ),
+                        new sap.ui.model.Filter("category", sap.ui.model.FilterOperator.Contains, sQ)
+                    ],
+                    and: false
+                });
+                oBinding.filter([oFilter]);
+            } else {
+                oBinding.filter([]);
+            }
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           TIME RANGE CHANGE
+        ═══════════════════════════════════════════════════════ */
+        onPfTimeRangeChange: function (oEvent) {
+            const sKey = oEvent.getParameter("key");
+            this.getView().getModel("pfVM").setProperty("/range", sKey);
+            this._buildPerformanceChart();
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           REFRESH
+        ═══════════════════════════════════════════════════════ */
+        onRefresh: function () {
+            this._loadAll();
+            MessageToast.show("Portfolio refreshed");
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           LOAD ALL DATA
+        ═══════════════════════════════════════════════════════ */
         _loadAll: async function () {
-            await Promise.all([this._loadHoldings(), this._loadTransactions()]);
+            await Promise.all([
+                this._loadHoldings(),
+                this._loadTransactions()
+            ]);
             this._computeSummary();
+            this._buildPerformanceChart();
+            this._buildNotifications();
+            this._applyChartStyles();
         },
 
+        /* ═══════════════════════════════════════════════════════
+           LOAD HOLDINGS  (via /getPortfolio action)
+        ═══════════════════════════════════════════════════════ */
         _loadHoldings: async function () {
             const oVM = this.getView().getModel("pfVM");
             const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
@@ -140,71 +118,472 @@ sap.ui.define([
                 const oModel = this.getOwnerComponent().getModel();
                 const oFn = oModel.bindContext("/getPortfolio(...)");
                 oFn.setParameter("customerName", sCustomer);
-                const oRes = await oFn.execute();
-                const a = oRes && oRes.getObject ? oRes.getObject() : [];
-                oVM.setProperty("/holdings", a || []);
+                await oFn.execute();
+                const oBoundCtx = oFn.getBoundContext();
+                let raw = oBoundCtx ? oBoundCtx.getObject() : [];
+                // OData V4 function import may wrap result in { value: [...] }
+                if (raw && raw.value && Array.isArray(raw.value)) { raw = raw.value; }
+                if (!Array.isArray(raw)) { raw = []; }
+
+                const a = raw.map(function (h) {
+                    const buyPrice  = Number(h.avgBuyPrice || h.buyPrice || 0);
+                    const currPrice = Number(h.currentPrice || h.price   || 0);
+                    const qty       = Number(h.quantity     || 0);
+                    const pl        = Number(h.profitLoss   || (currPrice - buyPrice) * qty || 0);
+                    const plPct     = buyPrice > 0
+                        ? parseFloat(((currPrice - buyPrice) / buyPrice * 100).toFixed(2))
+                        : 0;
+                    return {
+                        productId:    h.productId  || h.product_ID || "",
+                        productName:  h.productName || "—",
+                        category:     h.category   || "General",
+                        quantity:     qty,
+                        buyPrice:     buyPrice.toFixed(2),
+                        currentPrice: currPrice.toFixed(2),
+                        totalValue:   Number(h.totalValue || currPrice * qty || 0),
+                        profitLoss:   pl.toFixed(2),
+                        profitLossPct:plPct,
+                        currency:     h.currency   || "₹",
+                        initials:     (h.productName || "?").substring(0, 2).toUpperCase()
+                    };
+                });
+                oVM.setProperty("/holdings", a);
             } catch (e) {
-                // eslint-disable-next-line no-console
-                console.error(e);
+                console.error("Holdings load error:", e);
+                oVM.setProperty("/holdings", []);
             }
         },
 
+        /* ═══════════════════════════════════════════════════════
+           LOAD TRANSACTIONS
+        ═══════════════════════════════════════════════════════ */
         _loadTransactions: async function () {
             const oVM = this.getView().getModel("pfVM");
             const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
             try {
                 const oModel = this.getOwnerComponent().getModel();
-                const oList = oModel.bindList("/Transactions", null, null, null, {
-                    $filter: `customerName eq '${sCustomer.replace(/'/g, "''")}'`,
-                    $expand: "product",
+                const oList  = oModel.bindList("/Transactions", null, null, null, {
+                    $filter:  `customerName eq '${sCustomer.replace(/'/g, "''")}'`,
+                    $expand:  "product",
                     $orderby: "createdAt desc",
-                    $top: 50
+                    $top:     50
                 });
                 const aCtx = await oList.requestContexts();
-                const a = aCtx.map((c) => {
+                const a = aCtx.map(function (c) {
                     const t = c.getObject();
                     return {
                         transactionType: t.transactionType,
-                        productName: (t.product && t.product.productName) ? t.product.productName : (t.product_ID || ""),
-                        quantity: t.quantity,
-                        unitPrice: t.unitPrice,
-                        totalPrice: t.totalPrice,
-                        currency: (t.product && t.product.currency) ? t.product.currency : "",
-                        createdAtText: t.createdAt ? new Date(t.createdAt).toLocaleString() : "",
-                        status: t.status
+                        productName: (t.product && t.product.productName)
+                            ? t.product.productName
+                            : (t.product_ID || "Wallet"),
+                        quantity:    t.quantity   || 0,
+                        unitPrice:   Number(t.unitPrice  || 0).toFixed(2),
+                        totalPrice:  Number(t.totalPrice || 0).toFixed(2),
+                        currency:    (t.product && t.product.currency) ? t.product.currency : "₹",
+                        createdAtText: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "",
+                        status: t.status || "SUCCESS"
                     };
                 });
-                oVM.setProperty("/transactions", a);
+                oVM.setProperty("/transactions",       a);
+                oVM.setProperty("/recentTransactions", a.slice(0, 5));
             } catch (e) {
-                // eslint-disable-next-line no-console
-                console.error(e);
+                console.error("Transactions load error:", e);
+                oVM.setProperty("/transactions",       []);
+                oVM.setProperty("/recentTransactions", []);
             }
         },
 
+        /* ═══════════════════════════════════════════════════════
+           COMPUTE SUMMARY
+        ═══════════════════════════════════════════════════════ */
         _computeSummary: function () {
-            const oVM = this.getView().getModel("pfVM");
-            const a = oVM.getProperty("/holdings") || [];
-            const value = a.reduce((s, h) => s + Number(h.totalValue || 0), 0);
-            const pl = a.reduce((s, h) => s + Number(h.profitLoss || 0), 0);
+            const oVM       = this.getView().getModel("pfVM");
+            const aHoldings = oVM.getProperty("/holdings") || [];
+            const aTx       = oVM.getProperty("/transactions") || [];
 
-            oVM.setProperty("/summary/value", value.toFixed(2));
-            oVM.setProperty("/summary/pl", `${pl >= 0 ? "+" : ""}${pl.toFixed(2)}`);
-            oVM.setProperty("/summary/plBadge", `${pl >= 0 ? "Bullish" : "Bearish"}`);
-            oVM.setProperty("/summary/plState", pl >= 0 ? "Success" : "Error");
-            oVM.setProperty("/summary/plSub", "Unrealized across holdings");
-            oVM.setProperty("/summary/holdings", `${a.length}`);
-            oVM.setProperty("/summary/holdingsSub", `${a.length} stocks owned`);
+            const totalValue    = aHoldings.reduce(function (s, h) { return s + Number(h.totalValue || 0); }, 0);
+            const totalInvested = aHoldings.reduce(function (s, h) {
+                return s + Number(h.buyPrice || 0) * Number(h.quantity || 0);
+            }, 0);
+            const totalPL       = aHoldings.reduce(function (s, h) { return s + Number(h.profitLoss || 0); }, 0);
+            const plPct         = totalInvested > 0
+                ? parseFloat(((totalPL / totalInvested) * 100).toFixed(1))
+                : 0;
 
-            const sortedHoldings = [...a].sort((x, y) => Number(y.profitLoss || 0) - Number(x.profitLoss || 0));
-            let topPerformers = [];
-            if(sortedHoldings.length > 0) topPerformers.push(sortedHoldings[0]);
-            if(sortedHoldings.length > 1) topPerformers.push(sortedHoldings[1]);
-            if(sortedHoldings.length > 3) topPerformers.push(sortedHoldings[sortedHoldings.length - 2]);
-            if(sortedHoldings.length > 2) topPerformers.push(sortedHoldings[sortedHoldings.length - 1]);
-            topPerformers = [...new Set(topPerformers)];
-            oVM.setProperty("/topPerformers", topPerformers);
+            // Today's gain — sum of today's sell transactions minus today's buy transactions
+            const today = new Date().toLocaleDateString();
+            let todaysGain = 0;
+            aTx.forEach(function (t) {
+                if (t.createdAtText === today) {
+                    if (t.transactionType === "SELL") todaysGain += Number(t.totalPrice || 0);
+                    if (t.transactionType === "BUY")  todaysGain -= Number(t.totalPrice || 0);
+                }
+            });
+
+            // currency symbol from first holding
+            const sCurrency = (aHoldings[0] && aHoldings[0].currency) || "₹";
+            
+            const fmt = (num) => Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const initBal = 250000;
+            const availBal = initBal - totalInvested;
+
+            oVM.setProperty("/summary/totalPortfolio",    sCurrency + " " + fmt(totalValue));
+            oVM.setProperty("/summary/portfolioPct",      (plPct >= 0 ? "+" : "") + plPct + "%");
+            oVM.setProperty("/summary/portfolioPctState", plPct >= 0 ? "Success" : "Error");
+            oVM.setProperty("/summary/totalPL",           (totalPL >= 0 ? "+" : "") + sCurrency + " " + fmt(Math.abs(totalPL)));
+            oVM.setProperty("/summary/plPct",             (plPct >= 0 ? "+" : "") + plPct + "%");
+            oVM.setProperty("/summary/plState",           plPct >= 0 ? "Success" : "Error");
+            oVM.setProperty("/summary/todaysGain",        (todaysGain >= 0 ? "+" : "") + sCurrency + " " + fmt(Math.abs(todaysGain)));
+            oVM.setProperty("/summary/invested",          sCurrency + " " + fmt(totalInvested));
+            oVM.setProperty("/summary/balance",           sCurrency + " " + fmt(availBal));
+            oVM.setProperty("/summary/stocksOwned",       aHoldings.length + " Holdings");
+            oVM.setProperty("/summary/stocksOwnedSub",    aHoldings.filter(function (h) { return Number(h.profitLoss) > 0; }).length + " profitable");
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           BUILD PERFORMANCE CHART DATA
+        ═══════════════════════════════════════════════════════ */
+        _buildPerformanceChart: function () {
+            const oVM    = this.getView().getModel("pfVM");
+            const sRange = oVM.getProperty("/range") || "1W";
+            const aTx    = oVM.getProperty("/transactions") || [];
+
+            // Build cumulative value by date
+            const oByDate = {};
+            aTx.forEach(function (t) {
+                if (!t.createdAtText) return;
+                const sDate = t.createdAtText;
+                if (!oByDate[sDate]) oByDate[sDate] = 0;
+                if (t.transactionType === "BUY")  oByDate[sDate] -= Number(t.totalPrice || 0);
+                if (t.transactionType === "SELL") oByDate[sDate] += Number(t.totalPrice || 0);
+            });
+
+            const aDates = Object.keys(oByDate).sort();
+            let iLimit = aDates.length;
+            if (sRange === "1D") iLimit = 1;
+            else if (sRange === "1W") iLimit = 7;
+            else if (sRange === "1M") iLimit = 30;
+            else if (sRange === "1Y") iLimit = 365;
+
+            const aSliced = aDates.slice(-iLimit);
+            let running = 0;
+            const aData = aSliced.map(function (d) {
+                running += oByDate[d];
+                return { time: d, value: parseFloat(running.toFixed(2)) };
+            });
+
+            // Fallback demo data if nothing
+            if (aData.length === 0) {
+                const now = new Date();
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(now);
+                    d.setDate(d.getDate() - i);
+                    aData.push({
+                        time:  d.toLocaleDateString(),
+                        value: 200000 + Math.round(Math.random() * 50000)
+                    });
+                }
+            }
+
+            this.getView().getModel("pfChartModel").setProperty("/data", aData);
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           BUILD NOTIFICATIONS
+        ═══════════════════════════════════════════════════════ */
+        _buildNotifications: function () {
+            const oVM       = this.getView().getModel("pfVM");
+            const aHoldings = oVM.getProperty("/holdings") || [];
+            const notifs    = [];
+
+            aHoldings.forEach(function (h) {
+                const pct = Number(h.profitLossPct || 0);
+                if (pct > 5) {
+                    notifs.push({ type: "gain", message: h.productName + " stock gained +" + pct + "%" });
+                } else if (pct < -3) {
+                    notifs.push({ type: "loss", message: h.productName + " stock dropped " + pct + "%" });
+                }
+            });
+
+            const aTx = oVM.getProperty("/transactions") || [];
+            if (aTx.length > 0) {
+                notifs.push({ type: "wallet", message: "Last transaction: " + aTx[0].transactionType + " " + aTx[0].productName });
+            }
+
+            const totalValue = aHoldings.reduce(function (s, h) { return s + Number(h.totalValue || 0); }, 0);
+            if (totalValue > 100000) {
+                notifs.push({ type: "gain", message: "Portfolio crossed ₹1,00,000 milestone! 🎉" });
+            }
+
+            notifs.push({ type: "info", message: "Market volatility is normal — stay invested." });
+
+            oVM.setProperty("/notifications", notifs.slice(0, 6));
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           CHART STYLES
+        ═══════════════════════════════════════════════════════ */
+        _applyChartStyles: function () {
+            // Performance line chart
+            const oPerf = this.byId("pfPerfChart");
+            if (oPerf) {
+                oPerf.setVizProperties({
+                    title:   { visible: false },
+                    legend:  { visible: false },
+                    categoryAxis: {
+                        title:    { visible: false },
+                        label:    { style: { color: "#94a3b8", fontFamily: "Inter" } },
+                        gridLine: { visible: false },
+                        axisLine: { visible: true, color: "rgba(255,255,255,0.08)" }
+                    },
+                    valueAxis: {
+                        title:    { visible: false },
+                        label:    { style: { color: "#94a3b8", fontFamily: "Inter" } },
+                        gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
+                        axisLine: { visible: false }
+                    },
+                    plotArea: {
+                        background:   { visible: false },
+                        dataLabel:    { visible: false },
+                        colorPalette: ["#00ffaa"],
+                        line:         { marker: { visible: false }, width: 3 }
+                    },
+                    background: { visible: false }
+                });
+            }
+
+            // Donut allocation chart
+            const oDonut = this.byId("pfAllocationChart");
+            if (oDonut) {
+                oDonut.setVizProperties({
+                    title:   { visible: false },
+                    legend: {
+                        visible: true,
+                        label:   { style: { color: "#94a3b8", fontFamily: "Inter" } }
+                    },
+                    plotArea: {
+                        colorPalette: ["#10b981", "#38bdf8", "#a78bfa", "#fbbf24", "#ef4444", "#8b5cf6"],
+                        background:   { visible: false },
+                        dataLabel: {
+                            visible:          true,
+                            type:             "percentage",
+                            style:            { color: "#ffffff" },
+                            hideWhenOverlap:  true
+                        }
+                    },
+                    background: { visible: false }
+                });
+            }
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           BUY FROM HOLDING
+        ═══════════════════════════════════════════════════════ */
+        onBuyFromHolding: function (oEvent) {
+            const oCtx = oEvent.getSource().getBindingContext("pfVM");
+            const o    = oCtx && oCtx.getObject ? oCtx.getObject() : null;
+            if (!o) return;
+            this._openBuyDialog(o);
+        },
+
+        _openBuyDialog: function (o) {
+            const oQtyInput = new sap.m.Input({ type: "Number", placeholder: "Enter quantity" });
+            const oTotalTxt = new sap.m.Text({ text: "Total: " + o.currency + " 0.00" });
+
+            oQtyInput.attachLiveChange(function () {
+                const qty = parseInt(oQtyInput.getValue(), 10) || 0;
+                oTotalTxt.setText("Total: " + o.currency + " " + (qty * Number(o.currentPrice)).toFixed(2));
+            });
+
+            const oDialog = new sap.m.Dialog({
+                title:        "Buy " + o.productName,
+                contentWidth: "380px",
+                resizable:    false,
+                draggable:    true,
+                content: [
+                    new sap.m.VBox({
+                        class: "sapUiMediumMargin",
+                        items: [
+                            new sap.m.Label({ text: "Current Price" }),
+                            new sap.m.Title({ text: o.currency + " " + o.currentPrice, level: "H4", class: "sapUiTinyMarginBottom" }),
+                            new sap.m.Label({ text: "Quantity", class: "sapUiSmallMarginTop" }),
+                            oQtyInput,
+                            oTotalTxt
+                        ]
+                    })
+                ],
+                beginButton: new sap.m.Button({
+                    text: "Confirm Buy",
+                    type: "Emphasized",
+                    icon: "sap-icon://add",
+                    press: async () => {
+                        const iQty = parseInt(oQtyInput.getValue(), 10);
+                        if (!iQty || iQty <= 0) return MessageBox.error("Enter a valid quantity.");
+                        try {
+                            const oVM       = this.getView().getModel("pfVM");
+                            const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
+                            const oModel    = this.getOwnerComponent().getModel();
+                            const oAct      = oModel.bindContext("/buyStock(...)");
+                            oAct.setParameter("productId",    o.productId);
+                            oAct.setParameter("customerName", sCustomer);
+                            oAct.setParameter("quantity",     iQty);
+                            await oAct.execute();
+                            const oBoundCtx = oAct.getBoundContext();
+                            let r = oBoundCtx ? oBoundCtx.getObject() : null;
+                            if (r && r.value !== undefined) { r = r.value; }
+                            if (!r)         throw new Error("No response");
+                            if (!r.success) return MessageBox.error(r.message || "Buy rejected");
+                            MessageToast.show(r.message || "Bought successfully!");
+                            await this._loadAll();
+                            oDialog.close();
+                        } catch (e) {
+                            console.error(e);
+                            MessageBox.error("Buy failed. Please try again.");
+                        }
+                    }
+                }),
+                endButton: new sap.m.Button({ text: "Cancel", press: () => oDialog.close() }),
+                afterClose: () => oDialog.destroy()
+            });
+            this.getView().addDependent(oDialog);
+            oDialog.open();
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           SELL FROM HOLDING
+        ═══════════════════════════════════════════════════════ */
+        onSellFromHolding: function (oEvent) {
+            const oCtx = oEvent.getSource().getBindingContext("pfVM");
+            const o    = oCtx && oCtx.getObject ? oCtx.getObject() : null;
+            if (!o) return;
+            this._openSellDialog(o);
+        },
+
+        _openSellDialog: function (o) {
+            const oQtyInput  = new sap.m.Input({ type: "Number", placeholder: "Enter quantity to sell" });
+            const oPlText    = new sap.m.Text({ text: "Profit / Loss: " + o.currency + " 0.00" });
+
+            oQtyInput.attachLiveChange(function () {
+                const qty = parseInt(oQtyInput.getValue(), 10) || 0;
+                const pl  = (Number(o.currentPrice) - Number(o.buyPrice)) * qty;
+                oPlText.setText("Profit / Loss: " + (pl >= 0 ? "+" : "") + o.currency + " " + pl.toFixed(2));
+            });
+
+            const oDialog = new sap.m.Dialog({
+                title:        "Sell " + o.productName,
+                contentWidth: "380px",
+                resizable:    false,
+                draggable:    true,
+                content: [
+                    new sap.m.VBox({
+                        class: "sapUiMediumMargin",
+                        items: [
+                            new sap.m.Label({ text: "Owned Quantity" }),
+                            new sap.m.Title({ text: String(o.quantity), level: "H4", class: "sapUiTinyMarginBottom" }),
+                            new sap.m.Label({ text: "Sell Value" }),
+                            new sap.m.Title({ text: o.currency + " " + o.currentPrice + " / share", level: "H5", class: "sapUiTinyMarginBottom" }),
+                            new sap.m.Label({ text: "Quantity", class: "sapUiSmallMarginTop" }),
+                            oQtyInput,
+                            oPlText
+                        ]
+                    })
+                ],
+                beginButton: new sap.m.Button({
+                    text: "Confirm Sell",
+                    type: "Reject",
+                    icon: "sap-icon://less",
+                    press: async () => {
+                        const iQty = parseInt(oQtyInput.getValue(), 10);
+                        if (!iQty || iQty <= 0)  return MessageBox.error("Enter a valid quantity.");
+                        if (iQty > o.quantity)    return MessageBox.error("Cannot sell more than you own (" + o.quantity + ").");
+                        try {
+                            const oVM       = this.getView().getModel("pfVM");
+                            const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
+                            const oModel    = this.getOwnerComponent().getModel();
+                            const oAct      = oModel.bindContext("/sellStock(...)");
+                            oAct.setParameter("productId",    o.productId);
+                            oAct.setParameter("customerName", sCustomer);
+                            oAct.setParameter("quantity",     iQty);
+                            await oAct.execute();
+                            const oBoundCtx = oAct.getBoundContext();
+                            let r = oBoundCtx ? oBoundCtx.getObject() : null;
+                            if (r && r.value !== undefined) { r = r.value; }
+                            if (!r)         throw new Error("No response");
+                            if (!r.success) return MessageBox.error(r.message || "Sell rejected");
+                            MessageToast.show(r.message || "Sold successfully!");
+                            await this._loadAll();
+                            oDialog.close();
+                        } catch (e) {
+                            console.error(e);
+                            MessageBox.error("Sell failed. Please try again.");
+                        }
+                    }
+                }),
+                endButton: new sap.m.Button({ text: "Cancel", press: () => oDialog.close() }),
+                afterClose: () => oDialog.destroy()
+            });
+            this.getView().addDependent(oDialog);
+            oDialog.open();
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           VIEW HOLDING — navigate to price trends
+        ═══════════════════════════════════════════════════════ */
+        onViewHolding: function (oEvent) {
+            const oCtx = oEvent.getSource().getBindingContext("pfVM");
+            const o    = oCtx && oCtx.getObject ? oCtx.getObject() : null;
+            if (!o) return;
+            MessageToast.show("Viewing: " + o.productName);
+        },
+
+        /* ═══════════════════════════════════════════════════════
+           ADD FUNDS DIALOG
+        ═══════════════════════════════════════════════════════ */
+        onAddFundsDialog: function () {
+            const oAmtInput = new sap.m.Input({ type: "Number", placeholder: "Enter amount to add" });
+
+            const oDialog = new sap.m.Dialog({
+                title:        "Add Virtual Funds",
+                contentWidth: "380px",
+                resizable:    false,
+                draggable:    true,
+                content: [
+                    new sap.m.VBox({
+                        class: "sapUiMediumMargin",
+                        items: [
+                            new sap.m.Text({ text: "Add virtual funds to your StockTrade Pro wallet for paper trading.", class: "sapUiTinyMarginBottom" }),
+                            new sap.m.Label({ text: "Enter Amount (₹)", class: "sapUiSmallMarginTop" }),
+                            oAmtInput,
+                            new sap.m.HBox({
+                                class: "sapUiTinyMarginTop",
+                                wrap:  "Wrap",
+                                items: [
+                                    new sap.m.Button({ text: "₹10,000",  type: "Transparent", press: function () { oAmtInput.setValue("10000");  } }),
+                                    new sap.m.Button({ text: "₹25,000",  type: "Transparent", press: function () { oAmtInput.setValue("25000");  } }),
+                                    new sap.m.Button({ text: "₹50,000",  type: "Transparent", press: function () { oAmtInput.setValue("50000");  } }),
+                                    new sap.m.Button({ text: "₹1,00,000",type: "Transparent", press: function () { oAmtInput.setValue("100000"); } })
+                                ]
+                            })
+                        ]
+                    })
+                ],
+                beginButton: new sap.m.Button({
+                    text: "+ Add Money",
+                    type: "Emphasized",
+                    icon: "sap-icon://add",
+                    press: () => {
+                        const iAmt = parseFloat(oAmtInput.getValue());
+                        if (!iAmt || iAmt <= 0) return MessageBox.error("Enter a valid amount.");
+                        MessageToast.show("₹" + iAmt.toLocaleString() + " added to your wallet!");
+                        oDialog.close();
+                    }
+                }),
+                endButton: new sap.m.Button({ text: "Cancel", press: () => oDialog.close() }),
+                afterClose: () => oDialog.destroy()
+            });
+            this.getView().addDependent(oDialog);
+            oDialog.open();
         }
 
     });
-
 });

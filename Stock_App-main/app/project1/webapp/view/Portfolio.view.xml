@@ -1,5 +1,5 @@
 <mvc:View
-    controllerName="sap.stocktrading.app.controller.PriceTrends"
+    controllerName="sap.stocktrading.app.controller.Portfolio"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
@@ -8,100 +8,522 @@
     xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
     displayBlock="true">
 
-    <Page showHeader="false" class="msRootPage">
-        <content>
-            <VBox class="msPageWrapper">
+    <Page id="portfolioPage" backgroundDesign="List" class="pfPage">
 
-                <!-- ── Top navigation bar ─────────────────────────── -->
-                <HBox class="msTopBar" alignItems="Center" justifyContent="SpaceBetween">
-                    <HBox alignItems="Center">
-                        <Button icon="sap-icon://nav-back" type="Transparent"
-                                press=".onNavBack" tooltip="Back to Dashboard"
-                                class="msBackBtn"/>
-                        <Title text="Admin  ›  Live Price Trends" level="H5" class="msTopBarTitle"/>
+        <!-- ═══════════════════════════════════════════════════════
+             CUSTOMER NAVBAR  (same style as Customer.view.xml)
+        ═══════════════════════════════════════════════════════ -->
+        <customHeader>
+            <Bar id="portfolioNavBar" design="Header" class="cdNavBar" width="100%">
+
+                <!-- LEFT -->
+                <contentLeft>
+                    <HBox alignItems="Center" class="cdLeftSection">
+                        <Button
+                            icon="sap-icon://nav-back"
+                            type="Transparent"
+                            press=".onNavBack"
+                            class="cdNavBackBtn"/>
+                        <HBox alignItems="Center" class="cdNavBrand">
+                            <VBox justifyContent="Center" alignItems="Center" class="cdNavLogoWrap">
+                                <core:Icon
+                                    src="sap-icon://business-objects-experience"
+                                    size="1.4rem"
+                                    color="#00ffaa"
+                                    class="cdNavLogoIcon"/>
+                            </VBox>
+                            <VBox justifyContent="Center" class="cdNavBrandText">
+                                <Title text="StockTrade Pro" level="H5" class="cdNavBrandName"/>
+                                <Text text="Customer Portal" class="cdNavBrandSub"/>
+                            </VBox>
+                        </HBox>
                     </HBox>
-                    
-                    <HBox alignItems="Center">
-                        <Label text="Select Stock: " class="sapUiSmallMarginEnd"/>
-                        <Select
-                            id="stockSelector"
-                            items="{
-                                path: 'stockList>/stocks'
-                            }"
-                            change=".onStockSelect"
-                            class="sapUiSmallMarginEnd">
-                            <core:Item key="{stockList>id}" text="{stockList>name}"/>
-                        </Select>
-                        <Button icon="sap-icon://refresh" text="Refresh" type="Transparent" press=".onRefreshChart"/>
+                </contentLeft>
+
+                <!-- CENTER -->
+                <contentMiddle>
+                    <HBox justifyContent="Center" width="100%">
+                        <SearchField
+                            id="pfSearchField"
+                            placeholder="Search stocks, companies..."
+                            width="100%"
+                            search=".onStockSearch"
+                            liveChange=".onStockSearch"
+                            class="cdNavSearchField"/>
+                    </HBox>
+                </contentMiddle>
+
+                <!-- RIGHT -->
+                <contentRight>
+                    <HBox alignItems="Center" justifyContent="End" width="100%" class="cdNavActions">
+                        <Button
+                            id="pfNavPortfolioBtn"
+                            text="Portfolio"
+                            icon="sap-icon://wallet"
+                            type="Emphasized"
+                            class="cdNavPortfolioBtn pfNavPortfolioActive"/>
+                        <Button
+                            id="pfNavBellBtn"
+                            icon="sap-icon://bell"
+                            type="Transparent"
+                            press=".onNotificationsPress"
+                            class="cdNavBellBtn"/>
+                        <Button
+                            id="pfNavProfileBtn"
+                            icon="sap-icon://customer"
+                            text="Customer"
+                            type="Transparent"
+                            class="cdNavProfileBtn"/>
+                    </HBox>
+                </contentRight>
+
+            </Bar>
+        </customHeader>
+
+        <!-- ═══════════════════════════════════════════════════════
+             PAGE SCROLL CONTAINER
+        ═══════════════════════════════════════════════════════ -->
+        <VBox class="pfPageContent">
+
+            <!-- ─────────────────────────────────────────────────
+                 1. PORTFOLIO OVERVIEW HERO BANNER
+            ───────────────────────────────────────────────── -->
+            <VBox class="pfHeroBanner">
+                <HBox justifyContent="SpaceBetween" alignItems="Center">
+                    <VBox>
+                        <Title text="Portfolio Overview" level="H2" class="pfHeroTitle"/>
+                        <Text text="Track your investments, holdings &amp; realtime market performance" class="pfHeroSub"/>
+                    </VBox>
+                    <HBox alignItems="Center" class="pfMarketLiveBadge">
+                        <core:Icon src="sap-icon://status-positive" class="pfLiveDot"/>
+                        <Text text="MARKET LIVE" class="pfLiveBadgeText"/>
+                    </HBox>
+                </HBox>
+            </VBox>
+
+            <!-- ─────────────────────────────────────────────────
+                 2. SUMMARY CARDS ROW — 6 cards
+            ───────────────────────────────────────────────── -->
+            <HBox wrap="Wrap" class="pfSummaryRow">
+
+                <!-- Total Portfolio Value -->
+                <VBox class="pfSummCard pfSummCardGreen">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfSummCardTop">
+                        <VBox class="pfSummIconWrap pfSummIconGreen">
+                            <core:Icon src="sap-icon://wallet" class="pfSummIcon"/>
+                        </VBox>
+                        <ObjectStatus
+                            id="pfTotalPortfolioStatus"
+                            text="{pfVM>/summary/portfolioPct}"
+                            state="{pfVM>/summary/portfolioPctState}"
+                            class="pfSummBadge"/>
+                    </HBox>
+                    <Title text="{pfVM>/summary/totalPortfolio}" level="H2" class="pfSummValue pfSummGreenVal"/>
+                    <Text text="Total Portfolio" class="pfSummLabel"/>
+                    <Text text="Current market value" class="pfSummSub"/>
+                </VBox>
+
+                <!-- Total Profit / Loss -->
+                <VBox class="pfSummCard pfSummCardProfit">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfSummCardTop">
+                        <VBox class="pfSummIconWrap pfSummIconGreen">
+                            <core:Icon src="sap-icon://trend-up" class="pfSummIcon"/>
+                        </VBox>
+                        <ObjectStatus
+                            id="pfPLStatus"
+                            text="{pfVM>/summary/plPct}"
+                            state="{pfVM>/summary/plState}"
+                            class="pfSummBadge"/>
+                    </HBox>
+                    <Title text="{pfVM>/summary/totalPL}" level="H2" class="pfSummValue pfSummGreenVal"/>
+                    <Text text="Total Profit / Loss" class="pfSummLabel"/>
+                    <Text text="Unrealized across holdings" class="pfSummSub"/>
+                </VBox>
+
+                <!-- Today's Gain -->
+                <VBox class="pfSummCard pfSummCardToday">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfSummCardTop">
+                        <VBox class="pfSummIconWrap pfSummIconBlue">
+                            <core:Icon src="sap-icon://activity-individual" class="pfSummIcon"/>
+                        </VBox>
+                        <ObjectStatus text="Today" state="Information" class="pfSummBadge"/>
+                    </HBox>
+                    <Title text="{pfVM>/summary/todaysGain}" level="H2" class="pfSummValue pfSummBlueVal"/>
+                    <Text text="Today's Gain" class="pfSummLabel"/>
+                    <Text text="Intraday performance" class="pfSummSub"/>
+                </VBox>
+
+                <!-- Invested Amount -->
+                <VBox class="pfSummCard pfSummCardInvested">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfSummCardTop">
+                        <VBox class="pfSummIconWrap pfSummIconPurple">
+                            <core:Icon src="sap-icon://money-bills" class="pfSummIcon"/>
+                        </VBox>
+                        <ObjectStatus text="Active Capital" state="None" class="pfSummBadge"/>
+                    </HBox>
+                    <Title text="{pfVM>/summary/invested}" level="H2" class="pfSummValue pfSummPurpleVal"/>
+                    <Text text="Invested Amount" class="pfSummLabel"/>
+                    <Text text="Total cost basis" class="pfSummSub"/>
+                </VBox>
+
+                <!-- Available Balance -->
+                <VBox class="pfSummCard pfSummCardBalance">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfSummCardTop">
+                        <VBox class="pfSummIconWrap pfSummIconAmber">
+                            <core:Icon src="sap-icon://credit-card" class="pfSummIcon"/>
+                        </VBox>
+                        <Button
+                            text="+ Add Funds"
+                            type="Transparent"
+                            press=".onAddFundsDialog"
+                            class="pfAddFundsBtn"/>
+                    </HBox>
+                    <Title text="{pfVM>/summary/balance}" level="H2" class="pfSummValue pfSummAmberVal"/>
+                    <Text text="Available Balance" class="pfSummLabel"/>
+                    <Text text="Ready to invest" class="pfSummSub"/>
+                </VBox>
+
+                <!-- Stocks Owned -->
+                <VBox class="pfSummCard pfSummCardStocks">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfSummCardTop">
+                        <VBox class="pfSummIconWrap pfSummIconIndigo">
+                            <core:Icon src="sap-icon://pie-chart" class="pfSummIcon"/>
+                        </VBox>
+                        <ObjectStatus text="Diversified" state="Success" class="pfSummBadge"/>
+                    </HBox>
+                    <Title text="{pfVM>/summary/stocksOwned}" level="H2" class="pfSummValue pfSummIndigoVal"/>
+                    <Text text="Stocks Owned" class="pfSummLabel"/>
+                    <Text text="{pfVM>/summary/stocksOwnedSub}" class="pfSummSub"/>
+                </VBox>
+
+            </HBox>
+
+            <!-- ─────────────────────────────────────────────────
+                 3. PORTFOLIO PERFORMANCE CHART
+            ───────────────────────────────────────────────── -->
+            <VBox class="pfCard pfChartCard">
+                <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfCardHeader">
+                    <HBox alignItems="Center" class="pfCardTitleRow">
+                        <core:Icon src="sap-icon://line-chart" class="pfSectionIcon pfIconGreen"/>
+                        <VBox>
+                            <Title text="Portfolio Performance" level="H3" class="pfCardTitle"/>
+                            <Text text="Realtime portfolio growth &amp; market trend" class="pfCardSub"/>
+                        </VBox>
+                    </HBox>
+                    <SegmentedButton
+                        id="pfTimeRange"
+                        selectedKey="{pfVM>/range}"
+                        selectionChange=".onPfTimeRangeChange"
+                        class="cdSegmentedBtn">
+                        <items>
+                            <SegmentedButtonItem key="1D" text="1D"/>
+                            <SegmentedButtonItem key="1W" text="1W"/>
+                            <SegmentedButtonItem key="1M" text="1M"/>
+                            <SegmentedButtonItem key="1Y" text="1Y"/>
+                            <SegmentedButtonItem key="ALL" text="ALL"/>
+                        </items>
+                    </SegmentedButton>
+                </HBox>
+
+                <viz:VizFrame
+                    id="pfPerfChart"
+                    width="100%"
+                    height="300px"
+                    vizType="line"
+                    uiConfig="{applicationSet:'fiori'}"
+                    class="pfVizFrame">
+                    <viz:dataset>
+                        <viz.data:FlattenedDataset data="{pfChartModel>/data}">
+                            <viz.data:dimensions>
+                                <viz.data:DimensionDefinition name="Time" value="{pfChartModel>time}"/>
+                            </viz.data:dimensions>
+                            <viz.data:measures>
+                                <viz.data:MeasureDefinition name="Value" value="{pfChartModel>value}"/>
+                            </viz.data:measures>
+                        </viz.data:FlattenedDataset>
+                    </viz:dataset>
+                    <viz:feeds>
+                        <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Value"/>
+                        <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Time"/>
+                    </viz:feeds>
+                </viz:VizFrame>
+            </VBox>
+
+            <!-- ─────────────────────────────────────────────────
+                 4. HOLDINGS TABLE
+            ───────────────────────────────────────────────── -->
+            <VBox class="pfCard pfHoldingsCard">
+                <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfCardHeader">
+                    <HBox alignItems="Center" class="pfCardTitleRow">
+                        <core:Icon src="sap-icon://table-chart" class="pfSectionIcon pfIconPurple"/>
+                        <VBox>
+                            <Title text="My Holdings" level="H3" class="pfCardTitle"/>
+                            <Text text="Your current stock positions" class="pfCardSub"/>
+                        </VBox>
+                    </HBox>
+                    <HBox alignItems="Center" class="pfLivePill">
+                        <core:Icon src="sap-icon://status-positive" class="pfPillDot"/>
+                        <Text text="Live" class="pfPillText"/>
                     </HBox>
                 </HBox>
 
-                <HBox class="adminStatsRow" wrap="Wrap">
-                    <VBox class="adminStatCard adminStatCardBlue">
-                        <HBox alignItems="Center">
-                            <core:Icon src="sap-icon://lead" size="1.6rem" color="#2563eb" class="adminStatIcon"/>
-                            <VBox class="adminStatTextBlock">
-                                <Text text="Current Price" class="adminStatLabel"/>
-                                <Title text="{trends>/currentPrice}" class="adminStatValue"/>
-                            </VBox>
-                        </HBox>
-                    </VBox>
+                <Table
+                    id="pfHoldingsTable"
+                    items="{pfVM>/holdings}"
+                    alternateRowColors="false"
+                    showSeparators="Inner"
+                    noDataText="No holdings found. Start investing to see your portfolio here."
+                    class="pfHoldingsTable">
 
-                    <VBox class="adminStatCard adminStatCardGreen">
-                        <HBox alignItems="Center">
-                            <core:Icon src="sap-icon://business-objects-experience" size="1.6rem" color="#059669" class="adminStatIcon"/>
-                            <VBox class="adminStatTextBlock">
-                                <Text text="Trading Volume" class="adminStatLabel"/>
-                                <Title text="{trends>/volume}" class="adminStatValue"/>
-                            </VBox>
-                        </HBox>
-                    </VBox>
-                    
-                    <VBox class="adminStatCard adminStatCardPurple">
-                        <HBox alignItems="Center">
-                            <core:Icon src="{= ${trends>/trend} === 'BULL' ? 'sap-icon://trend-up' : (${trends>/trend} === 'BEAR' ? 'sap-icon://trend-down' : 'sap-icon://minus') }" size="1.6rem" color="{= ${trends>/trend} === 'BULL' ? '#10b981' : (${trends>/trend} === 'BEAR' ? '#ef4444' : '#7c3aed') }" class="adminStatIcon"/>
-                            <VBox class="adminStatTextBlock">
-                                <Text text="Market Trend" class="adminStatLabel"/>
-                                <Title text="{trends>/trend}" class="adminStatValue"/>
-                            </VBox>
-                        </HBox>
-                    </VBox>
-                </HBox>
+                    <columns>
+                        <Column class="pfTableCol pfColWide"><Text text="Company" class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Qty" class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Buy Price" class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Current Price" class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="P&amp;L" class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Actions" class="pfColHeader"/></Column>
+                    </columns>
 
-                <!-- ── Live Line Chart ────────────────────────────── -->
-                <VBox class="adminSectionBlock">
-                    <HBox alignItems="Center" class="adminSectionHeaderRow">
-                        <core:Icon src="sap-icon://line-chart" size="1.1rem" color="#059669" class="adminSectionIcon"/>
-                        <Title text="Live Time vs Price Graph" class="adminSectionTitle"/>
-                        <ToolbarSpacer/>
-                        <ObjectStatus text="Auto-updates every 5s" state="Success" icon="sap-icon://sys-enter"/>
+                    <items>
+                        <ColumnListItem class="pfTableRow" type="Inactive">
+                            <cells>
+                                <!-- Company cell with avatar -->
+                                <HBox alignItems="Center" class="pfCompanyCell">
+                                    <VBox class="pfStockAvatar" justifyContent="Center" alignItems="Center">
+                                        <Text text="{pfVM>initials}" class="pfAvatarText"/>
+                                    </VBox>
+                                    <VBox>
+                                        <Text text="{pfVM>productName}" class="pfStockSymbol"/>
+                                        <Text text="{pfVM>category}" class="pfStockSub"/>
+                                    </VBox>
+                                </HBox>
+                                <!-- Qty -->
+                                <Text text="{pfVM>quantity}" class="pfQtyText"/>
+                                <!-- Buy Price -->
+                                <VBox>
+                                    <Text text="{= ${pfVM>currency} + ' ' + ${pfVM>buyPrice} }" class="pfBuyPrice"/>
+                                </VBox>
+                                <!-- Current Price -->
+                                <VBox>
+                                    <Text text="{= ${pfVM>currency} + ' ' + ${pfVM>currentPrice} }" class="pfCurrPrice"/>
+                                </VBox>
+                                <!-- P&L -->
+                                <VBox>
+                                    <Text
+                                        text="{= (${pfVM>profitLoss} >= 0 ? '+' : '') + ${pfVM>currency} + ' ' + ${pfVM>profitLoss} }"
+                                        class="{= ${pfVM>profitLoss} >= 0 ? 'pfPLPositive' : 'pfPLNegative' }"/>
+                                    <Text
+                                        text="{= (${pfVM>profitLossPct} >= 0 ? '▲ +' : '▼ ') + ${pfVM>profitLossPct} + '%' }"
+                                        class="{= ${pfVM>profitLossPct} >= 0 ? 'pfPLPctPositive' : 'pfPLPctNegative' }"/>
+                                </VBox>
+                                <!-- Actions -->
+                                <HBox alignItems="Center" class="pfActionBtns">
+                                    <Button text="Buy"  type="Accept"      press=".onBuyFromHolding"  class="pfBuyBtn"/>
+                                    <Button text="Sell" type="Reject"      press=".onSellFromHolding" class="pfSellBtn"/>
+                                    <Button text="View" type="Transparent" press=".onViewHolding"     class="pfViewBtn"/>
+                                </HBox>
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </VBox>
+
+            <!-- ─────────────────────────────────────────────────
+                 5. WALLET + ASSET ALLOCATION ROW
+            ───────────────────────────────────────────────── -->
+            <HBox alignItems="Stretch" wrap="Wrap" class="pfWalletRow">
+
+                <!-- WALLET OVERVIEW -->
+                <VBox class="pfCard pfWalletCard">
+                    <HBox alignItems="Center" class="pfCardHeader">
+                        <core:Icon src="sap-icon://credit-card" class="pfSectionIcon pfIconAmber"/>
+                        <VBox>
+                            <Title text="Wallet Overview" level="H3" class="pfCardTitle"/>
+                            <Text text="Your virtual trading wallet" class="pfCardSub"/>
+                        </VBox>
                     </HBox>
-                    
+
+                    <VBox class="pfWalletBalanceBox">
+                        <Text text="Available Balance" class="pfWalletLabel"/>
+                        <Title text="{pfVM>/summary/balance}" level="H1" class="pfWalletBalance"/>
+                        <Button
+                            id="pfAddFundsBtnWallet"
+                            text="+ Add Funds"
+                            type="Emphasized"
+                            press=".onAddFundsDialog"
+                            class="pfAddFundsBtnLarge"/>
+                    </VBox>
+
+                    <VBox class="pfRecentTxSection">
+                        <Title text="Recent Transactions" level="H5" class="pfRecentTxTitle"/>
+                        <List
+                            id="pfRecentTxList"
+                            items="{pfVM>/recentTransactions}"
+                            showSeparators="None"
+                            noDataText="No recent transactions"
+                            class="pfTxList">
+                            <CustomListItem class="pfTxItem">
+                                <HBox justifyContent="SpaceBetween" alignItems="Center" width="100%">
+                                    <HBox alignItems="Center">
+                                        <VBox class="{= ${pfVM>transactionType} === 'BUY' ? 'pfTxDotBuy' : (${pfVM>transactionType} === 'ADD_FUNDS' ? 'pfTxDotAdd' : 'pfTxDotSell') }"/>
+                                        <VBox class="pfTxInfo">
+                                            <Text text="{= ${pfVM>transactionType} === 'BUY' ? '-' + ${pfVM>currency} + ' ' + ${pfVM>totalPrice} : (${pfVM>transactionType} === 'ADD_FUNDS' ? '+₹' + ${pfVM>totalPrice} : '+' + ${pfVM>currency} + ' ' + ${pfVM>totalPrice}) }" class="pfTxAmount"/>
+                                            <Text text="{pfVM>productName}" class="pfTxDesc"/>
+                                        </VBox>
+                                    </HBox>
+                                    <VBox alignItems="End">
+                                        <ObjectStatus
+                                            text="{pfVM>transactionType}"
+                                            state="{= ${pfVM>transactionType} === 'BUY' ? 'Error' : (${pfVM>transactionType} === 'ADD_FUNDS' ? 'Information' : 'Success') }"
+                                            class="pfTxTypeBadge"/>
+                                        <Text text="{pfVM>createdAtText}" class="pfTxDate"/>
+                                    </VBox>
+                                </HBox>
+                            </CustomListItem>
+                        </List>
+                    </VBox>
+                </VBox>
+
+                <!-- ASSET ALLOCATION CHART -->
+                <VBox class="pfCard pfAllocationCard">
+                    <HBox alignItems="Center" class="pfCardHeader">
+                        <core:Icon src="sap-icon://donut-chart" class="pfSectionIcon pfIconIndigo"/>
+                        <VBox>
+                            <Title text="Asset Allocation" level="H3" class="pfCardTitle"/>
+                            <Text text="Portfolio distribution by holding" class="pfCardSub"/>
+                        </VBox>
+                    </HBox>
+
                     <viz:VizFrame
-                        id="priceTrendChart"
-                        vizType="line"
+                        id="pfAllocationChart"
                         width="100%"
-                        height="450px"
+                        height="280px"
+                        vizType="donut"
                         uiConfig="{applicationSet:'fiori'}"
-                        class="adminVizFrame">
+                        class="pfVizFrame">
                         <viz:dataset>
-                            <viz.data:FlattenedDataset data="{trends>/history}">
+                            <viz.data:FlattenedDataset data="{pfVM>/holdings}">
                                 <viz.data:dimensions>
-                                    <viz.data:DimensionDefinition name="Time" value="{trends>timeLabel}"/>
+                                    <viz.data:DimensionDefinition name="Stock" value="{pfVM>productName}"/>
                                 </viz.data:dimensions>
                                 <viz.data:measures>
-                                    <viz.data:MeasureDefinition name="Price" value="{trends>price}"/>  
+                                    <viz.data:MeasureDefinition name="Value" value="{pfVM>totalValue}"/>
                                 </viz.data:measures>
                             </viz.data:FlattenedDataset>
                         </viz:dataset>
                         <viz:feeds>
-                            <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Price"/>
-                            <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Time"/>
+                            <viz.feeds:FeedItem uid="size" type="Measure" values="Value"/>
+                            <viz.feeds:FeedItem uid="color" type="Dimension" values="Stock"/>
                         </viz:feeds>
                     </viz:VizFrame>
                 </VBox>
 
+            </HBox>
+
+            <!-- ─────────────────────────────────────────────────
+                 6. TRANSACTION HISTORY TABLE
+            ───────────────────────────────────────────────── -->
+            <VBox class="pfCard pfTxHistoryCard">
+                <HBox justifyContent="SpaceBetween" alignItems="Center" class="pfCardHeader">
+                    <HBox alignItems="Center" class="pfCardTitleRow">
+                        <core:Icon src="sap-icon://history" class="pfSectionIcon pfIconBlue"/>
+                        <VBox>
+                            <Title text="Transaction History" level="H3" class="pfCardTitle"/>
+                            <Text text="All your past buy, sell and fund transactions" class="pfCardSub"/>
+                        </VBox>
+                    </HBox>
+                    <Button
+                        text="Refresh"
+                        icon="sap-icon://refresh"
+                        type="Transparent"
+                        press=".onRefresh"
+                        class="pfRefreshBtn"/>
+                </HBox>
+
+                <Table
+                    id="pfTxTable"
+                    items="{pfVM>/transactions}"
+                    alternateRowColors="false"
+                    showSeparators="Inner"
+                    noDataText="No transactions found."
+                    class="pfTxTable">
+
+                    <columns>
+                        <Column class="pfTableCol"><Text text="Type"   class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Stock"  class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Qty"    class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Amount" class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Date"   class="pfColHeader"/></Column>
+                        <Column class="pfTableCol"><Text text="Status" class="pfColHeader"/></Column>
+                    </columns>
+
+                    <items>
+                        <ColumnListItem class="pfTableRow" type="Inactive">
+                            <cells>
+                                <ObjectStatus
+                                    text="{pfVM>transactionType}"
+                                    state="{= ${pfVM>transactionType} === 'BUY' ? 'Error' : (${pfVM>transactionType} === 'SELL' ? 'Success' : 'Information') }"
+                                    class="pfTxTypePill"/>
+                                <Text text="{pfVM>productName}" class="pfTxStockName"/>
+                                <Text text="{pfVM>quantity}"    class="pfQtyText"/>
+                                <Text text="{= ${pfVM>currency} + ' ' + ${pfVM>totalPrice} }" class="pfTxAmt"/>
+                                <Text text="{pfVM>createdAtText}" class="pfTxDate"/>
+                                <ObjectStatus
+                                    text="{pfVM>status}"
+                                    state="{= ${pfVM>status} === 'SUCCESS' ? 'Success' : 'Warning' }"
+                                    class="pfTxStatus"/>
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
             </VBox>
-        </content>
+
+            <!-- ─────────────────────────────────────────────────
+                 7. NOTIFICATIONS PANEL
+            ───────────────────────────────────────────────── -->
+            <VBox class="pfCard pfNotifCard">
+                <HBox alignItems="Center" class="pfCardHeader">
+                    <core:Icon src="sap-icon://bell" class="pfSectionIcon pfIconAmber"/>
+                    <VBox>
+                        <Title text="Notifications" level="H3" class="pfCardTitle"/>
+                        <Text text="Recent alerts and market updates" class="pfCardSub"/>
+                    </VBox>
+                </HBox>
+
+                <List
+                    id="pfNotifList"
+                    items="{pfVM>/notifications}"
+                    showSeparators="None"
+                    class="pfNotifList">
+                    <CustomListItem class="pfNotifItem">
+                        <HBox alignItems="Center" width="100%">
+                            <core:Icon
+                                src="{= ${pfVM>type} === 'gain' ? 'sap-icon://trend-up' : (${pfVM>type} === 'loss' ? 'sap-icon://trend-down' : (${pfVM>type} === 'wallet' ? 'sap-icon://credit-card' : 'sap-icon://warning')) }"
+                                class="{= ${pfVM>type} === 'gain' ? 'pfNotifIconGain' : (${pfVM>type} === 'loss' ? 'pfNotifIconLoss' : (${pfVM>type} === 'wallet' ? 'pfNotifIconWallet' : 'pfNotifIconWarn')) }"/>
+                            <Text text="{pfVM>message}" class="pfNotifText"/>
+                        </HBox>
+                    </CustomListItem>
+                </List>
+            </VBox>
+
+        </VBox>
+
+        <!-- ═══════════════════════════════════════════════════════
+             FOOTER
+        ═══════════════════════════════════════════════════════ -->
+        <footer>
+            <Bar design="Footer" class="cdFooter">
+                <contentLeft>
+                    <Text text="StockTrade Pro" class="cdFooterBrand"/>
+                </contentLeft>
+                <contentMiddle>
+                    <Text text="© 2025 StockTrade Pro. Market data is for informational purposes only." class="cdFooterText"/>
+                </contentMiddle>
+                <contentRight>
+                    <Text text="SAP BTP · v1.0.0" class="cdFooterText"/>
+                </contentRight>
+            </Bar>
+        </footer>
+
     </Page>
 </mvc:View>

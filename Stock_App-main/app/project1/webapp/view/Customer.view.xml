@@ -62,6 +62,7 @@
                             placeholder="Search stocks, companies..."
                             width="100%"
                             search=".onStockSearch"
+                            liveChange=".onStockSearch"
                             class="cdNavSearchField"/>
                     </HBox>
                 </contentMiddle>
@@ -274,7 +275,7 @@
                                         </HBox>
                                         <VBox>
                                             <Text text="{= ${currency} + ' ' + ${price} }" class="cdPrice"/>
-                                            <Text text="{= (${previousPrice} !== null &amp;&amp; ${previousPrice} !== undefined &amp;&amp; ${previousPrice} !== 0) ? ((${price} - ${previousPrice}) &gt;= 0 ? '+' : '') + (${price} - ${previousPrice}).toFixed(2) : '' }" class="cdPriceChange cdChangeUp"/>
+                                            <Text text="{= (${previousPrice} !== null &amp;&amp; ${previousPrice} !== undefined &amp;&amp; Number(${previousPrice}) !== 0 &amp;&amp; !isNaN(Number(${previousPrice}))) ? ((Number(${price}) - Number(${previousPrice})) &gt;= 0 ? '+' : '') + (Number(${price}) - Number(${previousPrice})).toFixed(2) : '' }" class="cdPriceChange cdChangeUp"/>
                                         </VBox>
                                         <Text text="{stockQuantity}" class="cdQty"/>
                                         <ObjectStatus text="{trend}" state="{= ${trend} === 'BULL' ? 'Success' : (${trend} === 'BEAR' ? 'Error' : 'Warning') }" class="cdChangeStatus"/>

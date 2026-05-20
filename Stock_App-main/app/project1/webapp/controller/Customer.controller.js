@@ -33,6 +33,9 @@ sap.ui.define([
             this._createChartModel();
             this._refreshPortfolioSummary();
 
+            const oRouter = this.getOwnerComponent().getRouter();
+            oRouter.getRoute("customer").attachPatternMatched(this._onRouteMatched, this);
+
             /* ── Load daily chart on init ─────────────────────── */
             this._refreshDailyChart();
 
@@ -57,6 +60,15 @@ sap.ui.define([
 
         onNotificationsPress: function () { MessageToast.show("No new notifications"); },
 
+        _onRouteMatched: function () {
+            this._refreshPortfolioSummary();
+            this._refreshSelectedHistory();
+            const oTable = this.byId("stockTable");
+            if (oTable && oTable.getBinding("items")) {
+                oTable.getBinding("items").refresh();
+            }
+        },
+
         onPortfolioPress: function () {
             this.getOwnerComponent().getRouter().navTo("portfolio");
         },
@@ -64,11 +76,16 @@ sap.ui.define([
         onLoadPortfolio: function () { this._refreshPortfolioSummary(); },
 
         onStockSearch: function (oEvent) {
-            const sQ = (oEvent.getParameter("query") || "").trim().toLowerCase();
+            const sQ = (oEvent.getParameter("query") || oEvent.getParameter("newValue") || "").trim();
             const oTable = this.byId("stockTable");
             const oBinding = oTable && oTable.getBinding("items");
             if (!oBinding) { return; }
-            oBinding.refresh();
+            if (sQ) {
+                const oFilter = new sap.ui.model.Filter("productName", sap.ui.model.FilterOperator.Contains, sQ);
+                oBinding.filter([oFilter]);
+            } else {
+                oBinding.filter([]);
+            }
         },
 
         onSelectProduct: function (oEvent) {
@@ -415,8 +432,10 @@ sap.ui.define([
                             oAct.setParameter("customerName", sCustomer);
                             oAct.setParameter("quantity",     iQty);
 
-                            const oRes = await oAct.execute();
-                            const r    = oRes && oRes.getObject ? oRes.getObject() : null;
+                            await oAct.execute();
+                            const oBoundCtx = oAct.getBoundContext();
+                            let r = oBoundCtx ? oBoundCtx.getObject() : null;
+                            if (r && r.value !== undefined) { r = r.value; }
                             if (!r)         { throw new Error("No response"); }
                             if (!r.success) { return MessageBox.error(r.message || "Trade rejected"); }
 
@@ -629,21 +648,30 @@ sap.ui.define([
                 const oModel = this.getOwnerComponent().getModel();
                 const oFn    = oModel.bindContext("/getPortfolio(...)");
                 oFn.setParameter("customerName", sCustomer);
-                const oRes = await oFn.execute();
-                const a    = oRes && oRes.getObject ? oRes.getObject() : [];
+                await oFn.execute();
+                const oBoundCtx = oFn.getBoundContext();
+                let a = oBoundCtx ? oBoundCtx.getObject() : [];
+                // OData V4 function import may wrap result in { value: [...] }
+                if (a && a.value && Array.isArray(a.value)) { a = a.value; }
+                if (!Array.isArray(a)) { a = []; }
 
-                const totalValue = (a || []).reduce(function (s, h) { return s + Number(h.totalValue  || 0); }, 0);
-                const totalPL    = (a || []).reduce(function (s, h) { return s + Number(h.profitLoss  || 0); }, 0);
-                const owned      = (a || []).length;
-                const profitable = (a || []).filter(function (h) { return Number(h.profitLoss || 0) > 0; }).length;
+                const totalValue = a.reduce(function (s, h) { return s + Number(h.totalValue  || 0); }, 0);
+                const totalPL    = a.reduce(function (s, h) { return s + Number(h.profitLoss  || 0); }, 0);
+                const totalInv   = a.reduce(function (s, h) { return s + (Number(h.avgBuyPrice || h.buyPrice || 0) * Number(h.quantity || 0)); }, 0);
+                const owned      = a.length;
+                const profitable = a.filter(function (h) { return Number(h.profitLoss || 0) > 0; }).length;
 
-                oVM.setProperty("/summary/portfolioValue",      totalValue.toFixed(2));
-                oVM.setProperty("/summary/unrealizedText",      (totalPL >= 0 ? "+" : "") + totalPL.toFixed(2) + " unrealized");
+                const fmt = (num) => Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const initBal = 250000;
+                const availBal = initBal - totalInv;
+
+                oVM.setProperty("/summary/portfolioValue",      fmt(totalValue));
+                oVM.setProperty("/summary/unrealizedText",      (totalPL >= 0 ? "+" : "") + fmt(totalPL) + " unrealized");
                 oVM.setProperty("/summary/portfolioProgress",   Math.min(100, Math.round((owned / 20) * 100)));
-                oVM.setProperty("/summary/profitLoss",          (totalPL >= 0 ? "+" : "") + totalPL.toFixed(2));
+                oVM.setProperty("/summary/profitLoss",          (totalPL >= 0 ? "+" : "") + fmt(totalPL));
                 oVM.setProperty("/summary/profitProgress",      Math.min(100, Math.round(Math.abs(totalPL) / 1000 * 100)));
-                oVM.setProperty("/summary/buyingPower",         "—");
-                oVM.setProperty("/summary/buyingPowerProgress", 40);
+                oVM.setProperty("/summary/buyingPower",         "₹" + fmt(availBal));
+                oVM.setProperty("/summary/buyingPowerProgress", Math.min(100, Math.round((availBal / initBal) * 100)));
                 oVM.setProperty("/summary/ownedStocks",         owned + " Stocks");
                 oVM.setProperty("/summary/ownedStocksSub",      profitable + " profitable");
                 oVM.setProperty("/summary/ownedStocksProgress", Math.min(100, Math.round((profitable / Math.max(1, owned)) * 100)));
@@ -651,6 +679,7 @@ sap.ui.define([
                 console.error(e);
             }
         }
+
 
     });
 });
