@@ -81,11 +81,11 @@ entity HistoricalPrices : cuid {
 
 entity Transactions : cuid, managed {
 
-    product          : Association to Products @mandatory;
+    product          : Association to Products;
 
     customerName     : String(100) @mandatory;
 
-    transactionType  : String(10) @mandatory; // BUY | SELL
+    transactionType  : String(10) @mandatory; // BUY | SELL | ADD_FUNDS
 
     quantity         : Integer @mandatory;
 

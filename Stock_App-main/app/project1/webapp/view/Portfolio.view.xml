@@ -216,6 +216,7 @@
                         selectionChange=".onPfTimeRangeChange"
                         class="cdSegmentedBtn">
                         <items>
+                            <SegmentedButtonItem key="1H" text="1H"/>
                             <SegmentedButtonItem key="1D" text="1D"/>
                             <SegmentedButtonItem key="1W" text="1W"/>
                             <SegmentedButtonItem key="1M" text="1M"/>
@@ -225,28 +226,61 @@
                     </SegmentedButton>
                 </HBox>
 
-                <viz:VizFrame
-                    id="pfPerfChart"
-                    width="100%"
-                    height="300px"
-                    vizType="line"
-                    uiConfig="{applicationSet:'fiori'}"
-                    class="pfVizFrame">
-                    <viz:dataset>
-                        <viz.data:FlattenedDataset data="{pfChartModel>/data}">
-                            <viz.data:dimensions>
-                                <viz.data:DimensionDefinition name="Time" value="{pfChartModel>time}"/>
-                            </viz.data:dimensions>
-                            <viz.data:measures>
-                                <viz.data:MeasureDefinition name="Value" value="{pfChartModel>value}"/>
-                            </viz.data:measures>
-                        </viz.data:FlattenedDataset>
-                    </viz:dataset>
-                    <viz:feeds>
-                        <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Value"/>
-                        <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Time"/>
-                    </viz:feeds>
-                </viz:VizFrame>
+                <!-- Premium Custom D3/SVG Line Chart Container -->
+                <VBox class="pfPerfChartHTMLWrapper" width="100%">
+                    <core:HTML id="pfPerfChartHTML" preferDOM="true" sanitize="None" />
+                </VBox>
+
+                <!-- Bottom 5 Analytics Cards Section -->
+                <HBox id="pfAnalyticsRow" wrap="Wrap" class="pfAnalyticsCardsRow" width="100%">
+                    <!-- Best Performance -->
+                    <VBox class="pfAnalyticsCard">
+                        <Text text="Best Performance" class="pfAnalyticsLabel"/>
+                        <HBox alignItems="Center" class="pfAnalyticsValueRow">
+                            <Text text="{pfVM>/analytics/bestPerfValue}" class="pfAnalyticsVal pfValGreen"/>
+                            <core:Icon src="sap-icon://trend-up" class="pfAnalyticsTrendIcon pfValGreenIcon"/>
+                        </HBox>
+                        <Text text="{pfVM>/analytics/bestPerfTime}" class="pfAnalyticsSub"/>
+                    </VBox>
+
+                    <!-- Worst Performance -->
+                    <VBox class="pfAnalyticsCard">
+                        <Text text="Worst Performance" class="pfAnalyticsLabel"/>
+                        <HBox alignItems="Center" class="pfAnalyticsValueRow">
+                            <Text text="{pfVM>/analytics/worstPerfValue}" class="pfAnalyticsVal pfValRed"/>
+                            <core:Icon src="sap-icon://trend-down" class="pfAnalyticsTrendIcon pfValRedIcon"/>
+                        </HBox>
+                        <Text text="{pfVM>/analytics/worstPerfTime}" class="pfAnalyticsSub"/>
+                    </VBox>
+
+                    <!-- Break Even Point -->
+                    <VBox class="pfAnalyticsCard">
+                        <Text text="Break Even Point" class="pfAnalyticsLabel"/>
+                        <HBox alignItems="Center" class="pfAnalyticsValueRow">
+                            <Text text="{pfVM>/analytics/breakEvenTime}" class="pfAnalyticsVal pfValWhite"/>
+                        </HBox>
+                        <Text text="{pfVM>/analytics/breakEvenSub}" class="pfAnalyticsSub"/>
+                    </VBox>
+
+                    <!-- Total Fluctuation -->
+                    <VBox class="pfAnalyticsCard">
+                        <Text text="Total Fluctuation" class="pfAnalyticsLabel"/>
+                        <HBox alignItems="Center" class="pfAnalyticsValueRow">
+                            <Text text="{pfVM>/analytics/totalFluctuation}" class="pfAnalyticsVal pfValBlue"/>
+                        </HBox>
+                        <Text text="{pfVM>/analytics/totalFluctuationSub}" class="pfAnalyticsSub"/>
+                    </VBox>
+
+                    <!-- Market Trend -->
+                    <VBox class="pfAnalyticsCard">
+                        <Text text="Market Trend" class="pfAnalyticsLabel"/>
+                        <HBox alignItems="Center" class="pfAnalyticsValueRow">
+                            <Text text="{pfVM>/analytics/marketTrend}" class="{pfVM>/analytics/marketTrendClass}"/>
+                            <core:Icon src="{pfVM>/analytics/marketTrendIcon}" class="{pfVM>/analytics/marketTrendIconClass}"/>
+                        </HBox>
+                        <Text text="{pfVM>/analytics/marketTrendSub}" class="pfAnalyticsSub"/>
+                    </VBox>
+                </HBox>
             </VBox>
 
             <!-- ─────────────────────────────────────────────────
