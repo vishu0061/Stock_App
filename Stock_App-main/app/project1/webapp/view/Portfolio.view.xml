@@ -470,7 +470,7 @@
                                 <Text text="{pfVM>createdAtText}" class="pfTxDate"/>
                                 <ObjectStatus
                                     text="{pfVM>status}"
-                                    state="{= ${pfVM>status} === 'SUCCESS' ? 'Success' : 'Warning' }"
+                                    state="{= ${pfVM>status} === 'COMPLETED' ? 'Success' : 'Warning' }"
                                     class="pfTxStatus"/>
                             </cells>
                         </ColumnListItem>

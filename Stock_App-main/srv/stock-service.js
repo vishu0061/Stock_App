@@ -404,14 +404,16 @@ module.exports = cds.service.impl(async function () {
                 const profitLossPct = avgBuy > 0 ? ((currentPrice - avgBuy) / avgBuy) * 100 : 0;
 
                 result.push({
-                    productId: h.product_ID,
-                    productName: prod.productName || "",
-                    quantity: qty,
-                    avgBuyPrice: avgBuy,
-                    currentPrice: currentPrice,
-                    currency: h.currency || prod.currency || "INR",
-                    totalValue: Number(totalValue.toFixed(2)),
-                    profitLoss: Number(profitLoss.toFixed(2)),
+                    productId:     h.product_ID,
+                    productName:   prod.productName || "",
+                    category:      prod.category_ID || "",
+                    quantity:      qty,
+                    avgBuyPrice:   avgBuy,
+                    currentPrice:  currentPrice,
+                    previousPrice: Number(prod.previousPrice || currentPrice),
+                    currency:      h.currency || prod.currency || "INR",
+                    totalValue:    Number(totalValue.toFixed(2)),
+                    profitLoss:    Number(profitLoss.toFixed(2)),
                     profitLossPct: Number(profitLossPct.toFixed(2))
                 });
             }
