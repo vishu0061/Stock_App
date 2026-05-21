@@ -12,8 +12,16 @@ sap.ui.define([
            INIT
         ═══════════════════════════════════════════════════════ */
         onInit: function () {
+            /* ── Resolve customer name from URL hash or session ── */
+            let sCustomerName = "Demo Customer";
+            try {
+                const sHash  = window.location.hash || "";
+                const oMatch = sHash.match(/[?&]customer=([^&]+)/);
+                if (oMatch) { sCustomerName = decodeURIComponent(oMatch[1]); }
+            } catch (e) { /* ignore */ }
+
             const oVM = new JSONModel({
-                customerName: "Demo Customer",
+                customerName: sCustomerName,
                 range: "1W",
                 holdings: [],
                 transactions: [],
@@ -28,7 +36,7 @@ sap.ui.define([
                     plState:           "None",
                     todaysGain:        "—",
                     invested:          "—",
-                    balance:           "₹78,500",
+                    balance:           "—",
                     stocksOwned:       "—",
                     stocksOwnedSub:    "Holdings"
                 }
@@ -41,10 +49,21 @@ sap.ui.define([
             // Route attach
             const oRouter = this.getOwnerComponent().getRouter();
             oRouter.getRoute("portfolio").attachPatternMatched(this._onRouteMatched, this);
+
+            /* ── Auto-refresh every 10s to keep prices current ── */
+            this._refreshTimer = setInterval(() => {
+                this._loadAll();
+            }, 10000);
         },
 
         _onRouteMatched: function () {
             this._loadAll();
+        },
+
+        onExit: function () {
+            if (this._refreshTimer) {
+                clearInterval(this._refreshTimer);
+            }
         },
 
         /* ═══════════════════════════════════════════════════════
@@ -134,17 +153,18 @@ sap.ui.define([
                         ? parseFloat(((currPrice - buyPrice) / buyPrice * 100).toFixed(2))
                         : 0;
                     return {
-                        productId:    h.productId  || h.product_ID || "",
-                        productName:  h.productName || "—",
-                        category:     h.category   || "General",
-                        quantity:     qty,
-                        buyPrice:     buyPrice.toFixed(2),
-                        currentPrice: currPrice.toFixed(2),
-                        totalValue:   Number(h.totalValue || currPrice * qty || 0),
-                        profitLoss:   pl.toFixed(2),
-                        profitLossPct:plPct,
-                        currency:     h.currency   || "₹",
-                        initials:     (h.productName || "?").substring(0, 2).toUpperCase()
+                        productId:     h.productId   || h.product_ID || "",
+                        productName:   h.productName || "—",
+                        category:      h.category    || "General",
+                        quantity:      qty,
+                        buyPrice:      buyPrice.toFixed(2),
+                        currentPrice:  currPrice.toFixed(2),
+                        previousPrice: Number(h.previousPrice || currPrice),
+                        totalValue:    Number(h.totalValue || currPrice * qty || 0),
+                        profitLoss:    pl.toFixed(2),
+                        profitLossPct: plPct,
+                        currency:      h.currency || "INR",
+                        initials:      (h.productName || "?").substring(0, 2).toUpperCase()
                     };
                 });
                 oVM.setProperty("/holdings", a);
@@ -162,26 +182,31 @@ sap.ui.define([
             const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
             try {
                 const oModel = this.getOwnerComponent().getModel();
-                const oList  = oModel.bindList("/Transactions", null, null, null, {
-                    $filter:  `customerName eq '${sCustomer.replace(/'/g, "''")}'`,
-                    $expand:  "product",
-                    $orderby: "createdAt desc",
-                    $top:     50
-                });
-                const aCtx = await oList.requestContexts();
+                /* Use proper OData V4 Filter objects — raw $filter strings are ignored by bindList */
+                const oFilter = new sap.ui.model.Filter(
+                    "customerName", sap.ui.model.FilterOperator.EQ, sCustomer
+                );
+                const oList = oModel.bindList("/Transactions", null,
+                    [new sap.ui.model.Sorter("createdAt", true)],
+                    [oFilter]
+                );
+                const aCtx = await oList.requestContexts(0, 100);
                 const a = aCtx.map(function (c) {
                     const t = c.getObject();
+                    /* product association is flattened as product_productName in OData V4 */
+                    const sProductName = (t.product && t.product.productName)
+                        ? t.product.productName
+                        : (t.product_productName || t.productName || "Stock");
                     return {
-                        transactionType: t.transactionType,
-                        productName: (t.product && t.product.productName)
-                            ? t.product.productName
-                            : (t.product_ID || "Wallet"),
-                        quantity:    t.quantity   || 0,
-                        unitPrice:   Number(t.unitPrice  || 0).toFixed(2),
-                        totalPrice:  Number(t.totalPrice || 0).toFixed(2),
-                        currency:    (t.product && t.product.currency) ? t.product.currency : "₹",
-                        createdAtText: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "",
-                        status: t.status || "SUCCESS"
+                        transactionType: t.transactionType || "",
+                        productName:     sProductName,
+                        quantity:        t.quantity  || 0,
+                        unitPrice:       Number(t.unitPrice  || 0).toFixed(2),
+                        totalPrice:      Number(t.totalPrice || 0).toFixed(2),
+                        currency:        (t.product && t.product.currency) ? t.product.currency : "₹",
+                        createdAt:       t.createdAt || null,
+                        createdAtText:   t.createdAt ? new Date(t.createdAt).toLocaleDateString("en-IN") : "",
+                        status:          t.status || "COMPLETED"
                     };
                 });
                 oVM.setProperty("/transactions",       a);
@@ -201,87 +226,139 @@ sap.ui.define([
             const aHoldings = oVM.getProperty("/holdings") || [];
             const aTx       = oVM.getProperty("/transactions") || [];
 
-            const totalValue    = aHoldings.reduce(function (s, h) { return s + Number(h.totalValue || 0); }, 0);
-            const totalInvested = aHoldings.reduce(function (s, h) {
+            /* ─────────────────────────────────────────────
+             * Filter to a single primary currency to avoid mixing
+             * INR + USD + EUR into one nonsensical total.
+             * We pick INR (the dominant currency in the seed data).
+             * USD / EUR holdings are shown in the table with their own currency.
+             * ───────────────────────────────────────────── */
+            const sPrimary  = "INR";
+            const aINR      = aHoldings.filter(function (h) { return (h.currency || "INR") === sPrimary; });
+            const aAll      = aHoldings; // used for counts
+
+            const totalValue    = aINR.reduce(function (s, h) { return s + Number(h.totalValue  || 0); }, 0);
+            const totalCost     = aINR.reduce(function (s, h) {
                 return s + Number(h.buyPrice || 0) * Number(h.quantity || 0);
             }, 0);
-            const totalPL       = aHoldings.reduce(function (s, h) { return s + Number(h.profitLoss || 0); }, 0);
-            const plPct         = totalInvested > 0
-                ? parseFloat(((totalPL / totalInvested) * 100).toFixed(1))
+            const totalPL       = aINR.reduce(function (s, h) { return s + Number(h.profitLoss || 0); }, 0);
+
+            /* Portfolio growth %: how much the market value moved vs cost basis */
+            const portGrowthPct = totalCost > 0
+                ? parseFloat(((totalValue - totalCost) / totalCost * 100).toFixed(2))
                 : 0;
 
-            // Today's gain — sum of today's sell transactions minus today's buy transactions
-            const today = new Date().toLocaleDateString();
-            let todaysGain = 0;
+            /* P/L %: same as portGrowthPct when using unrealized P/L */
+            const plPct = portGrowthPct;
+
+            /* ── Available Balance: computed from real transaction cash-flow ──
+             * currency field on mapped transactions stores the product currency CODE
+             * (INR / USD / EUR). Only count INR transactions against the INR wallet. */
+            const startingCapital = 1000000; // ₹10,00,000 virtual wallet
+            let cashOutflow = 0;
+            let cashInflow  = 0;
             aTx.forEach(function (t) {
-                if (t.createdAtText === today) {
-                    if (t.transactionType === "SELL") todaysGain += Number(t.totalPrice || 0);
-                    if (t.transactionType === "BUY")  todaysGain -= Number(t.totalPrice || 0);
-                }
+                /* Skip foreign-currency transactions (USD, EUR, etc.) */
+                const cur = (t.currency || "INR").toUpperCase();
+                if (cur !== "INR" && cur !== "₹") { return; }
+                const amt = Number(t.totalPrice || 0);
+                if (t.transactionType === "BUY")  { cashOutflow += amt; }
+                if (t.transactionType === "SELL") { cashInflow  += amt; }
             });
+            const availBal = Math.max(0, startingCapital - cashOutflow + cashInflow);
 
-            // currency symbol from first holding
-            const sCurrency = (aHoldings[0] && aHoldings[0].currency) || "₹";
-            
-            const fmt = (num) => Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            const initBal = 250000;
-            const availBal = initBal - totalInvested;
+            /* ── Today's Gain: use previousPrice from getPortfolio result ──
+             * This is the real intraday movement = (current - previous) × qty
+             * for all INR holdings. Much more reliable than tx-date matching. */
+            const todaysGain = aINR.reduce(function (s, h) {
+                const curr  = Number(h.currentPrice || 0);
+                const prev  = Number(h.previousPrice || curr);
+                return s + (curr - prev) * Number(h.quantity || 0);
+            }, 0);
 
-            oVM.setProperty("/summary/totalPortfolio",    sCurrency + " " + fmt(totalValue));
-            oVM.setProperty("/summary/portfolioPct",      (plPct >= 0 ? "+" : "") + plPct + "%");
-            oVM.setProperty("/summary/portfolioPctState", plPct >= 0 ? "Success" : "Error");
-            oVM.setProperty("/summary/totalPL",           (totalPL >= 0 ? "+" : "") + sCurrency + " " + fmt(Math.abs(totalPL)));
-            oVM.setProperty("/summary/plPct",             (plPct >= 0 ? "+" : "") + plPct + "%");
+            const fmt = (num) => Number(num).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const profitable = aAll.filter(function (h) { return Number(h.profitLoss) > 0; }).length;
+
+            oVM.setProperty("/summary/totalPortfolio",    "₹" + fmt(totalValue));
+            oVM.setProperty("/summary/portfolioPct",      (portGrowthPct >= 0 ? "+" : "") + portGrowthPct.toFixed(2) + "%");
+            oVM.setProperty("/summary/portfolioPctState", portGrowthPct >= 0 ? "Success" : "Error");
+            oVM.setProperty("/summary/totalPL",           (totalPL >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(totalPL)));
+            oVM.setProperty("/summary/plPct",             (plPct >= 0 ? "+" : "") + plPct.toFixed(2) + "%");
             oVM.setProperty("/summary/plState",           plPct >= 0 ? "Success" : "Error");
-            oVM.setProperty("/summary/todaysGain",        (todaysGain >= 0 ? "+" : "") + sCurrency + " " + fmt(Math.abs(todaysGain)));
-            oVM.setProperty("/summary/invested",          sCurrency + " " + fmt(totalInvested));
-            oVM.setProperty("/summary/balance",           sCurrency + " " + fmt(availBal));
-            oVM.setProperty("/summary/stocksOwned",       aHoldings.length + " Holdings");
-            oVM.setProperty("/summary/stocksOwnedSub",    aHoldings.filter(function (h) { return Number(h.profitLoss) > 0; }).length + " profitable");
+            oVM.setProperty("/summary/todaysGain",        (todaysGain >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(todaysGain)));
+            oVM.setProperty("/summary/invested",          "₹" + fmt(totalCost));
+            oVM.setProperty("/summary/balance",           "₹" + fmt(availBal));
+            oVM.setProperty("/summary/stocksOwned",       aAll.length + " Holdings");
+            oVM.setProperty("/summary/stocksOwnedSub",    profitable + " profitable");
         },
 
         /* ═══════════════════════════════════════════════════════
            BUILD PERFORMANCE CHART DATA
         ═══════════════════════════════════════════════════════ */
         _buildPerformanceChart: function () {
-            const oVM    = this.getView().getModel("pfVM");
-            const sRange = oVM.getProperty("/range") || "1W";
-            const aTx    = oVM.getProperty("/transactions") || [];
+            const oVM      = this.getView().getModel("pfVM");
+            const sRange   = oVM.getProperty("/range") || "1W";
+            const aTx      = oVM.getProperty("/transactions") || [];
+            const aHoldings = oVM.getProperty("/holdings") || [];
 
-            // Build cumulative value by date
+            if (aTx.length === 0) {
+                /* No transactions yet — show empty chart cleanly */
+                this.getView().getModel("pfChartModel").setProperty("/data", []);
+                return;
+            }
+
+            /* Determine date window from the range selector */
+            const now = new Date();
+            let dFrom = new Date(now);
+            if      (sRange === "1D")  { dFrom.setDate(dFrom.getDate() - 1); }
+            else if (sRange === "1W")  { dFrom.setDate(dFrom.getDate() - 7); }
+            else if (sRange === "1M")  { dFrom.setMonth(dFrom.getMonth() - 1); }
+            else if (sRange === "1Y")  { dFrom.setFullYear(dFrom.getFullYear() - 1); }
+            else                       { dFrom = new Date(0); } // ALL
+
+            /*
+             * Build a daily portfolio cost-basis snapshot:
+             * For each day from dFrom→today, track:
+             *   - cumulative invested capital (BUY) or released capital (SELL)
+             * and derive a portfolio cost line.
+             * We use running invested total as proxy for value (no PriceHistory join needed here).
+             */
             const oByDate = {};
             aTx.forEach(function (t) {
-                if (!t.createdAtText) return;
-                const sDate = t.createdAtText;
-                if (!oByDate[sDate]) oByDate[sDate] = 0;
-                if (t.transactionType === "BUY")  oByDate[sDate] -= Number(t.totalPrice || 0);
-                if (t.transactionType === "SELL") oByDate[sDate] += Number(t.totalPrice || 0);
+                if (!t.createdAt) { return; }
+                const d = new Date(t.createdAt);
+                if (d < dFrom) { return; }
+                const sKey = d.toLocaleDateString("en-IN");
+                if (!oByDate[sKey]) { oByDate[sKey] = { buyCost: 0, sellRevenue: 0 }; }
+                if (t.transactionType === "BUY")  { oByDate[sKey].buyCost     += Number(t.totalPrice || 0); }
+                if (t.transactionType === "SELL") { oByDate[sKey].sellRevenue += Number(t.totalPrice || 0); }
             });
 
-            const aDates = Object.keys(oByDate).sort();
-            let iLimit = aDates.length;
-            if (sRange === "1D") iLimit = 1;
-            else if (sRange === "1W") iLimit = 7;
-            else if (sRange === "1M") iLimit = 30;
-            else if (sRange === "1Y") iLimit = 365;
-
-            const aSliced = aDates.slice(-iLimit);
-            let running = 0;
-            const aData = aSliced.map(function (d) {
-                running += oByDate[d];
-                return { time: d, value: parseFloat(running.toFixed(2)) };
+            /* Build a sorted running total */
+            const aSortedDates = Object.keys(oByDate).sort(function (a, b) {
+                return new Date(a) - new Date(b);
             });
 
-            // Fallback demo data if nothing
-            if (aData.length === 0) {
-                const now = new Date();
-                for (let i = 6; i >= 0; i--) {
-                    const d = new Date(now);
-                    d.setDate(d.getDate() - i);
-                    aData.push({
-                        time:  d.toLocaleDateString(),
-                        value: 200000 + Math.round(Math.random() * 50000)
-                    });
+            let runningInvested = 0;
+            const aData = aSortedDates.map(function (d) {
+                runningInvested += oByDate[d].buyCost - oByDate[d].sellRevenue;
+                return {
+                    time : d,
+                    value: parseFloat(Math.max(0, runningInvested).toFixed(2))
+                };
+            });
+
+            /*
+             * Append a "today" point reflecting the current live portfolio value
+             * so the chart endpoint always shows current market value, not just cost.
+             */
+            const totalValue = aHoldings.reduce(function (s, h) { return s + Number(h.totalValue || 0); }, 0);
+            if (totalValue > 0) {
+                const sToday = now.toLocaleDateString("en-IN");
+                const lastEntry = aData[aData.length - 1];
+                if (!lastEntry || lastEntry.time !== sToday) {
+                    aData.push({ time: sToday, value: parseFloat(totalValue.toFixed(2)) });
+                } else {
+                    lastEntry.value = parseFloat(totalValue.toFixed(2));
                 }
             }
 
