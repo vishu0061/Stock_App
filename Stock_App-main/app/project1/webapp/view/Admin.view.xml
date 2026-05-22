@@ -27,34 +27,52 @@ xmlns:unified="sap.ui.unified"
                     <Title text="SAP STOCK TRADING APP" class="adminNavBrand" wrapping="false"/>
                 </HBox>
 
-                <MenuButton
-    text="Admin Profile"
-    icon="sap-icon://customer"
-    type="Transparent"
-    class="adminProfileMenuBtn">
+                <HBox alignItems="Center">
+                    <!-- NOTIFICATIONS BELL -->
+                    <HBox class="cdBellWrap" alignItems="Center" style="margin-right: 0.6rem;">
+                        <Button
+                            id="adminBellBtn"
+                            icon="sap-icon://bell"
+                            type="Transparent"
+                            press=".onAdminNotificationsPress"
+                            class="adminBellBtn"
+                            tooltip="Notifications"/>
+                        <Text
+                            id="adminNotifBadgeText"
+                            text="{adminVM>/notifications/unreadCount}"
+                            visible="{= ${adminVM>/notifications/unreadCount} > 0}"
+                            class="cdNotifBadgeText"/>
+                    </HBox>
 
-    <menu>
+                    <MenuButton
+                        text="Admin Profile"
+                        icon="sap-icon://customer"
+                        type="Transparent"
+                        class="adminProfileMenuBtn">
 
-        <Menu>
+                        <menu>
 
-            <MenuItem
-                text="Profile"
-                icon="sap-icon://employee"/>
+                            <Menu>
 
-            <MenuItem
-                text="Settings"
-                icon="sap-icon://action-settings"/>
+                                <MenuItem
+                                    text="Profile"
+                                    icon="sap-icon://employee"/>
 
-            <MenuItem
-                text="Logout"
-                icon="sap-icon://log"
-                press=".onLogout"/>
+                                <MenuItem
+                                    text="Settings"
+                                    icon="sap-icon://action-settings"/>
 
-        </Menu>
+                                <MenuItem
+                                    text="Logout"
+                                    icon="sap-icon://log"
+                                    press=".onLogout"/>
 
-    </menu>
+                            </Menu>
 
-</MenuButton>
+                        </menu>
+
+                    </MenuButton>
+                </HBox>
 
             </HBox>
 

@@ -85,11 +85,20 @@
                             class="cdNavPortfolioBtn"/>
 
                         <!-- NOTIFICATIONS BELL -->
-                        <Button
-                            icon="sap-icon://bell"
-                            type="Transparent"
-                            press=".onNotificationsPress"
-                            class="cdNavBellBtn"/>
+                        <HBox class="cdBellWrap" alignItems="Center">
+                            <Button
+                                id="customerBellBtn"
+                                icon="sap-icon://bell"
+                                type="Transparent"
+                                press=".onNotificationsPress"
+                                class="cdNavBellBtn"
+                                tooltip="Notifications"/>
+                            <Text
+                                id="notifBadgeText"
+                                text="{custVM>/notifications/unreadCount}"
+                                visible="{= ${custVM>/notifications/unreadCount} > 0}"
+                                class="cdNotifBadgeText"/>
+                        </HBox>
 
                         <!-- CUSTOMER PROFILE BUTTON WITH DROPDOWN ARROW -->
                         <HBox
@@ -253,12 +262,12 @@
                             </headerToolbar>
 
                             <columns>
-                                <Column class="cdTableCol"><Text text="Company" class="cdColHeader"/></Column>
-                                <Column class="cdTableCol"><Text text="Price" class="cdColHeader"/></Column>
-                                <Column class="cdTableCol"><Text text="Qty" class="cdColHeader"/></Column>
-                                <Column class="cdTableCol"><Text text="Trend" class="cdColHeader"/></Column>
-                                <Column class="cdTableCol"><Text text="Status" class="cdColHeader"/></Column>
-                                <Column class="cdTableCol"><Text text="Actions" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol" width="34%"><Text text="Company" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol" width="14%"><Text text="Price" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol" width="11%"><Text text="Qty" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol" width="13%"><Text text="Trend" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol" width="13%"><Text text="Status" class="cdColHeader"/></Column>
+                                <Column class="cdTableCol" width="15%"><Text text="Actions" class="cdColHeader"/></Column>
                             </columns>
 
                             <items>
@@ -282,8 +291,7 @@
                                         <ObjectStatus text="{status}" state="{= ${status} === 'ACTIVE' ? 'Success' : (${status} === 'LOW' ? 'Warning' : 'Error') }" class="cdStatusBadge"/>
                                         <HBox class="cdActionBtns" alignItems="Center">
                                             <Button text="Buy" type="Accept" press=".onBuyStock" class="cdBuyBtn"/>
-                                            <Button text="Sell" type="Reject" press=".onSellStock" class="cdSellBtn"/>
-                                            <Button icon="{path: 'ID', formatter: '.formatWatchlistIcon'}" type="Transparent" press=".onToggleWatchlist" class="sapUiTinyMarginBegin" tooltip="Toggle Watchlist"/>
+                                            <Button icon="{path: 'ID', formatter: '.formatWatchlistIcon'}" type="Transparent" press=".onToggleWatchlist" class="cdWatchlistBtn" tooltip="Toggle Watchlist"/>
                                         </HBox>
                                     </cells>
                                 </ColumnListItem>
@@ -292,73 +300,171 @@
                     </VBox>
 
                     <!-- ─────────────────────────────────────────
-                         5. STOCK GRAPH SECTION
+                         5. SECTOR BASED MOVEMENT ANALYTICS SECTION
                     ───────────────────────────────────────────── -->
-                    <VBox class="cdCard cdGraphCard">
+                    <VBox class="cdCard cdSectorAnalyticsCard sapUiSmallMarginBottom">
+                        <!-- HEADER ROW -->
                         <HBox justifyContent="SpaceBetween" alignItems="Center" class="cdCardHeader">
                             <HBox alignItems="Center" class="cdCardTitleRow">
-                                <core:Icon src="sap-icon://line-chart" class="cdSectionIcon cdIconGreen"/>
+                                <core:Icon src="sap-icon://business-objects-experience" class="cdSectionIcon cdIconBlue"/>
                                 <VBox>
-                                    <Title text="Live Stock Graph" level="H3" class="cdCardTitle"/>
-                                    <Text text="Portfolio value over time" class="cdCardSubtitle"/>
+                                    <Title text="SECTOR BASED MOVEMENT" level="H3" class="cdCardTitle"/>
+                                    <Text text="Market movement by sector correlation" class="cdCardSubtitle"/>
                                 </VBox>
                             </HBox>
                             <SegmentedButton
-                                id="graphTimeRange"
-                                selectedKey="{custVM>/range}"
-                                selectionChange=".onTimeRangeChange"
+                                id="sectorTimeRange"
+                                selectedKey="{custVM>/sectorRange}"
+                                selectionChange=".onSectorRangeChange"
                                 class="cdSegmentedBtn">
                                 <items>
                                     <SegmentedButtonItem key="1D" text="1D"/>
                                     <SegmentedButtonItem key="1W" text="1W"/>
                                     <SegmentedButtonItem key="1M" text="1M"/>
+                                    <SegmentedButtonItem key="3M" text="3M"/>
                                     <SegmentedButtonItem key="1Y" text="1Y"/>
                                 </items>
                             </SegmentedButton>
                         </HBox>
 
-                        <viz:VizFrame
-                            id="priceChart"
-                            width="100%"
-                            height="320px"
-                            vizType="line"
-                            uiConfig="{applicationSet:'fiori'}">
-                            <viz:dataset>
-                                <viz.data:FlattenedDataset data="{chartModel>/data}">
-                                    <viz.data:dimensions>
-                                        <viz.data:DimensionDefinition name="Time" value="{chartModel>time}"/>
-                                    </viz.data:dimensions>
-                                    <viz.data:measures>
-                                        <viz.data:MeasureDefinition name="Price" value="{chartModel>price}"/>
-                                    </viz.data:measures>
-                                </viz.data:FlattenedDataset>
-                            </viz:dataset>
-                            <viz:feeds>
-                                <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Price"/>
-                                <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Time"/>
-                            </viz:feeds>
-                        </viz:VizFrame>
-
-                        <!-- Graph Stats Row -->
-                        <HBox justifyContent="SpaceBetween" wrap="Wrap" class="cdGraphStats">
-                            <VBox class="cdGraphStat">
-                                <Text text="Market Trend" class="cdGraphStatLabel"/>
-                                <HBox alignItems="Center" class="cdBullishRow">
-                                    <core:Icon src="{custVM>/graphStats/marketTrendIcon}" class="cdBullishIcon"/>
-                                    <Text text="{custVM>/graphStats/marketTrend}" class="cdBullishText"/>
+                        <!-- GRID: LEFT SECTOR PERFORMANCE & RIGHT MAIN CHART -->
+                        <HBox alignItems="Stretch" wrap="Wrap" class="cdSectorGrid sapUiSmallMarginTop">
+                            <!-- LEFT PANEL: SECTOR PERFORMANCE -->
+                            <VBox class="cdSectorPerformancePanel" width="30%">
+                                <Title text="SECTOR PERFORMANCE" level="H4" class="cdSubCardTitle sapUiSmallMarginBottom"/>
+                                <List items="{custVM>/sectorList}" showSeparators="None" noDataText="No sector data available" class="cdSectorList">
+                                    <CustomListItem class="cdSectorItem">
+                                        <HBox justifyContent="SpaceBetween" alignItems="Center" width="100%" class="cdSectorRow">
+                                            <HBox alignItems="Center">
+                                                <VBox class="cdSectorIconWrap {custVM>iconClass}">
+                                                    <core:Icon src="{custVM>icon}" class="cdSectorIconSmall"/>
+                                                </VBox>
+                                                <VBox class="cdSectorMeta">
+                                                    <Text text="{custVM>name}" class="cdSectorNameText"/>
+                                                    <Text text="{custVM>description}" class="cdSectorDescText"/>
+                                                </VBox>
+                                            </HBox>
+                                            <HBox alignItems="Center" class="cdSectorValueRow">
+                                                <Text text="{custVM>changeText}" class="{custVM>changeClass} cdSectorPercent"/>
+                                                <core:Icon src="{custVM>sparklineIcon}" class="{custVM>changeClass} cdSparklineIcon sapUiTinyMarginBegin"/>
+                                            </HBox>
+                                        </HBox>
+                                    </CustomListItem>
+                                </List>
+                                <HBox class="cdSectorInfoPill sapUiSmallMarginTop" alignItems="Center">
+                                    <core:Icon src="sap-icon://information" class="cdInfoIcon"/>
+                                    <Text text="Sector performance shows % change in market value for the selected period." class="cdInfoText"/>
                                 </HBox>
                             </VBox>
-                            <VBox class="cdGraphStat">
-                                <Text text="Day High" class="cdGraphStatLabel"/>
-                                <Text text="{custVM>/graphStats/dayHigh}" class="cdGraphStatVal"/>
+
+                            <!-- RIGHT PANEL: SECTOR PERFORMANCE OVER TIME CHART -->
+                            <VBox class="cdSectorChartPanel" width="70%">
+                                <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginBottom">
+                                    <Title text="SECTOR PERFORMANCE OVER TIME" level="H4" class="cdSubCardTitle"/>
+                                    <HBox alignItems="Center" gap="10px">
+                                        <Select id="sectorFilterSelect" selectedKey="{custVM>/selectedSectorFilter}" change=".onSectorFilterChange" class="cdSectorSelect" width="140px" items="{custVM>/sectorList}">
+                                            <core:Item key="{custVM>key}" text="{custVM>name}"/>
+                                        </Select>
+                                        <Button icon="sap-icon://full-screen" type="Transparent" class="cdFullScreenBtn"/>
+                                    </HBox>
+                                </HBox>
+
+                                <!-- Custom Dynamic Sector Legend -->
+                                <HBox wrap="Wrap" class="cdSectorLegendRow sapUiTinyMarginBottom" items="{custVM>/sectorList}">
+                                    <HBox class="cdLegendItem" visible="{= ${custVM>key} !== 'ALL' }">
+                                        <VBox class="cdLegendDot {custVM>dotClass}"/>
+                                        <Text text="{custVM>name}" class="cdLegendText"/>
+                                    </HBox>
+                                </HBox>
+
+                                <viz:VizFrame
+                                    id="sectorMovementChart"
+                                    width="100%"
+                                    height="340px"
+                                    vizType="line"
+                                    uiConfig="{applicationSet:'fiori'}">
+                                    <viz:dataset>
+                                        <viz.data:FlattenedDataset data="{custVM>/sectorChartData}">
+                                            <viz.data:dimensions>
+                                                <viz.data:DimensionDefinition name="Time" value="{custVM>Time}"/>
+                                                <viz.data:DimensionDefinition name="Sector" value="{custVM>Sector}"/>
+                                            </viz.data:dimensions>
+                                            <viz.data:measures>
+                                                <viz.data:MeasureDefinition name="Performance" value="{custVM>Performance}"/>
+                                            </viz.data:measures>
+                                        </viz.data:FlattenedDataset>
+                                    </viz:dataset>
+                                    <viz:feeds>
+                                        <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Performance"/>
+                                        <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Time"/>
+                                        <viz.feeds:FeedItem uid="color" type="Dimension" values="Sector"/>
+                                    </viz:feeds>
+                                </viz:VizFrame>
                             </VBox>
-                            <VBox class="cdGraphStat">
-                                <Text text="Day Low" class="cdGraphStatLabel"/>
-                                <Text text="{custVM>/graphStats/dayLow}" class="cdGraphStatVal"/>
+                        </HBox>
+
+                        <!-- BOTTOM ROW: MARKET SENTIMENT & SECTOR SUMMARY TABLE -->
+                        <HBox alignItems="Stretch" wrap="Wrap" class="cdSectorBottomRow sapUiMediumMarginTop">
+                            <!-- MARKET SENTIMENT PANEL -->
+                            <VBox class="cdSubCard cdSentimentCard" width="45%">
+                                <Title text="MARKET SENTIMENT" level="H4" class="cdSubCardTitle sapUiSmallMarginBottom"/>
+                                <HBox alignItems="Center" justifyContent="SpaceAround" class="cdSentimentContent">
+                                    <!-- Sentiment Gauge Mock Visual -->
+                                    <VBox alignItems="Center" class="cdSentimentGaugeBox">
+                                        <VBox class="cdSentimentGaugeRadial">
+                                            <Text text="{custVM>/sentiment/score}/100" class="cdSentimentScoreText"/>
+                                            <Text text="{custVM>/sentiment/text}" class="cdSentimentLabelText {custVM>/sentiment/textClass}"/>
+                                        </VBox>
+                                        <Text text="{custVM>/sentiment/sentimentTrendMsg}" class="cdSentimentMsgText {custVM>/sentiment/textClass} sapUiTinyMarginTop"/>
+                                    </VBox>
+                                    <!-- Advancing / Declining Metrics -->
+                                    <VBox class="cdSentimentMetricsBox">
+                                        <HBox class="cdMetricItem" alignItems="Center">
+                                            <core:Icon src="sap-icon://trend-up" class="cdMetricIconGreen"/>
+                                            <VBox class="cdMetricTextWrap">
+                                                <Text text="Advancing Sectors" class="cdMetricLabel"/>
+                                                <Text text="{custVM>/sentiment/advancing}/8" class="cdMetricValue cdValueGreen"/>
+                                            </VBox>
+                                        </HBox>
+                                        <HBox class="cdMetricItem sapUiSmallMarginTop" alignItems="Center">
+                                            <core:Icon src="sap-icon://trend-down" class="cdMetricIconRed"/>
+                                            <VBox class="cdMetricTextWrap">
+                                                <Text text="Declining Sectors" class="cdMetricLabel"/>
+                                                <Text text="{custVM>/sentiment/declining}/8" class="cdMetricValue cdValueRed"/>
+                                            </VBox>
+                                        </HBox>
+                                        <HBox class="cdMetricItem sapUiSmallMarginTop" alignItems="Center">
+                                            <core:Icon src="sap-icon://minus" class="cdMetricIconGrey"/>
+                                            <VBox class="cdMetricTextWrap">
+                                                <Text text="Unchanged Sectors" class="cdMetricLabel"/>
+                                                <Text text="{custVM>/sentiment/unchanged}/8" class="cdMetricValue cdValueGrey"/>
+                                            </VBox>
+                                        </HBox>
+                                    </VBox>
+                                </HBox>
                             </VBox>
-                            <VBox class="cdGraphStat">
-                                <Text text="Volume" class="cdGraphStatLabel"/>
-                                <Text text="{custVM>/graphStats/volume}" class="cdGraphStatVal"/>
+
+                            <!-- SECTOR SUMMARY TABLE -->
+                            <VBox class="cdSubCard cdSectorSummaryCard" width="55%">
+                                <Title text="SECTOR SUMMARY" level="H4" class="cdSubCardTitle sapUiSmallMarginBottom"/>
+                                <Table items="{custVM>/sectorList}" showSeparators="Inner" class="cdSectorSummaryTable">
+                                    <columns>
+                                        <Column class="cdTableCol" width="40%"><Text text="Sector" class="cdColHeader"/></Column>
+                                        <Column class="cdTableCol" width="25%"><Text text="Daily Change" class="cdColHeader"/></Column>
+                                        <Column class="cdTableCol" width="20%"><Text text="Trend" class="cdColHeader"/></Column>
+                                        <Column class="cdTableCol" width="15%"><Text text="Status" class="cdColHeader"/></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem class="cdTableRow" type="Inactive" visible="{= ${custVM>key} !== 'ALL' }">
+                                            <cells>
+                                                <Text text="{custVM>name}" class="cdSectorSummaryName"/>
+                                                <Text text="{custVM>changeText}" class="{custVM>changeClass} cdSectorSummaryChange"/>
+                                                <core:Icon src="{custVM>sparklineIcon}" class="{custVM>changeClass} cdSparklineIconSummary"/>
+                                                <ObjectStatus text="{custVM>status}" state="{custVM>statusState}" class="cdStatusBadge"/>
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
                             </VBox>
                         </HBox>
                     </VBox>
@@ -439,38 +545,7 @@
                         </List>
                     </VBox>
 
-                    <!-- ─────────────────────────────────────────
-                         6b. RECENT ACTIVITY (live transactions)
-                    ───────────────────────────────────────────── -->
-                    <VBox class="cdCard cdActivityCard">
-                        <HBox alignItems="Center" class="cdCardHeader">
-                            <core:Icon src="sap-icon://history" class="cdSectionIcon cdIconBlue"/>
-                            <VBox>
-                                <Title text="Recent Activity" level="H4" class="cdCardTitle"/>
-                                <Text text="Your trading history" class="cdCardSubtitle"/>
-                            </VBox>
-                        </HBox>
 
-                        <List
-                            id="recentActivityList"
-                            items="{custVM>/recentActivity}"
-                            showSeparators="None"
-                            noDataText="No recent transactions found."
-                            class="sapUiTinyMarginTop">
-                            <CustomListItem class="cdActivityItem">
-                                <HBox alignItems="Center" class="cdActivityRow">
-                                    <VBox class="{custVM>dotClass}"/>
-                                    <VBox class="cdActivityContent">
-                                        <HBox justifyContent="SpaceBetween">
-                                            <Text text="{custVM>title}" class="cdActivityTitle"/>
-                                            <Text text="{custVM>time}" class="cdActivityTime"/>
-                                        </HBox>
-                                        <Text text="{custVM>detail}" class="cdActivityDetail"/>
-                                    </VBox>
-                                </HBox>
-                            </CustomListItem>
-                        </List>
-                    </VBox>
 
                     <!-- ─────────────────────────────────────────
                          6c. MARKET INSIGHTS

@@ -50,13 +50,33 @@ sap.ui.define([
                     dayHigh: "—",
                     dayLow: "—",
                     volume: "—"
-                }
+                },
+                notifications: {
+                    unreadCount: 0,
+                    items: []
+                },
+                
+                // NEW: Sector Based Movement Analytics properties
+                sectorRange: "1D",
+                selectedSectorFilter: "ALL",
+                sectorList: [],
+                sentiment: {
+                    score: 0,
+                    text: "LOADING",
+                    textClass: "cdChangeStatus",
+                    sentimentTrendMsg: "Analyzing market data...",
+                    advancing: 0,
+                    declining: 0,
+                    unchanged: 0
+                },
+                sectorChartData: []
             });
             this.getView().setModel(oVM, "custVM");
 
             this._createChartModel();
             this._refreshPortfolioSummary();
             this._refreshRecentActivity();
+            this._refreshNotifications();
 
             const oRouter = this.getOwnerComponent().getRouter();
             oRouter.getRoute("customer").attachPatternMatched(this._onRouteMatched, this);
@@ -66,6 +86,10 @@ sap.ui.define([
 
             /* ── Apply Price Chart Style ──────────────────────── */
             this._applyPriceChartStyle();
+
+            /* ── Initialize & Style Sector Analytics ──────────── */
+            this._initSectorAnalytics();
+            this._applySectorChartStyle();
 
             /* ── Auto-refresh everything every 7s ─────────────── */
             setInterval(() => {
@@ -77,6 +101,7 @@ sap.ui.define([
                 this._refreshPortfolioSummary();
                 this._refreshRecentActivity();
                 this._refreshDailyChart();
+                this._refreshNotifications();
             }, 7000);
         },
 
@@ -84,9 +109,153 @@ sap.ui.define([
            NAVIGATION
         ═══════════════════════════════════════════════════════ */
 
-        onNavBack: function () { window.history.go(-1); },
+        onNavBack: function () {
+            window.location.hash = "";
+            this.getOwnerComponent().getRouter().navTo("home");
+        },
 
-        onNotificationsPress: function () { MessageToast.show("No new notifications"); },
+        onProfileMenuPress: function (oEvent) {
+            var oSource = oEvent.getSource();
+            if (!this._oProfileSheet) {
+                this._oProfileSheet = new sap.m.ActionSheet({
+                    title: "Choose Action",
+                    showCancelButton: true,
+                    placement: "Bottom",
+                    buttons: [
+                        new sap.m.Button({
+                            text: "Profile Information",
+                            icon: "sap-icon://employee",
+                            press: function () {
+                                MessageToast.show("Viewing customer profile");
+                            }
+                        }),
+                        new sap.m.Button({
+                            text: "Account Settings",
+                            icon: "sap-icon://action-settings",
+                            press: function () {
+                                MessageToast.show("Settings opening...");
+                            }
+                        }),
+                        new sap.m.Button({
+                            text: "Logout",
+                            icon: "sap-icon://log",
+                            type: "Reject",
+                            press: this.onLogout.bind(this)
+                        })
+                    ]
+                });
+                this.getView().addDependent(this._oProfileSheet);
+            }
+            this._oProfileSheet.openBy(oSource);
+        },
+
+        onLogout: function () {
+            MessageBox.confirm("Are you sure you want to logout?", {
+                title: "Confirm Logout",
+                actions: [MessageBox.Action.OK, MessageBox.Action.CANCEL],
+                onClose: function (sAction) {
+                    if (sAction === MessageBox.Action.OK) {
+                        window.location.hash = "";
+                        this.getOwnerComponent().getRouter().navTo("home");
+                    }
+                }.bind(this)
+            });
+        },
+
+        onNotificationsPress: function (oEvent) {
+            const oVM = this.getView().getModel("custVM");
+            const aItems = oVM.getProperty("/notifications/items") || [];
+
+            /* ── Mark all as read: record the current timestamp as last-read ── */
+            this._lastReadTs = Date.now();
+            oVM.setProperty("/notifications/unreadCount", 0);
+
+            /* ── Snapshot the items for this popover session ── */
+            const oNotifModel = new JSONModel({ items: aItems });
+
+            const oList = new sap.m.List({
+                items: {
+                    path: "notif>/items",
+                    template: new sap.m.CustomListItem({
+                        content: [
+                            new sap.m.HBox({
+                                alignItems: "Center",
+                                class: "cdNotifItem",
+                                items: [
+                                    new sap.m.VBox({
+                                        class: "cdNotifDotWrap",
+                                        items: [
+                                            new sap.m.Text({
+                                                text: "",
+                                                class: {
+                                                    path: "notif>type",
+                                                    formatter: function (sType) {
+                                                        return sType === "buy" ? "cdNotifDot cdDotGreen" :
+                                                            sType === "sell" ? "cdNotifDot cdDotRed" :
+                                                                sType === "alert" ? "cdNotifDot cdDotAmber" :
+                                                                    sType === "spike" ? "cdNotifDot cdDotAmber" :
+                                                                        "cdNotifDot cdDotBlue";
+                                                    }
+                                                }
+                                            })
+                                        ]
+                                    }),
+                                    new sap.m.VBox({
+                                        class: "cdNotifContent",
+                                        items: [
+                                            new sap.m.HBox({
+                                                justifyContent: "SpaceBetween",
+                                                items: [
+                                                    new sap.m.Title({ text: "{notif>title}", level: "H6", class: "cdNotifTitle" }),
+                                                    new sap.m.Text({ text: "{notif>time}", class: "cdNotifTime" })
+                                                ]
+                                            }),
+                                            new sap.m.Text({ text: "{notif>message}", class: "cdNotifMessage" })
+                                        ]
+                                    })
+                                ]
+                            })
+                        ]
+                    })
+                },
+                noDataText: "🎉 You're all caught up — no new activity!",
+                showSeparators: "Inner"
+            });
+
+            oList.setModel(oNotifModel, "notif");
+
+            /* ── Build the popover ── */
+            if (this._oNotifPopover) {
+                this._oNotifPopover.destroy();
+                this._oNotifPopover = null;
+            }
+
+            this._oNotifPopover = new sap.m.Popover({
+                title: "🔔 Notifications",
+                contentWidth: "360px",
+                contentHeight: "420px",
+                placement: "Bottom",
+                showHeader: true,
+                class: "cdNotifPopover",
+                content: [oList],
+                endButton: new sap.m.Button({
+                    text: "Clear All",
+                    type: "Transparent",
+                    press: () => {
+                        oVM.setProperty("/notifications/items", []);
+                        oVM.setProperty("/notifications/unreadCount", 0);
+                        oNotifModel.setProperty("/items", []);
+                    }
+                }),
+                afterClose: () => {
+                    if (this._oNotifPopover) { this._oNotifPopover.destroy(); this._oNotifPopover = null; }
+                }
+            });
+
+            this.getView().addDependent(this._oNotifPopover);
+            const oSource = oEvent ? oEvent.getSource() : this.byId("customerBellBtn");
+            this._oNotifPopover.openBy(oSource);
+        },
 
         _onRouteMatched: function () {
             this._refreshPortfolioSummary();
@@ -189,8 +358,8 @@ sap.ui.define([
         ═══════════════════════════════════════════════════════ */
 
         _openProfileDialog: function () {
-            const oVM    = this.getView().getModel("custVM");
-            const sName  = oVM.getProperty("/customerName") || "Demo Customer";
+            const oVM = this.getView().getModel("custVM");
+            const sName = oVM.getProperty("/customerName") || "Demo Customer";
 
             /* Build initials — e.g. "Demo Customer" → "DC" */
             const sInitials = sName
@@ -201,10 +370,10 @@ sap.ui.define([
                 .toUpperCase();
 
             const oDialog = new sap.m.Dialog({
-                title       : "My Profile",
+                title: "My Profile",
                 contentWidth: "400px",
-                resizable   : false,
-                draggable   : true,
+                resizable: false,
+                draggable: true,
                 content: [
                     new sap.m.VBox({
                         class: "sapUiMediumMargin",
@@ -213,12 +382,12 @@ sap.ui.define([
                             /* ── Avatar row ── */
                             new sap.m.HBox({
                                 justifyContent: "Center",
-                                class         : "sapUiSmallMarginBottom",
+                                class: "sapUiSmallMarginBottom",
                                 items: [
                                     new sap.m.Avatar({
-                                        displaySize    : "L",
-                                        displayShape   : "Circle",
-                                        initials       : sInitials,
+                                        displaySize: "L",
+                                        displayShape: "Circle",
+                                        initials: sInitials,
                                         backgroundColor: "Accent5"
                                     })
                                 ]
@@ -226,10 +395,10 @@ sap.ui.define([
 
                             /* ── Name ── */
                             new sap.m.Title({
-                                text     : sName,
-                                level    : "H3",
+                                text: sName,
+                                level: "H3",
                                 textAlign: "Center",
-                                class    : "sapUiSmallMarginBottom"
+                                class: "sapUiSmallMarginBottom"
                             }),
 
                             /* ── Info list ── */
@@ -260,8 +429,8 @@ sap.ui.define([
 
                 /* ── Buttons ── */
                 beginButton: new sap.m.Button({
-                    text : "Close",
-                    type : "Emphasized",
+                    text: "Close",
+                    type: "Emphasized",
                     press: function () { oDialog.close(); }
                 }),
 
@@ -282,25 +451,17 @@ sap.ui.define([
             MessageBox.confirm(
                 "Are you sure you want to logout from StockTrade Pro?",
                 {
-                    title           : "Confirm Logout",
-                    icon            : MessageBox.Icon.WARNING,
-                    actions         : [MessageBox.Action.YES, MessageBox.Action.NO],
+                    title: "Confirm Logout",
+                    icon: MessageBox.Icon.WARNING,
+                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
                     emphasizedAction: MessageBox.Action.YES,
-                    onClose         : function (sAction) {
+                    onClose: function (sAction) {
                         if (sAction === MessageBox.Action.YES) {
                             MessageToast.show("Logging out… see you soon!");
 
                             setTimeout(function () {
-                                /*
-                                 * ── Option A (recommended for BTP / Launchpad):
-                                 *    Navigate to your app's login route if you have one:
-                                 *
-                                 *    self.getOwnerComponent().getRouter().navTo("login");
-                                 *
-                                 * ── Option B (simple full-page reload, works universally):
-                                 */
-                                window.location.reload();
-
+                                window.location.hash = "";
+                                self.getOwnerComponent().getRouter().navTo("home");
                             }, 1000);
                         }
                     }
@@ -315,7 +476,7 @@ sap.ui.define([
         onBuyStock: function (oEvent) {
             oEvent.cancelBubble();
             const oContext = oEvent.getSource().getBindingContext();
-            const oData    = oContext.getObject();
+            const oData = oContext.getObject();
             this._openTradeDialog("BUY", oData);
         },
 
@@ -326,7 +487,7 @@ sap.ui.define([
         onSellStock: function (oEvent) {
             oEvent.cancelBubble();
             const oContext = oEvent.getSource().getBindingContext();
-            const oData    = oContext.getObject();
+            const oData = oContext.getObject();
             this._openTradeDialog("SELL", oData);
         },
 
@@ -344,12 +505,12 @@ sap.ui.define([
 
         onToggleWatchlist: function (oEvent) {
             oEvent.cancelBubble();
-            const oCtx  = oEvent.getSource().getBindingContext();
+            const oCtx = oEvent.getSource().getBindingContext();
             const oData = oCtx.getObject();
             if (!oData || !oData.ID) { return; }
 
-            const oVM        = this.getView().getModel("custVM");
-            let   aWatchlist = oVM.getProperty("/watchlist") || [];
+            const oVM = this.getView().getModel("custVM");
+            let aWatchlist = oVM.getProperty("/watchlist") || [];
 
             if (aWatchlist.includes(oData.ID)) {
                 aWatchlist = aWatchlist.filter(function (id) { return id !== oData.ID; });
@@ -360,36 +521,38 @@ sap.ui.define([
             }
 
             oVM.setProperty("/watchlist", aWatchlist);
+            oVM.updateBindings(true);
             this._refreshWatchlistData();
         },
 
         onRemoveWatchlist: function (oEvent) {
-            const oCtx  = oEvent.getSource().getBindingContext("custVM");
+            const oCtx = oEvent.getSource().getBindingContext("custVM");
             const oData = oCtx.getObject();
             if (!oData || !oData.ID) { return; }
 
-            const oVM        = this.getView().getModel("custVM");
-            let   aWatchlist = oVM.getProperty("/watchlist") || [];
+            const oVM = this.getView().getModel("custVM");
+            let aWatchlist = oVM.getProperty("/watchlist") || [];
             aWatchlist = aWatchlist.filter(function (id) { return id !== oData.ID; });
             oVM.setProperty("/watchlist", aWatchlist);
+            oVM.updateBindings(true);
             this._refreshWatchlistData();
         },
 
         onBuyFromWatchlist: function (oEvent) {
-            const oCtx  = oEvent.getSource().getBindingContext("custVM");
+            const oCtx = oEvent.getSource().getBindingContext("custVM");
             const oData = oCtx.getObject();
             const oProduct = {
-                ID           : oData.ID,
-                productName  : oData.productName,
-                currency     : oData.currency,
-                price        : oData.price,
+                ID: oData.ID,
+                productName: oData.productName,
+                currency: oData.currency,
+                price: oData.price,
                 stockQuantity: oData.stockQuantity || 100
             };
             this._openTradeDialog("BUY", oProduct);
         },
 
         _refreshWatchlistData: function () {
-            const oVM        = this.getView().getModel("custVM");
+            const oVM = this.getView().getModel("custVM");
             const aWatchlist = oVM.getProperty("/watchlist") || [];
 
             if (aWatchlist.length === 0) {
@@ -397,12 +560,12 @@ sap.ui.define([
                 return;
             }
 
-            const oTable    = this.byId("stockTable");
-            const oBinding  = oTable.getBinding("items");
+            const oTable = this.byId("stockTable");
+            const oBinding = oTable.getBinding("items");
             if (!oBinding) { return; }
 
             const aContexts = oBinding.getCurrentContexts();
-            const aData     = [];
+            const aData = [];
 
             aContexts.forEach(function (oCtx) {
                 const oProduct = oCtx.getObject();
@@ -419,12 +582,12 @@ sap.ui.define([
         ═══════════════════════════════════════════════════════ */
 
         _openTradeDialog: function (sType, oProduct) {
-            const oInput    = new sap.m.Input({ type: "Number", placeholder: "Enter quantity" });
-            const oVM       = this.getView().getModel("custVM");
+            const oInput = new sap.m.Input({ type: "Number", placeholder: "Enter quantity" });
+            const oVM = this.getView().getModel("custVM");
             const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
 
             const oDialog = new sap.m.Dialog({
-                title       : sType === "BUY" ? "Buy Stock" : "Sell Stock",
+                title: sType === "BUY" ? "Buy Stock" : "Sell Stock",
                 contentWidth: "360px",
                 content: [
                     new sap.m.VBox({
@@ -432,7 +595,7 @@ sap.ui.define([
                         items: [
                             new sap.m.ObjectIdentifier({
                                 title: oProduct.productName,
-                                text : oProduct.currency + " " + oProduct.price
+                                text: oProduct.currency + " " + oProduct.price
                             }),
                             new sap.m.Text({ text: "Available: " + oProduct.stockQuantity }),
                             new sap.m.Label({ text: "Quantity", class: "sapUiSmallMarginTop" }),
@@ -441,9 +604,9 @@ sap.ui.define([
                     })
                 ],
                 beginButton: new sap.m.Button({
-                    text : sType === "BUY" ? "Confirm Buy" : "Confirm Sell",
-                    icon : sType === "BUY" ? "sap-icon://add" : "sap-icon://less",
-                    type : "Emphasized",
+                    text: sType === "BUY" ? "Confirm Buy" : "Confirm Sell",
+                    icon: sType === "BUY" ? "sap-icon://add" : "sap-icon://less",
+                    type: "Emphasized",
                     press: async () => {
                         const iQty = parseInt(oInput.getValue(), 10);
                         if (!iQty || iQty <= 0) {
@@ -454,18 +617,18 @@ sap.ui.define([
                         }
 
                         try {
-                            const oModel  = this.getOwnerComponent().getModel();
+                            const oModel = this.getOwnerComponent().getModel();
                             const sAction = sType === "BUY" ? "/buyStock(...)" : "/sellStock(...)";
-                            const oAct    = oModel.bindContext(sAction);
-                            oAct.setParameter("productId",    oProduct.ID);
+                            const oAct = oModel.bindContext(sAction);
+                            oAct.setParameter("productId", oProduct.ID);
                             oAct.setParameter("customerName", sCustomer);
-                            oAct.setParameter("quantity",     iQty);
+                            oAct.setParameter("quantity", iQty);
 
                             await oAct.execute();
                             const oBoundCtx = oAct.getBoundContext();
                             let r = oBoundCtx ? oBoundCtx.getObject() : null;
                             if (r && r.value !== undefined) { r = r.value; }
-                            if (!r)         { throw new Error("No response"); }
+                            if (!r) { throw new Error("No response"); }
                             if (!r.success) { return MessageBox.error(r.message || "Trade rejected"); }
 
                             MessageToast.show(r.message || "Trade completed");
@@ -489,8 +652,8 @@ sap.ui.define([
                     }
                 }),
                 endButton: new sap.m.Button({
-                    text : "Cancel",
-                    type : "Transparent",
+                    text: "Cancel",
+                    type: "Transparent",
                     press: () => oDialog.close()
                 }),
                 afterClose: () => oDialog.destroy()
@@ -506,7 +669,7 @@ sap.ui.define([
         _refreshDailyChart: async function () {
             try {
                 const oModel = this.getOwnerComponent().getModel();
-                const aTx    = await oModel
+                const aTx = await oModel
                     .bindList("/Transactions")
                     .requestContexts(0, 5000);
 
@@ -535,13 +698,13 @@ sap.ui.define([
                 if (!t || !t.createdAt) { return; }
                 const sDate = String(t.createdAt).substring(0, 10);
                 if (!oByDate[sDate]) { oByDate[sDate] = { buys: 0, sells: 0 }; }
-                if (t.transactionType === "BUY")  { oByDate[sDate].buys++;  }
+                if (t.transactionType === "BUY") { oByDate[sDate].buys++; }
                 if (t.transactionType === "SELL") { oByDate[sDate].sells++; }
             });
 
             const aDates = Object.keys(oByDate).sort();
 
-            const oToday  = new Date();
+            const oToday = new Date();
             oToday.setHours(0, 0, 0, 0);
 
             let oStart = aDates.length
@@ -557,8 +720,8 @@ sap.ui.define([
             for (let d = new Date(oStart); d <= oToday; d.setDate(d.getDate() + 1)) {
                 const sKey = d.toISOString().substring(0, 10);
                 aResult.push({
-                    date : (d.getMonth() + 1) + "/" + d.getDate(),
-                    buys : (oByDate[sKey] || {}).buys  || 0,
+                    date: (d.getMonth() + 1) + "/" + d.getDate(),
+                    buys: (oByDate[sKey] || {}).buys || 0,
                     sells: (oByDate[sKey] || {}).sells || 0
                 });
             }
@@ -574,30 +737,30 @@ sap.ui.define([
             if (!oViz) { return; }
             oViz.setVizProperties({
                 title: {
-                    text : "Daily Buys vs Sells",
+                    text: "Daily Buys vs Sells",
                     style: { color: "#ffffff", fontSize: "14px", fontWeight: "bold", fontFamily: "Inter" }
                 },
                 legend: {
                     visible: true,
-                    label  : { style: { color: "#94a3b8", fontFamily: "Inter" } }
+                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } }
                 },
                 categoryAxis: {
-                    title   : { visible: true, text: "Date", style: { color: "#94a3b8" } },
-                    label   : { style: { color: "#94a3b8" } },
+                    title: { visible: true, text: "Date", style: { color: "#94a3b8" } },
+                    label: { style: { color: "#94a3b8" } },
                     gridLine: { visible: false },
                     axisLine: { visible: true, color: "#334155" }
                 },
                 valueAxis: {
-                    title   : { visible: true, text: "Transactions", style: { color: "#94a3b8" } },
-                    label   : { style: { color: "#94a3b8" } },
+                    title: { visible: true, text: "Transactions", style: { color: "#94a3b8" } },
+                    label: { style: { color: "#94a3b8" } },
                     gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
                     axisLine: { visible: false }
                 },
                 plotArea: {
-                    background  : { visible: false },
-                    dataLabel   : { visible: false },
+                    background: { visible: false },
+                    dataLabel: { visible: false },
                     colorPalette: ["#10b981", "#ef4444"],
-                    line        : { marker: { visible: true, size: 6 }, width: 3 }
+                    line: { marker: { visible: true, size: 6 }, width: 3 }
                 },
                 background: { visible: false }
             });
@@ -611,25 +774,25 @@ sap.ui.define([
             const oViz = this.byId("priceChart");
             if (!oViz) { return; }
             oViz.setVizProperties({
-                title  : { visible: false },
-                legend : { visible: false },
+                title: { visible: false },
+                legend: { visible: false },
                 categoryAxis: {
-                    title   : { visible: false },
-                    label   : { style: { color: "#94a3b8", fontFamily: "Inter" } },
+                    title: { visible: false },
+                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } },
                     gridLine: { visible: false },
                     axisLine: { visible: true, color: "rgba(255,255,255,0.1)" }
                 },
                 valueAxis: {
-                    title   : { visible: false },
-                    label   : { style: { color: "#94a3b8", fontFamily: "Inter" } },
+                    title: { visible: false },
+                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } },
                     gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
                     axisLine: { visible: false }
                 },
                 plotArea: {
-                    background  : { visible: false },
-                    dataLabel   : { visible: false },
+                    background: { visible: false },
+                    dataLabel: { visible: false },
                     colorPalette: ["#00ffaa"],
-                    line        : { marker: { visible: false }, width: 3 }
+                    line: { marker: { visible: false }, width: 3 }
                 },
                 background: { visible: false }
             });
@@ -644,20 +807,20 @@ sap.ui.define([
         },
 
         _refreshSelectedHistory: async function () {
-            const oVM  = this.getView().getModel("custVM");
+            const oVM = this.getView().getModel("custVM");
             const sPid = oVM.getProperty("/selectedProductId");
             if (!sPid) { return; }
             const sRange = oVM.getProperty("/range") || "1W";
             try {
                 const oModel = this.getOwnerComponent().getModel();
-                const oFn    = oModel.bindContext("/getPriceHistory(...)");
+                const oFn = oModel.bindContext("/getPriceHistory(...)");
                 oFn.setParameter("productId", sPid);
-                oFn.setParameter("range",     sRange);
-                const oRes  = await oFn.execute();
-                const a     = oRes && oRes.getObject ? oRes.getObject() : [];
+                oFn.setParameter("range", sRange);
+                const oRes = await oFn.execute();
+                const a = oRes && oRes.getObject ? oRes.getObject() : [];
                 const aData = (a || []).map(function (p) {
                     return {
-                        time : new Date(p.createdAt).toLocaleString(),
+                        time: new Date(p.createdAt).toLocaleString(),
                         price: Number(p.price)
                     };
                 });
@@ -674,11 +837,11 @@ sap.ui.define([
         ═══════════════════════════════════════════════════════ */
 
         _refreshPortfolioSummary: async function () {
-            const oVM       = this.getView().getModel("custVM");
+            const oVM = this.getView().getModel("custVM");
             const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
             try {
                 const oModel = this.getOwnerComponent().getModel();
-                const oFn    = oModel.bindContext("/getPortfolio(...)");
+                const oFn = oModel.bindContext("/getPortfolio(...)");
                 oFn.setParameter("customerName", sCustomer);
                 await oFn.execute();
                 const oBoundCtx = oFn.getBoundContext();
@@ -688,13 +851,13 @@ sap.ui.define([
                 if (!Array.isArray(a)) { a = []; }
 
                 /* Filter to INR only for summary totals — avoid mixing INR+USD+EUR */
-                const aINR   = a.filter(function (h) { return (h.currency || "INR") === "INR"; });
-                const owned  = a.length;
+                const aINR = a.filter(function (h) { return (h.currency || "INR") === "INR"; });
+                const owned = a.length;
                 const profitable = a.filter(function (h) { return Number(h.profitLoss || 0) > 0; }).length;
 
-                const totalValue = aINR.reduce(function (s, h) { return s + Number(h.totalValue  || 0); }, 0);
-                const totalPL    = aINR.reduce(function (s, h) { return s + Number(h.profitLoss  || 0); }, 0);
-                const totalInv   = aINR.reduce(function (s, h) { return s + (Number(h.avgBuyPrice || 0) * Number(h.quantity || 0)); }, 0);
+                const totalValue = aINR.reduce(function (s, h) { return s + Number(h.totalValue || 0); }, 0);
+                const totalPL = aINR.reduce(function (s, h) { return s + Number(h.profitLoss || 0); }, 0);
+                const totalInv = aINR.reduce(function (s, h) { return s + (Number(h.avgBuyPrice || 0) * Number(h.quantity || 0)); }, 0);
 
                 const fmt = (num) => Number(num).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const startingCapital = 1000000; // ₹10,00,000 virtual wallet
@@ -703,13 +866,13 @@ sap.ui.define([
                 let cashOut = 0, cashIn = 0;
                 try {
                     const oTxFilter = new sap.ui.model.Filter("customerName", sap.ui.model.FilterOperator.EQ, sCustomer);
-                    const oTxList   = oModel.bindList("/Transactions", null, [], [oTxFilter]);
-                    const aTxCtx    = await oTxList.requestContexts(0, 200);
+                    const oTxList = oModel.bindList("/Transactions", null, [], [oTxFilter]);
+                    const aTxCtx = await oTxList.requestContexts(0, 200);
                     aTxCtx.forEach(function (c) {
-                        const t   = c.getObject();
+                        const t = c.getObject();
                         const amt = Number(t.totalPrice || 0);
-                        if (t.transactionType === "BUY")  { cashOut += amt; }
-                        if (t.transactionType === "SELL") { cashIn  += amt; }
+                        if (t.transactionType === "BUY") { cashOut += amt; }
+                        if (t.transactionType === "SELL") { cashIn += amt; }
                     });
                 } catch (txErr) {
                     /* Fallback to cost-basis estimate if tx fetch fails */
@@ -720,57 +883,57 @@ sap.ui.define([
                 /* ── P/L percentage relative to total invested ── */
                 const plPct = totalInv > 0 ? (totalPL / totalInv) * 100 : 0;
                 const plPctStr = (plPct >= 0 ? "+" : "") + plPct.toFixed(2) + "%";
-                const plState  = plPct >= 0 ? "Success" : "Error";
+                const plState = plPct >= 0 ? "Success" : "Error";
 
                 /* ── Portfolio growth % based on buying power used ── */
-                const portPct    = totalInv > 0 ? ((totalValue - totalInv) / totalInv) * 100 : 0;
+                const portPct = totalInv > 0 ? ((totalValue - totalInv) / totalInv) * 100 : 0;
                 const portPctStr = (portPct >= 0 ? "+" : "") + portPct.toFixed(2) + "%";
-                const portState  = portPct >= 0 ? "Success" : "Error";
+                const portState = portPct >= 0 ? "Success" : "Error";
 
                 /* ── Stocks badge: how many added this month ── */
                 const stocksBadge = owned > 0 ? owned + " active" : "No holdings";
 
-                oVM.setProperty("/summary/portfolioValue",      "₹" + fmt(totalValue));
-                oVM.setProperty("/summary/unrealizedText",      (totalPL >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(totalPL)) + " unrealized");
-                oVM.setProperty("/summary/portfolioProgress",   Math.min(100, Math.round((owned / 20) * 100)));
-                oVM.setProperty("/summary/portfolioBadge",      portPctStr);
+                oVM.setProperty("/summary/portfolioValue", "₹" + fmt(totalValue));
+                oVM.setProperty("/summary/unrealizedText", (totalPL >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(totalPL)) + " unrealized");
+                oVM.setProperty("/summary/portfolioProgress", Math.min(100, Math.round((owned / 20) * 100)));
+                oVM.setProperty("/summary/portfolioBadge", portPctStr);
                 oVM.setProperty("/summary/portfolioBadgeState", portState);
-                oVM.setProperty("/summary/profitLoss",          (totalPL >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(totalPL)));
-                oVM.setProperty("/summary/profitLossPct",       plPctStr);
-                oVM.setProperty("/summary/profitProgress",      Math.min(100, Math.abs(plPct)));
-                oVM.setProperty("/summary/profitBadge",         plPctStr);
-                oVM.setProperty("/summary/profitBadgeState",    plState);
-                oVM.setProperty("/summary/buyingPower",         "₹" + fmt(availBal));
+                oVM.setProperty("/summary/profitLoss", (totalPL >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(totalPL)));
+                oVM.setProperty("/summary/profitLossPct", plPctStr);
+                oVM.setProperty("/summary/profitProgress", Math.min(100, Math.abs(plPct)));
+                oVM.setProperty("/summary/profitBadge", plPctStr);
+                oVM.setProperty("/summary/profitBadgeState", plState);
+                oVM.setProperty("/summary/buyingPower", "₹" + fmt(availBal));
                 oVM.setProperty("/summary/buyingPowerProgress", Math.min(100, Math.round((availBal / startingCapital) * 100)));
-                oVM.setProperty("/summary/ownedStocks",         owned + " Stocks");
-                oVM.setProperty("/summary/ownedStocksSub",      profitable + " profitable");
+                oVM.setProperty("/summary/ownedStocks", owned + " Stocks");
+                oVM.setProperty("/summary/ownedStocksSub", profitable + " profitable");
                 oVM.setProperty("/summary/ownedStocksProgress", Math.min(100, Math.round((profitable / Math.max(1, owned)) * 100)));
-                oVM.setProperty("/summary/stocksBadge",         stocksBadge);
-                oVM.setProperty("/summary/stocksBadgeState",    owned > 0 ? "Success" : "None");
+                oVM.setProperty("/summary/stocksBadge", stocksBadge);
+                oVM.setProperty("/summary/stocksBadgeState", owned > 0 ? "Success" : "None");
 
                 /* ── Update holdings list for portfolio breakdown ── */
                 const fmt2 = (n) => Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const maxTv = Math.max(1, totalValue);
                 const aHoldings = a.map(function (h) {
-                    const pl    = Number(h.profitLoss || 0);
-                    const plP   = Number(h.profitLossPct || 0);
-                    const tv    = Number(h.totalValue || 0);
-                    const curr  = h.currency || "INR";
-                    const sym   = curr === "INR" ? "₹" : (curr === "USD" ? "$" : (curr === "EUR" ? "€" : curr + " "));
+                    const pl = Number(h.profitLoss || 0);
+                    const plP = Number(h.profitLossPct || 0);
+                    const tv = Number(h.totalValue || 0);
+                    const curr = h.currency || "INR";
+                    const sym = curr === "INR" ? "₹" : (curr === "USD" ? "$" : (curr === "EUR" ? "€" : curr + " "));
                     return {
-                        productName  : h.productName || "",
-                        quantity     : h.quantity || 0,
-                        currency     : curr,
-                        currSymbol   : sym,
-                        currentPrice : fmt2(h.currentPrice || 0),
-                        avgBuyPrice  : fmt2(h.avgBuyPrice  || 0),
-                        totalValue   : fmt2(tv),
-                        profitLoss   : (pl >= 0 ? "+" : "-") + sym + fmt2(Math.abs(pl)),
+                        productName: h.productName || "",
+                        quantity: h.quantity || 0,
+                        currency: curr,
+                        currSymbol: sym,
+                        currentPrice: fmt2(h.currentPrice || 0),
+                        avgBuyPrice: fmt2(h.avgBuyPrice || 0),
+                        totalValue: fmt2(tv),
+                        profitLoss: (pl >= 0 ? "+" : "-") + sym + fmt2(Math.abs(pl)),
                         profitLossPct: (plP >= 0 ? "+" : "") + plP.toFixed(2) + "%",
-                        plState      : pl >= 0 ? "Success" : "Error",
-                        barValue     : curr === "INR" ? Math.min(100, Math.round((tv / maxTv) * 100)) : 10,
-                        barState     : pl >= 0 ? "Success" : "Error",
-                        gainClass    : pl >= 0 ? "cdChangeUp" : "cdChangeDown"
+                        plState: pl >= 0 ? "Success" : "Error",
+                        barValue: curr === "INR" ? Math.min(100, Math.round((tv / maxTv) * 100)) : 10,
+                        barState: pl >= 0 ? "Success" : "Error",
+                        gainClass: pl >= 0 ? "cdChangeUp" : "cdChangeDown"
                     };
                 });
                 oVM.setProperty("/holdings", aHoldings);
@@ -785,37 +948,37 @@ sap.ui.define([
         ═══════════════════════════════════════════════════════ */
 
         _refreshRecentActivity: async function () {
-            const oVM       = this.getView().getModel("custVM");
+            const oVM = this.getView().getModel("custVM");
             const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
             try {
                 const oModel = this.getOwnerComponent().getModel();
-                const aTx    = await oModel
+                const aTx = await oModel
                     .bindList("/Transactions", null, null, [
                         new sap.ui.model.Filter("customerName", sap.ui.model.FilterOperator.EQ, sCustomer)
-                    ], { $orderby: "createdAt desc", $top: 8 })
+                    ], { $orderby: "createdAt desc" })
                     .requestContexts(0, 8);
 
                 const fmt = (num) => Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                 const aActivity = aTx.map(function (c) {
                     const t = c.getObject();
-                    const isBuy  = t.transactionType === "BUY";
-                    const when   = t.createdAt ? new Date(t.createdAt) : null;
-                    let   sAgo   = "";
+                    const isBuy = t.transactionType === "BUY";
+                    const when = t.createdAt ? new Date(t.createdAt) : null;
+                    let sAgo = "";
                     if (when) {
                         const diff = Date.now() - when.getTime();
                         const mins = Math.floor(diff / 60000);
-                        if (mins < 1)       { sAgo = "just now"; }
+                        if (mins < 1) { sAgo = "just now"; }
                         else if (mins < 60) { sAgo = mins + "m ago"; }
                         else if (mins < 1440) { sAgo = Math.floor(mins / 60) + "h ago"; }
-                        else                { sAgo = Math.floor(mins / 1440) + "d ago"; }
+                        else { sAgo = Math.floor(mins / 1440) + "d ago"; }
                     }
                     const productName = (t.product_productName || t.productName || "Stock");
                     return {
-                        title      : (isBuy ? "Bought " : "Sold ") + productName,
-                        detail     : t.quantity + " shares @ " + (t.currency || "₹") + fmt(t.unitPrice || 0),
-                        time       : sAgo,
-                        dotClass   : isBuy ? "cdActivityDot cdDotGreen" : "cdActivityDot cdDotRed"
+                        title: (isBuy ? "Bought " : "Sold ") + productName,
+                        detail: t.quantity + " shares @ " + (t.currency || "₹") + fmt(t.unitPrice || 0),
+                        time: sAgo,
+                        dotClass: isBuy ? "cdActivityDot cdDotGreen" : "cdActivityDot cdDotRed"
                     };
                 });
 
@@ -826,9 +989,144 @@ sap.ui.define([
             }
         },
 
-        /* ═══════════════════════════════════════════════════════
-           GRAPH STATS — day high / day low / volume
-        ═══════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════
+           REAL-TIME NOTIFICATIONS
+           ─ Fetches live data from the OData service every 7 seconds.
+           ─ Sources:
+               1. /Transactions (customerName filter) → BUY/SELL confirmations
+               2. /Products (status=LOW)              → low-stock alerts
+               3. /HistoricalPrices (last 5 min)      → price spike alerts
+               4. custVM>/holdings                    → portfolio milestones
+           ─ Unread badge = # transaction notifications newer than _lastReadTs
+        ═══════════════════════════════════════════════════════════════ */
+
+        _refreshNotifications: async function () {
+            const oVM = this.getView().getModel("custVM");
+            const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
+
+            /* _lastReadTs: timestamp when user last opened the popover.
+               Initialised to "now" on first load so old transactions don't show as new. */
+            if (this._lastReadTs === undefined) {
+                this._lastReadTs = Date.now();
+            }
+
+            try {
+                const oModel = this.getOwnerComponent().getModel();
+                const fmt = (num) => Number(num).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                /* ── 1. REAL transactions for this customer (newest first) ── */
+                const aTxCtx = await oModel
+                    .bindList("/Transactions", null,
+                        [new sap.ui.model.Sorter("createdAt", true)],   // descending
+                        [new sap.ui.model.Filter("customerName", sap.ui.model.FilterOperator.EQ, sCustomer)]
+                    )
+                    .requestContexts(0, 15);
+
+                /* ── 2. REAL low-stock products ── */
+                const aProdCtx = await oModel
+                    .bindList("/Products", null, null,
+                        [new sap.ui.model.Filter("status", sap.ui.model.FilterOperator.EQ, "LOW")]
+                    )
+                    .requestContexts(0, 5);
+
+                /* ── 3. REAL price spikes in last 10 minutes ── */
+                const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+                const aSpikeCtx = await oModel
+                    .bindList("/HistoricalPrices", null, null, [
+                        new sap.ui.model.Filter("createdAt", sap.ui.model.FilterOperator.GE, tenMinAgo)
+                    ])
+                    .requestContexts(0, 30);
+
+                /* ───────────── Build notification items ───────────── */
+                const aItems = [];
+                let newTxCount = 0;   // genuinely new tx since last popover open
+
+                /* Trade notifications (REAL OData data) */
+                aTxCtx.forEach(function (c) {
+                    const t = c.getObject();
+                    const isBuy = t.transactionType === "BUY";
+                    const when = t.createdAt ? new Date(t.createdAt) : new Date();
+                    const tsMs = when.getTime();
+                    const diff = Date.now() - tsMs;
+                    const mins = Math.floor(diff / 60000);
+                    let sAgo = "just now";
+                    if (mins >= 1440) { sAgo = Math.floor(mins / 1440) + "d ago"; }
+                    else if (mins >= 60) { sAgo = Math.floor(mins / 60) + "h ago"; }
+                    else if (mins >= 1) { sAgo = mins + "m ago"; }
+
+                    /* Count as "new" only if created after last popover open */
+                    if (tsMs > this._lastReadTs) { newTxCount++; }
+
+                    const name = t.product_productName || t.productName || "Stock";
+                    aItems.push({
+                        type: isBuy ? "buy" : "sell",
+                        title: isBuy ? "✅ Buy Confirmed" : "🔴 Sell Executed",
+                        message: t.quantity + " × " + name + " @ ₹" + fmt(t.unitPrice || 0),
+                        time: sAgo,
+                        ts: tsMs
+                    });
+                }.bind(this));
+
+                /* Low-stock alerts (live from OData) */
+                aProdCtx.forEach(function (c) {
+                    const p = c.getObject();
+                    aItems.push({
+                        type: "alert",
+                        title: "⚠️ Low Stock Alert",
+                        message: p.productName + " — only " + p.stockQuantity + " units remaining",
+                        time: "live",
+                        ts: Date.now() + 200
+                    });
+                });
+
+                /* Price spike alerts from HistoricalPrices */
+                const spikeMap = {};
+                aSpikeCtx.forEach(function (c) {
+                    const h = c.getObject();
+                    const pct = Math.abs(Number(h.changePct || 0));
+                    if (pct >= 3) {  // only alert on >=3% moves
+                        const pid = h.product_ID;
+                        if (!spikeMap[pid] || pct > spikeMap[pid].pct) {
+                            spikeMap[pid] = { pct, price: Number(h.price || 0) };
+                        }
+                    }
+                });
+                Object.keys(spikeMap).forEach(function (pid) {
+                    const s = spikeMap[pid];
+                    const dir = s.pct >= 0 ? "📈" : "📉";
+                    aItems.push({
+                        type: "spike",
+                        title: dir + " Price Move Alert",
+                        message: "Market moved " + Math.abs(s.pct).toFixed(1) + "% — ₹" + fmt(s.price),
+                        time: "just now",
+                        ts: Date.now() + 100
+                    });
+                });
+
+                /* Portfolio milestone from real holdings */
+                const aHoldings = oVM.getProperty("/holdings") || [];
+                const gainers = aHoldings.filter(h => h.plState === "Success");
+                if (gainers.length > 0) {
+                    aItems.push({
+                        type: "info",
+                        title: "📈 Portfolio Milestone",
+                        message: gainers.length + " holding(s) in profit!",
+                        time: "now",
+                        ts: Date.now() - 1
+                    });
+                }
+
+                /* Sort newest first */
+                aItems.sort((a, b) => b.ts - a.ts);
+
+                /* Update model — unread = new transactions since last popover open */
+                oVM.setProperty("/notifications/items", aItems);
+                oVM.setProperty("/notifications/unreadCount", newTxCount);
+
+            } catch (e) {
+                console.error("Notifications refresh error:", e);
+            }
+        },
 
         _refreshGraphStats: async function (sPid) {
             if (!sPid) { return; }
@@ -840,7 +1138,7 @@ sap.ui.define([
                 const aCtx = await oModel
                     .bindList("/PriceHistory", null, null, [
                         new sap.ui.model.Filter("product_ID", sap.ui.model.FilterOperator.EQ, sPid),
-                        new sap.ui.model.Filter("timestamp",  sap.ui.model.FilterOperator.GE, oneDayAgo)
+                        new sap.ui.model.Filter("timestamp", sap.ui.model.FilterOperator.GE, oneDayAgo)
                     ])
                     .requestContexts(0, 5000);
 
@@ -853,33 +1151,311 @@ sap.ui.define([
                 aCtx.forEach(function (c) {
                     const r = c.getObject();
                     if (Number(r.high) > high) { high = Number(r.high); }
-                    if (Number(r.low)  < low)  { low  = Number(r.low);  }
+                    if (Number(r.low) < low) { low = Number(r.low); }
                     vol += Number(r.volume || 0);
                 });
 
                 const fmt2 = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const volStr = vol >= 1000000 ? (vol / 1000000).toFixed(1) + "M"
-                             : vol >= 1000    ? (vol / 1000).toFixed(1)    + "K"
-                             : vol.toString();
+                    : vol >= 1000 ? (vol / 1000).toFixed(1) + "K"
+                        : vol.toString();
 
                 /* Determine trend from first vs last close */
                 const firstClose = Number(aCtx[0].getObject().close || 0);
-                const lastClose  = Number(aCtx[aCtx.length - 1].getObject().close || 0);
-                const isBull     = lastClose >= firstClose;
+                const lastClose = Number(aCtx[aCtx.length - 1].getObject().close || 0);
+                const isBull = lastClose >= firstClose;
 
                 oVM.setProperty("/graphStats", {
-                    marketTrend    : isBull ? "Bullish" : "Bearish",
+                    marketTrend: isBull ? "Bullish" : "Bearish",
                     marketTrendIcon: isBull ? "sap-icon://trend-up" : "sap-icon://trend-down",
-                    dayHigh        : "₹" + fmt2(high),
-                    dayLow         : "₹" + fmt2(low),
-                    volume         : volStr
+                    dayHigh: "₹" + fmt2(high),
+                    dayLow: "₹" + fmt2(low),
+                    volume: volStr
                 });
 
             } catch (e) {
                 console.error("Graph stats error:", e);
             }
-        }
+        },
 
+        /* ═══════════════════════════════════════════════════════
+           SECTOR BASED MOVEMENT ANALYTICS METHODS (REAL-TIME DATA FETCHING)
+        ═══════════════════════════════════════════════════════ */
+
+        _initSectorAnalytics: function () {
+            // Run dynamic refresh from live database records instantly
+            this._refreshLiveSectorAnalytics();
+
+            // Establish real-time updates every 2.5 seconds
+            if (this._sectorTimer) { clearInterval(this._sectorTimer); }
+            this._sectorTimer = setInterval(() => {
+                this._refreshLiveSectorAnalytics();
+            }, 2500);
+        },
+
+        _refreshLiveSectorAnalytics: async function () {
+            const oVM = this.getView().getModel("custVM");
+            if (!oVM) { return; }
+            const oModel = this.getOwnerComponent().getModel();
+            try {
+                // 1. Fetch live products from database via OData ListBinding
+                const oListBinding = oModel.bindList("/Products", null, null, null, { $expand: "category" });
+                const aCtx = await oListBinding.requestContexts(0, 100);
+                
+                if (!aCtx || aCtx.length === 0) { return; }
+                const aProducts = aCtx.map(c => c.getObject());
+
+                // 2. Group products by Category/Sector
+                const oSectorsMap = {};
+                aProducts.forEach(function (p) {
+                    const sSectorName = p.category ? p.category.name : "Other";
+                    if (!oSectorsMap[sSectorName]) {
+                        oSectorsMap[sSectorName] = {
+                            key: sSectorName,
+                            name: sSectorName,
+                            products: [],
+                            changeSum: 0
+                        };
+                    }
+                    oSectorsMap[sSectorName].products.push(p);
+                    
+                    // Daily change percentage of individual stock: ((price - previousPrice) / previousPrice) * 100
+                    const fPrice = Number(p.price || 0);
+                    const fPrev = Number(p.previousPrice || p.price || 1);
+                    let fPct = 0;
+                    if (fPrev > 0) {
+                        fPct = ((fPrice - fPrev) / fPrev) * 100;
+                    }
+                    oSectorsMap[sSectorName].changeSum += fPct;
+                });
+
+                // 3. Build dynamic sector metadata array
+                const aSectors = Object.keys(oSectorsMap).map(function (sName) {
+                    const oSec = oSectorsMap[sName];
+                    const fAvgChange = oSec.products.length > 0 ? (oSec.changeSum / oSec.products.length) : 0;
+                    
+                    // Assign stylized icons, color dots and glowing classes dynamically based on category
+                    let sIcon = "sap-icon://circle-task";
+                    let sClass = "cdIconTeal";
+                    let sDot = "cdMaterialsDot";
+                    let sDesc = "Standard Sector";
+
+                    if (sName === "Technology") {
+                        sIcon = "sap-icon://laptop";
+                        sClass = "cdIconPurple";
+                        sDot = "cdTechDot";
+                        sDesc = "High Growth • High Volatility";
+                    } else if (sName === "Banking" || sName === "Financial Services") {
+                        sIcon = "sap-icon://official-service";
+                        sClass = "cdIconGreen";
+                        sDot = "cdFinanceDot";
+                        sDesc = "Stable Growth";
+                    } else if (sName === "Energy") {
+                        sIcon = "sap-icon://energy";
+                        sClass = "cdIconYellow";
+                        sDot = "cdEnergyDot";
+                        sDesc = "High Volatility";
+                    } else if (sName === "Automotive" || sName === "Automobile") {
+                        sIcon = "sap-icon://cargo-train";
+                        sClass = "cdIconBlue";
+                        sDot = "cdHealthDot";
+                        sDesc = "Cyclical • Moderate";
+                    }
+
+                    const isUp = fAvgChange >= 0;
+                    const sChangeText = (isUp ? "+" : "") + fAvgChange.toFixed(2) + "%";
+                    const sChangeClass = isUp ? "cdChangeUp" : "cdChangeDown";
+                    const sSparkIcon = isUp ? "sap-icon://trend-up" : "sap-icon://trend-down";
+
+                    let sStatus = "Stable";
+                    let sStatusState = "Success";
+                    if (fAvgChange >= 1.5) { sStatus = "Strong"; }
+                    else if (fAvgChange >= 0.5) { sStatus = "Positive"; }
+                    else if (fAvgChange >= -0.2) { sStatus = "Stable"; }
+                    else if (fAvgChange >= -1.0) { sStatus = "Neutral"; sStatusState = "Warning"; }
+                    else { sStatus = "Weak"; sStatusState = "Error"; }
+
+                    return {
+                        key: oSec.key,
+                        name: oSec.name,
+                        description: sDesc,
+                        change: parseFloat(fAvgChange.toFixed(2)),
+                        changeText: sChangeText,
+                        changeClass: sChangeClass,
+                        icon: sIcon,
+                        iconClass: sClass,
+                        dotClass: sDot,
+                        sparklineIcon: sSparkIcon,
+                        status: sStatus,
+                        statusState: sStatusState
+                    };
+                });
+
+                // Prepended "All Sectors" object for dropdown select item mapping
+                const aDropdownSectors = [
+                    { key: "ALL", name: "All Sectors", dotClass: "", icon: "", iconClass: "", changeText: "" }
+                ].concat(aSectors);
+                oVM.setProperty("/sectorList", aDropdownSectors);
+
+                // 4. Update Sentiment analysis dynamically from actual sectors count
+                const advancing = aSectors.filter(s => s.change > 0).length;
+                const declining = aSectors.filter(s => s.change < 0).length;
+                const unchanged = aSectors.length - advancing - declining;
+
+                let score = 50 + (advancing - declining) * (aSectors.length > 0 ? Math.round(40 / aSectors.length) : 5);
+                score = Math.min(95, Math.max(10, score));
+
+                let sText = "NEUTRAL";
+                let sTextClass = "cdChangeStatus";
+                let sMsg = "Market is trending sideways";
+                if (score >= 60) {
+                    sText = "BULLISH";
+                    sTextClass = "cdChangeUp";
+                    sMsg = "Market is trending positive";
+                } else if (score <= 40) {
+                    sText = "BEARISH";
+                    sTextClass = "cdChangeDown";
+                    sMsg = "Market is trending negative";
+                }
+
+                oVM.setProperty("/sentiment", {
+                    score: score,
+                    text: sText,
+                    textClass: sTextClass,
+                    sentimentTrendMsg: sMsg,
+                    advancing: advancing,
+                    declining: declining,
+                    unchanged: unchanged
+                });
+
+                // 5. Append historical scrolling data point
+                const sSelectedFilter = oVM.getProperty("/selectedSectorFilter") || "ALL";
+                const sSelectedRange = oVM.getProperty("/sectorRange") || "1D";
+                
+                let aChartData = oVM.getProperty("/sectorChartData") || [];
+
+                // Initialize historical walks if chart is empty
+                if (aChartData.length === 0) {
+                    aChartData = this._generateSectorChartData(sSelectedRange, aSectors);
+                }
+
+                // Add live points for each active database sector
+                const nowTime = new Date();
+                const sTimeStr = nowTime.getHours().toString().padStart(2, '0') + ":" + 
+                                 nowTime.getMinutes().toString().padStart(2, '0') + ":" + 
+                                 nowTime.getSeconds().toString().padStart(2, '0');
+
+                // Cap history length at last 15 time points to keep VizFrame snappy and beautiful
+                const aTimes = [...new Set(aChartData.map(d => d.Time))];
+                if (aTimes.length > 15) {
+                    const oldestTime = aTimes[0];
+                    aChartData = aChartData.filter(d => d.Time !== oldestTime);
+                }
+
+                aSectors.forEach(function (s) {
+                    if (sSelectedFilter === "ALL" || sSelectedFilter === s.name) {
+                        aChartData.push({
+                            Time: sTimeStr,
+                            Sector: s.name,
+                            Performance: s.change
+                        });
+                    }
+                });
+
+                oVM.setProperty("/sectorChartData", aChartData);
+                oVM.updateBindings(true);
+
+            } catch (e) {
+                console.error("Dynamic Sector fetching error:", e);
+            }
+        },
+
+        _generateSectorChartData: function (sRange, aSectors) {
+            let iCount = 15;
+            let aLabels = [];
+            if (sRange === "1D") {
+                iCount = 15;
+                for (let i = 0; i < iCount; i++) {
+                    const h = 9 + Math.floor(i / 2);
+                    const m = (i % 2) * 30;
+                    aLabels.push(h.toString().padStart(2, '0') + ":" + m.toString().padStart(2, '0'));
+                }
+            } else if (sRange === "1W") {
+                iCount = 7;
+                aLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            } else if (sRange === "1M") {
+                iCount = 10;
+                for (let i = 1; i <= iCount; i++) { aLabels.push("Day " + i); }
+            } else {
+                iCount = 8;
+                for (let i = 1; i <= iCount; i++) { aLabels.push("Wk " + i); }
+            }
+
+            const aData = [];
+            for (let i = 0; i < iCount; i++) {
+                const sLabel = aLabels[i] || "";
+                aSectors.forEach(function (s) {
+                    const fFinal = s.change;
+                    const fProgress = i / (iCount - 1);
+                    const fWalk = fFinal * fProgress + (Math.sin(i * 1.5) * 0.3) * (1 - fProgress);
+                    aData.push({
+                        Time: sLabel,
+                        Sector: s.name,
+                        Performance: parseFloat(fWalk.toFixed(2))
+                    });
+                });
+            }
+            return aData;
+        },
+
+        _applySectorChartStyle: function () {
+            const oViz = this.byId("sectorMovementChart");
+            if (!oViz) { return; }
+            oViz.setVizProperties({
+                title: { visible: false },
+                legend: { visible: false },
+                categoryAxis: {
+                    title: { visible: false },
+                    label: { style: { color: "#94a3b8", fontFamily: "Inter" } },
+                    gridLine: { visible: false },
+                    axisLine: { visible: true, color: "rgba(255,255,255,0.1)" }
+                },
+                valueAxis: {
+                    title: { visible: false },
+                    label: {
+                        style: { color: "#94a3b8", fontFamily: "Inter" },
+                        formatString: "0.0'%'"
+                    },
+                    gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
+                    axisLine: { visible: false }
+                },
+                plotArea: {
+                    background: { visible: false },
+                    dataLabel: { visible: false },
+                    colorPalette: ["#a78bfa", "#10b981", "#38bdf8", "#fb923c", "#2dd4bf", "#f472b6", "#fbbf24"],
+                    line: { marker: { visible: false }, width: 2.5 }
+                },
+                background: { visible: false }
+            });
+        },
+
+        onSectorRangeChange: function () {
+            const oVM = this.getView().getModel("custVM");
+            if (!oVM) { return; }
+            
+            // Clear current chart data to trigger regeneration of the selected range on next tick
+            oVM.setProperty("/sectorChartData", []);
+            this._refreshLiveSectorAnalytics();
+        },
+
+        onSectorFilterChange: function () {
+            const oVM = this.getView().getModel("custVM");
+            if (!oVM) { return; }
+            
+            // Clear chart data to trigger dynamic filter application in history building
+            oVM.setProperty("/sectorChartData", []);
+            this._refreshLiveSectorAnalytics();
+        }
 
     });
 });

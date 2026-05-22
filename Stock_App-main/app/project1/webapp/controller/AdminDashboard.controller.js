@@ -9,6 +9,12 @@ sap.ui.define([
     return Controller.extend("sap.stocktrading.app.controller.AdminDashboard", {
 
         onInit: function () {
+            /* ── Admin notifications model ── */
+            var oAdminVM = new JSONModel({
+                notifications: { unreadCount: 0, items: [] }
+            });
+            this.getView().setModel(oAdminVM, "adminVM");
+
             this._loadDashboardData();
             var oRouter = this.getOwnerComponent().getRouter();
             var oRoute = oRouter.getRoute("admin");
@@ -96,6 +102,8 @@ sap.ui.define([
                 console.error("Dashboard load error:", e);
                 MessageToast.show("Failed to load dashboard data");
             }
+            /* ── Refresh admin notifications alongside dashboard ── */
+            this._refreshAdminNotifications();
         },
 
         /* ═══ BUILD DAILY CHART DATA ═══════════════════════════════════════
@@ -207,6 +215,191 @@ sap.ui.define([
                     if (sAction === MessageBox.Action.OK) { this.getOwnerComponent().getRouter().navTo("home"); }
                 }.bind(this)
             });
+        },
+
+        /* ═══ ADMIN NOTIFICATIONS ═══════════════════════════════════════ */
+
+        _refreshAdminNotifications: async function () {
+            var oAdminVM = this.getView().getModel("adminVM");
+            if (!oAdminVM) { return; }
+            try {
+                var oModel   = this.getOwnerComponent().getModel();
+
+                /* ── Latest transactions (all customers) ── */
+                var aTxCtx = await oModel
+                    .bindList("/Transactions")
+                    .requestContexts(0, 10);
+
+                /* ── Low or OUT stock products ── */
+                var aProdLow = await oModel
+                    .bindList("/Products", null, null, [
+                        new sap.ui.model.Filter("status", sap.ui.model.FilterOperator.EQ, "LOW")
+                    ])
+                    .requestContexts(0, 5);
+
+                var aProdOut = await oModel
+                    .bindList("/Products", null, null, [
+                        new sap.ui.model.Filter("status", sap.ui.model.FilterOperator.EQ, "OUT")
+                    ])
+                    .requestContexts(0, 5);
+
+                var aItems = [];
+
+                /* Trade activity */
+                aTxCtx.forEach(function (c) {
+                    var t     = c.getObject();
+                    var isBuy = t.transactionType === "BUY";
+                    var when  = t.createdAt ? new Date(t.createdAt) : new Date();
+                    var diff  = Date.now() - when.getTime();
+                    var mins  = Math.floor(diff / 60000);
+                    var sAgo  = "just now";
+                    if (mins >= 1440) { sAgo = Math.floor(mins / 1440) + "d ago"; }
+                    else if (mins >= 60) { sAgo = Math.floor(mins / 60) + "h ago"; }
+                    else if (mins >= 1) { sAgo = mins + "m ago"; }
+
+                    aItems.push({
+                        type   : isBuy ? "buy" : "sell",
+                        title  : isBuy ? "🟢 Buy Order" : "🔴 Sell Order",
+                        message: (t.customerName || "Customer") + " — " + (t.quantity || 0) + " units",
+                        time   : sAgo,
+                        ts     : when.getTime()
+                    });
+                });
+
+                /* Low stock alerts */
+                aProdLow.forEach(function (c) {
+                    var p = c.getObject();
+                    aItems.push({
+                        type   : "alert",
+                        title  : "⚠️ Low Stock Warning",
+                        message: p.productName + " — " + p.stockQuantity + " units remaining",
+                        time   : "live",
+                        ts     : Date.now() + 2
+                    });
+                });
+
+                /* Out of stock */
+                aProdOut.forEach(function (c) {
+                    var p = c.getObject();
+                    aItems.push({
+                        type   : "out",
+                        title  : "🛑 Out of Stock",
+                        message: p.productName + " is completely sold out",
+                        time   : "now",
+                        ts     : Date.now() + 3
+                    });
+                });
+
+                aItems.sort(function (a, b) { return b.ts - a.ts; });
+
+                var prevItems = oAdminVM.getProperty("/notifications/items") || [];
+                var prevCount = oAdminVM.getProperty("/notifications/unreadCount") || 0;
+                var newCount  = Math.max(0, aItems.length - prevItems.length);
+
+                oAdminVM.setProperty("/notifications/items",       aItems);
+                oAdminVM.setProperty("/notifications/unreadCount", prevCount + newCount);
+
+            } catch (e) {
+                console.error("Admin notification refresh error:", e);
+            }
+        },
+
+        onAdminNotificationsPress: function (oEvent) {
+            var oAdminVM = this.getView().getModel("adminVM");
+            var aItems   = (oAdminVM && oAdminVM.getProperty("/notifications/items")) || [];
+
+            /* Mark all as read */
+            if (oAdminVM) { oAdminVM.setProperty("/notifications/unreadCount", 0); }
+
+            var oNotifModel = new JSONModel({ items: aItems });
+
+            var oList = new sap.m.List({
+                items: {
+                    path    : "notif>/items",
+                    template: new sap.m.CustomListItem({
+                        content: [
+                            new sap.m.HBox({
+                                alignItems: "Center",
+                                class     : "cdNotifItem",
+                                items     : [
+                                    new sap.m.VBox({
+                                        class: "cdNotifDotWrap",
+                                        items: [
+                                            new sap.m.Text({
+                                                text : "",
+                                                class: {
+                                                    path     : "notif>type",
+                                                    formatter: function (sType) {
+                                                        if (sType === "buy")   { return "cdNotifDot cdDotGreen"; }
+                                                        if (sType === "sell")  { return "cdNotifDot cdDotRed"; }
+                                                        if (sType === "alert") { return "cdNotifDot cdDotAmber"; }
+                                                        if (sType === "out")   { return "cdNotifDot cdDotRed"; }
+                                                        return "cdNotifDot cdDotBlue";
+                                                    }
+                                                }
+                                            })
+                                        ]
+                                    }),
+                                    new sap.m.VBox({
+                                        class: "cdNotifContent",
+                                        items: [
+                                            new sap.m.HBox({
+                                                justifyContent: "SpaceBetween",
+                                                items: [
+                                                    new sap.m.Title({ text: "{notif>title}",   level: "H6", class: "cdNotifTitle" }),
+                                                    new sap.m.Text({  text: "{notif>time}",    class: "cdNotifTime" })
+                                                ]
+                                            }),
+                                            new sap.m.Text({ text: "{notif>message}", class: "cdNotifMessage" })
+                                        ]
+                                    })
+                                ]
+                            })
+                        ]
+                    })
+                },
+                noDataText    : "🎉 All clear — no new alerts!",
+                showSeparators: "Inner"
+            });
+
+            oList.setModel(oNotifModel, "notif");
+
+            if (this._oAdminNotifPopover) {
+                this._oAdminNotifPopover.destroy();
+                this._oAdminNotifPopover = null;
+            }
+
+            var self = this;
+            this._oAdminNotifPopover = new sap.m.Popover({
+                title        : "🔔 Admin Notifications",
+                contentWidth : "380px",
+                contentHeight: "440px",
+                placement    : "Bottom",
+                showHeader   : true,
+                class        : "cdNotifPopover",
+                content      : [ oList ],
+                endButton    : new sap.m.Button({
+                    text : "Clear All",
+                    type : "Transparent",
+                    press: function () {
+                        if (oAdminVM) {
+                            oAdminVM.setProperty("/notifications/items", []);
+                            oAdminVM.setProperty("/notifications/unreadCount", 0);
+                        }
+                        oNotifModel.setProperty("/items", []);
+                    }
+                }),
+                afterClose: function () {
+                    if (self._oAdminNotifPopover) {
+                        self._oAdminNotifPopover.destroy();
+                        self._oAdminNotifPopover = null;
+                    }
+                }
+            });
+
+            this.getView().addDependent(this._oAdminNotifPopover);
+            var oSource = oEvent ? oEvent.getSource() : this.byId("adminBellBtn");
+            this._oAdminNotifPopover.openBy(oSource);
         },
 
         /* ═══ STOCK GRAPH DIALOG ════════════════════════════════════════════
