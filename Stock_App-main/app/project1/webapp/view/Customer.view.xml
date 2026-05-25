@@ -103,15 +103,13 @@
                         <!-- CUSTOMER PROFILE BUTTON WITH DROPDOWN ARROW -->
                         <HBox
                             alignItems="Center"
-                            class="cdNavProfileBtnWrap"
-                            press=".onProfileMenuPress">
+                            class="cdNavProfileBtnWrap">
 
                             <Button
                                 id="customerProfileBtn"
                                 icon="sap-icon://customer"
                                 text="Customer Profile"
                                 type="Transparent"
-                                press=".onProfileMenuPress"
                                 class="cdNavProfileBtn"/>
 
                             <core:Icon
@@ -559,31 +557,15 @@
                             </VBox>
                         </HBox>
 
-                        <VBox class="cdInsightItem cdInsightBullish">
-                            <HBox justifyContent="SpaceBetween" alignItems="Center">
-                                <Text text="Tech Sector" class="cdInsightTitle"/>
-                                <ObjectStatus text="Bullish" state="Success"/>
-                            </HBox>
-                            <Text text="Strong momentum — NVDA, MSFT leading gains" class="cdInsightDesc"/>
-                            <ProgressIndicator percentValue="82" displayValue="" state="Success" class="cdInsightBar"/>
-                        </VBox>
-
-                        <VBox class="cdInsightItem cdInsightNeutral">
-                            <HBox justifyContent="SpaceBetween" alignItems="Center">
-                                <Text text="Consumer Goods" class="cdInsightTitle"/>
-                                <ObjectStatus text="Neutral" state="Warning"/>
-                            </HBox>
-                            <Text text="Mixed signals — wait for earnings report" class="cdInsightDesc"/>
-                            <ProgressIndicator percentValue="50" displayValue="" state="Warning" class="cdInsightBar"/>
-                        </VBox>
-
-                        <VBox class="cdInsightItem cdInsightBearish">
-                            <HBox justifyContent="SpaceBetween" alignItems="Center">
-                                <Text text="Energy Sector" class="cdInsightTitle"/>
-                                <ObjectStatus text="Bearish" state="Error"/>
-                            </HBox>
-                            <Text text="Downtrend continues — reduce exposure" class="cdInsightDesc"/>
-                            <ProgressIndicator percentValue="22" displayValue="" state="Error" class="cdInsightBar"/>
+                        <VBox items="{custVM>/marketInsights}">
+                            <VBox class="cdInsightItem {custVM>itemClass}">
+                                <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                    <Text text="{custVM>name}" class="cdInsightTitle"/>
+                                    <ObjectStatus text="{custVM>status}" state="{custVM>state}"/>
+                                </HBox>
+                                <Text text="{custVM>desc}" class="cdInsightDesc"/>
+                                <ProgressIndicator percentValue="{custVM>score}" displayValue="" state="{custVM>state}" class="cdInsightBar"/>
+                            </VBox>
                         </VBox>
                     </VBox>
 

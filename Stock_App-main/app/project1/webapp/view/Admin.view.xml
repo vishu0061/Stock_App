@@ -101,7 +101,7 @@ xmlns:unified="sap.ui.unified"
                         <HBox alignItems="Center">
                             <core:Icon src="sap-icon://product" size="1.6rem" color="#7c3aed" class="adminStatIcon"/>
                             <VBox class="adminStatTextBlock">
-                                <Text text="Total Stocks" class="adminStatLabel"/>
+                                <Text text="Total Products" class="adminStatLabel"/>
                                 <Title id="statTotalStocks" text="0" class="adminStatValue"/>
                             </VBox>
                         </HBox>

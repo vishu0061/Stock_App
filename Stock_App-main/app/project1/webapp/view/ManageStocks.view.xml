@@ -24,7 +24,7 @@
                 <!-- ── Stats strip ────────────────────────────────── -->
                 <HBox class="msStatsStrip">
                     <VBox class="msStatItem">
-                        <Text text="Total Stocks"  class="msStatLabel"/>
+                        <Text text="Total Products"  class="msStatLabel"/>
                         <Text id="msTotalCount"    text="—" class="msStatValue"/>
                     </VBox>
                     <VBox class="msStatItem">

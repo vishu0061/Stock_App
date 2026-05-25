@@ -69,6 +69,7 @@ sap.ui.define([
                     declining: 0,
                     unchanged: 0
                 },
+                marketInsights: [],
                 sectorChartData: []
             });
             this.getView().setModel(oVM, "custVM");
@@ -279,7 +280,12 @@ sap.ui.define([
             const oBinding = oTable && oTable.getBinding("items");
             if (!oBinding) { return; }
             if (sQ) {
-                const oFilter = new sap.ui.model.Filter("productName", sap.ui.model.FilterOperator.Contains, sQ);
+                const oFilter = new sap.ui.model.Filter({
+                    path: "productName",
+                    operator: sap.ui.model.FilterOperator.Contains,
+                    value1: sQ,
+                    caseSensitive: false
+                });
                 oBinding.filter([oFilter]);
             } else {
                 oBinding.filter([]);
@@ -336,9 +342,7 @@ sap.ui.define([
             }
 
             /* Anchor the popover to the profile button */
-            const oSource = oEvent
-                ? oEvent.getSource()
-                : this.byId("customerProfileBtn");
+            const oSource = this.byId("customerProfileBtn") || (oEvent ? oEvent.getSource() : null);
 
             this._oProfileMenu.openBy(oSource);
         },
@@ -1296,6 +1300,54 @@ sap.ui.define([
                     { key: "ALL", name: "All Sectors", dotClass: "", icon: "", iconClass: "", changeText: "" }
                 ].concat(aSectors);
                 oVM.setProperty("/sectorList", aDropdownSectors);
+
+                // Build dynamic Market Insights array (excluding ALL)
+                const aInsights = aSectors.map(function (s) {
+                    const oSec = oSectorsMap[s.key];
+                    const aProds = oSec.products || [];
+                    
+                    // Sort products by individual change pct
+                    const aSortedProds = [...aProds].sort((a, b) => {
+                        const chA = ((Number(a.price) - Number(a.previousPrice || a.price)) / Number(a.previousPrice || a.price || 1));
+                        const chB = ((Number(b.price) - Number(b.previousPrice || b.price)) / Number(b.previousPrice || b.price || 1));
+                        return chB - chA; // descending
+                    });
+
+                    const leadingStock = aSortedProds[0] ? aSortedProds[0].productName : "";
+                    const laggingStock = aSortedProds[aSortedProds.length - 1] ? aSortedProds[aSortedProds.length - 1].productName : "";
+
+                    let sStatus = "Neutral";
+                    let sState = "Warning";
+                    let sItemClass = "cdInsightNeutral";
+                    let sDesc = "Mixed signals — wait for earnings report";
+
+                    // Map change to status
+                    if (s.change >= 0.5) {
+                        sStatus = "Bullish";
+                        sState = "Success";
+                        sItemClass = "cdInsightBullish";
+                        sDesc = "Strong momentum — " + (leadingStock ? leadingStock + " leading gains" : "sector rising");
+                    } else if (s.change <= -0.5) {
+                        sStatus = "Bearish";
+                        sState = "Error";
+                        sItemClass = "cdInsightBearish";
+                        sDesc = "Downside pressure — " + (laggingStock ? laggingStock + " leading losses" : "sector declining");
+                    }
+
+                    // Map score between 10% and 95%
+                    let fScore = 50 + (s.change * 10);
+                    fScore = Math.min(95, Math.max(10, Math.round(fScore)));
+
+                    return {
+                        name: s.name + " Sector",
+                        status: sStatus,
+                        state: sState,
+                        desc: sDesc,
+                        score: fScore,
+                        itemClass: sItemClass
+                    };
+                });
+                oVM.setProperty("/marketInsights", aInsights);
 
                 // 4. Update Sentiment analysis dynamically from actual sectors count
                 const advancing = aSectors.filter(s => s.change > 0).length;
