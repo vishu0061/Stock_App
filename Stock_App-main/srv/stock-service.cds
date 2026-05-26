@@ -16,6 +16,8 @@ service StockTradingService @(path: '/api') {
 
   entity Portfolio as projection on db.Portfolio;
 
+  entity Notifications as projection on db.Notifications;
+
   // ================= PRODUCT ACTIONS =================
 
   action createProduct(
@@ -138,6 +140,10 @@ service StockTradingService @(path: '/api') {
 
     message : String;
   };
+
+  action clearAllNotifications(
+    customerName : String
+  ) returns Boolean;
 }
 
 // ================= OPTIONAL SERVICES =================

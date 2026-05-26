@@ -112,3 +112,11 @@ entity Portfolio : cuid, managed {
 
     lastTradeAt      : Timestamp;
 }
+
+entity Notifications : cuid, managed {
+    type         : String(30);       // buy | sell | alert | spike | rally
+    title        : String(100);
+    message      : String(255);
+    isRead       : Boolean default false;
+    customerName : String(100);
+}

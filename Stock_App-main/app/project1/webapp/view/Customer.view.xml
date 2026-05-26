@@ -17,8 +17,7 @@
             <Bar
                 id="customerNavBar"
                 design="Header"
-                class="cdNavBar"
-                width="100%">
+                class="cdNavBar">
 
                 <!-- LEFT -->
                 <contentLeft>
@@ -330,7 +329,7 @@
                             <!-- LEFT PANEL: SECTOR PERFORMANCE -->
                             <VBox class="cdSectorPerformancePanel" width="30%">
                                 <Title text="SECTOR PERFORMANCE" level="H4" class="cdSubCardTitle sapUiSmallMarginBottom"/>
-                                <List items="{custVM>/sectorList}" showSeparators="None" noDataText="No sector data available" class="cdSectorList">
+                                <List items="{custVM>/filteredSectorList}" showSeparators="None" noDataText="No sector data available" class="cdSectorList">
                                     <CustomListItem class="cdSectorItem">
                                         <HBox justifyContent="SpaceBetween" alignItems="Center" width="100%" class="cdSectorRow">
                                             <HBox alignItems="Center">
@@ -338,7 +337,7 @@
                                                     <core:Icon src="{custVM>icon}" class="cdSectorIconSmall"/>
                                                 </VBox>
                                                 <VBox class="cdSectorMeta">
-                                                    <Text text="{custVM>name}" class="cdSectorNameText"/>
+                                                    <Text text="{custVM>name}" class="cdSectorNameText {custVM>sectorColorClass}"/>
                                                     <Text text="{custVM>description}" class="cdSectorDescText"/>
                                                 </VBox>
                                             </HBox>
@@ -360,20 +359,27 @@
                                 <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginBottom">
                                     <Title text="SECTOR PERFORMANCE OVER TIME" level="H4" class="cdSubCardTitle"/>
                                     <HBox alignItems="Center" gap="10px">
-                                        <Select id="sectorFilterSelect" selectedKey="{custVM>/selectedSectorFilter}" change=".onSectorFilterChange" class="cdSectorSelect" width="140px" items="{custVM>/sectorList}">
-                                            <core:Item key="{custVM>key}" text="{custVM>name}"/>
-                                        </Select>
                                         <Button icon="sap-icon://full-screen" type="Transparent" class="cdFullScreenBtn"/>
                                     </HBox>
                                 </HBox>
 
-                                <!-- Custom Dynamic Sector Legend -->
-                                <HBox wrap="Wrap" class="cdSectorLegendRow sapUiTinyMarginBottom" items="{custVM>/sectorList}">
-                                    <HBox class="cdLegendItem" visible="{= ${custVM>key} !== 'ALL' }">
-                                        <VBox class="cdLegendDot {custVM>dotClass}"/>
-                                        <Text text="{custVM>name}" class="cdLegendText"/>
-                                    </HBox>
-                                </HBox>
+                                <!-- Custom Dynamic Sector Chips Selector (Acts as both Selector and Legend) -->
+                                <List 
+                                    id="sectorChipsList" 
+                                    items="{custVM>/sectorList}" 
+                                    mode="None" 
+                                    showSeparators="None" 
+                                    class="cdSectorChipsList sapUiTinyMarginBottom">
+                                    <CustomListItem 
+                                        type="Active" 
+                                        press=".onSectorTabPress"
+                                        class="cdSectorChipItem {= ${custVM>key} === ${custVM>/selectedSectorFilter} ? 'cdSectorChipActive' : '' } {custVM>sectorColorClass}">
+                                        <HBox alignItems="Center" class="cdSectorChipContent">
+                                            <VBox class="cdSectorChipDot {custVM>dotClass}"/>
+                                            <Text text="{custVM>name}" class="cdSectorChipText"/>
+                                        </HBox>
+                                    </CustomListItem>
+                                </List>
 
                                 <viz:VizFrame
                                     id="sectorMovementChart"
@@ -421,21 +427,21 @@
                                             <core:Icon src="sap-icon://trend-up" class="cdMetricIconGreen"/>
                                             <VBox class="cdMetricTextWrap">
                                                 <Text text="Advancing Sectors" class="cdMetricLabel"/>
-                                                <Text text="{custVM>/sentiment/advancing}/8" class="cdMetricValue cdValueGreen"/>
+                                                <Text text="{custVM>/sentiment/advancing}/{custVM>/sentiment/totalSectors}" class="cdMetricValue cdValueGreen"/>
                                             </VBox>
                                         </HBox>
                                         <HBox class="cdMetricItem sapUiSmallMarginTop" alignItems="Center">
                                             <core:Icon src="sap-icon://trend-down" class="cdMetricIconRed"/>
                                             <VBox class="cdMetricTextWrap">
                                                 <Text text="Declining Sectors" class="cdMetricLabel"/>
-                                                <Text text="{custVM>/sentiment/declining}/8" class="cdMetricValue cdValueRed"/>
+                                                <Text text="{custVM>/sentiment/declining}/{custVM>/sentiment/totalSectors}" class="cdMetricValue cdValueRed"/>
                                             </VBox>
                                         </HBox>
                                         <HBox class="cdMetricItem sapUiSmallMarginTop" alignItems="Center">
                                             <core:Icon src="sap-icon://minus" class="cdMetricIconGrey"/>
                                             <VBox class="cdMetricTextWrap">
                                                 <Text text="Unchanged Sectors" class="cdMetricLabel"/>
-                                                <Text text="{custVM>/sentiment/unchanged}/8" class="cdMetricValue cdValueGrey"/>
+                                                <Text text="{custVM>/sentiment/unchanged}/{custVM>/sentiment/totalSectors}" class="cdMetricValue cdValueGrey"/>
                                             </VBox>
                                         </HBox>
                                     </VBox>
@@ -445,7 +451,7 @@
                             <!-- SECTOR SUMMARY TABLE -->
                             <VBox class="cdSubCard cdSectorSummaryCard" width="55%">
                                 <Title text="SECTOR SUMMARY" level="H4" class="cdSubCardTitle sapUiSmallMarginBottom"/>
-                                <Table items="{custVM>/sectorList}" showSeparators="Inner" class="cdSectorSummaryTable">
+                                <Table items="{custVM>/filteredSectorList}" showSeparators="Inner" class="cdSectorSummaryTable">
                                     <columns>
                                         <Column class="cdTableCol" width="40%"><Text text="Sector" class="cdColHeader"/></Column>
                                         <Column class="cdTableCol" width="25%"><Text text="Daily Change" class="cdColHeader"/></Column>
@@ -453,9 +459,9 @@
                                         <Column class="cdTableCol" width="15%"><Text text="Status" class="cdColHeader"/></Column>
                                     </columns>
                                     <items>
-                                        <ColumnListItem class="cdTableRow" type="Inactive" visible="{= ${custVM>key} !== 'ALL' }">
+                                        <ColumnListItem class="cdTableRow" type="Inactive">
                                             <cells>
-                                                <Text text="{custVM>name}" class="cdSectorSummaryName"/>
+                                                <Text text="{custVM>name}" class="cdSectorSummaryName {custVM>sectorColorClass}"/>
                                                 <Text text="{custVM>changeText}" class="{custVM>changeClass} cdSectorSummaryChange"/>
                                                 <core:Icon src="{custVM>sparklineIcon}" class="{custVM>changeClass} cdSparklineIconSummary"/>
                                                 <ObjectStatus text="{custVM>status}" state="{custVM>statusState}" class="cdStatusBadge"/>

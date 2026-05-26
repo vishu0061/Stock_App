@@ -3179,10 +3179,17 @@
 .cdFinanceDot { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
 .cdHealthDot { background-color: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
 .cdConsumerDot { background-color: #fb923c; box-shadow: 0 0 6px #fb923c; }
-.cdEnergyDot { background-color: #facc15; box-shadow: 0 0 6px #facc15; }
+.cdEnergyDot { background-color: #fb923c; box-shadow: 0 0 6px #fb923c; }
 .cdIndustrialsDot { background-color: #2dd4bf; box-shadow: 0 0 6px #2dd4bf; }
 .cdUtilitiesDot { background-color: #f472b6; box-shadow: 0 0 6px #f472b6; }
 .cdMaterialsDot { background-color: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
+
+/* Text Color Classes for Identity Mapping */
+.cdColorTech { color: #a78bfa !important; text-shadow: 0 0 8px rgba(167, 139, 250, 0.4); }
+.cdColorEnergy { color: #fb923c !important; text-shadow: 0 0 8px rgba(251, 146, 60, 0.4); }
+.cdColorBanking { color: #10b981 !important; text-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+.cdColorAuto { color: #38bdf8 !important; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+.cdColorOther { color: #94a3b8 !important; text-shadow: 0 0 8px rgba(148, 163, 184, 0.4); }
 
 .cdLegendText {
     color: #94a3b8 !important;
@@ -3315,3 +3322,298 @@
 .cdSparklineIconSummary {
     font-size: 0.75rem !important;
 }
+
+/* =========================================================
+   DYNAMIC SECTOR CHIPS SELECTOR & LEGEND STYLES
+========================================================= */
+
+/* Override standard SAPUI5 list container for horizontal flex flow */
+.cdSectorChipsList.sapMList {
+    background: transparent !important;
+}
+
+.cdSectorChipsList .sapMListUl {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.cdSectorChipsList .sapMLIB {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    width: auto !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    display: inline-flex !important;
+}
+
+/* Base chip styling - glassmorphism with smooth transitions */
+.cdSectorChipItem {
+    background: rgba(30, 41, 59, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 20px !important;
+    padding: 8px 18px !important;
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    user-select: none !important;
+    outline: none !important;
+}
+
+.cdSectorChipItem:hover {
+    transform: translateY(-2px) scale(1.04) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Active Glow Highlight States */
+.cdSectorChipActive {
+    background: rgba(255, 255, 255, 0.08) !important;
+    transform: translateY(-2px) scale(1.04) !important;
+    border-width: 1.5px !important;
+}
+
+/* Specific glows for sector colors */
+.cdSectorChipActive.cdColorTech {
+    border-color: #a78bfa !important;
+    box-shadow: 0 0 16px rgba(167, 139, 250, 0.45), inset 0 0 8px rgba(167, 139, 250, 0.20) !important;
+}
+
+.cdSectorChipActive.cdColorEnergy {
+    border-color: #fb923c !important;
+    box-shadow: 0 0 16px rgba(251, 146, 60, 0.45), inset 0 0 8px rgba(251, 146, 60, 0.20) !important;
+}
+
+.cdSectorChipActive.cdColorBanking {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.45), inset 0 0 8px rgba(16, 185, 129, 0.20) !important;
+}
+
+.cdSectorChipActive.cdColorAuto {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.45), inset 0 0 8px rgba(56, 189, 248, 0.20) !important;
+}
+
+.cdSectorChipActive.cdColorAll {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 0 16px rgba(203, 213, 225, 0.35), inset 0 0 8px rgba(203, 213, 225, 0.15) !important;
+}
+
+/* Hover scales and subtle colors matching theme */
+.cdSectorChipItem:hover.cdColorTech { border-color: rgba(167, 139, 250, 0.5) !important; }
+.cdSectorChipItem:hover.cdColorEnergy { border-color: rgba(251, 146, 60, 0.5) !important; }
+.cdSectorChipItem:hover.cdColorBanking { border-color: rgba(16, 185, 129, 0.5) !important; }
+.cdSectorChipItem:hover.cdColorAuto { border-color: rgba(56, 189, 248, 0.5) !important; }
+.cdSectorChipItem:hover.cdColorAll { border-color: rgba(203, 213, 225, 0.5) !important; }
+
+/* Dot Container */
+.cdSectorChipDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0;
+    transition: all 0.3s ease !important;
+}
+
+/* Real-time dot color glows */
+.cdTechDot { background-color: #a78bfa; box-shadow: 0 0 6px #a78bfa; }
+.cdFinanceDot { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
+.cdHealthDot { background-color: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+.cdConsumerDot { background-color: #fb923c; box-shadow: 0 0 6px #fb923c; }
+.cdEnergyDot { background-color: #fb923c; box-shadow: 0 0 6px #fb923c; }
+.cdIndustrialsDot { background-color: #2dd4bf; box-shadow: 0 0 6px #2dd4bf; }
+.cdUtilitiesDot { background-color: #f472b6; box-shadow: 0 0 6px #f472b6; }
+.cdMaterialsDot { background-color: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
+
+.cdAllDot { background-color: #cbd5e1; box-shadow: 0 0 6px #cbd5e1; }
+
+/* Pulse active dot on selection */
+.cdSectorChipActive .cdSectorChipDot {
+    transform: scale(1.25);
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* Chip Text */
+.cdSectorChipText {
+    color: #94a3b8 !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    transition: color 0.3s ease !important;
+}
+
+/* Active text coloring */
+.cdSectorChipActive .cdSectorChipText {
+    color: #ffffff !important;
+}
+
+.cdSectorChipActive.cdColorTech .cdSectorChipText { color: #ffffff !important; }
+.cdSectorChipActive.cdColorEnergy .cdSectorChipText { color: #ffffff !important; }
+.cdSectorChipActive.cdColorBanking .cdSectorChipText { color: #ffffff !important; }
+.cdSectorChipActive.cdColorAuto .cdSectorChipText { color: #ffffff !important; }
+.cdSectorChipActive.cdColorAll .cdSectorChipText { color: #ffffff !important; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .cdSectorChipsList .sapMListUl {
+        gap: 8px !important;
+    }
+    .cdSectorChipItem {
+        padding: 6px 14px !important;
+    }
+    .cdSectorChipText {
+        font-size: 0.78rem !important;
+    }
+}
+
+/* =========================================================
+   FUTURISTIC FINTECH NOTIFICATION POPOVER STYLES
+========================================================= */
+
+.cdNotifPopover {
+    width: 380px !important;
+    height: 460px !important;
+    max-width: 380px !important;
+    max-height: 460px !important;
+}
+
+.cdNotifPopover .sapMPopoverCont {
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(10, 18, 36, 0.96) !important;
+    backdrop-filter: blur(25px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+    overflow-y: auto !important;
+}
+
+.cdNotifPopover .sapMPopoverHeader .sapMTitle {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.cdNotifPopover .sapMPopoverHeader {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.cdNotifPopover footer {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.cdNotifPopover footer .sapMBtnTransparent {
+    color: #38bdf8 !important;
+    font-weight: 600 !important;
+}
+
+.cdNotifPopover footer .sapMBtnTransparent:hover {
+    color: #00ffaa !important;
+}
+
+.cdNotifItem {
+    padding: 14px 16px !important;
+    background: rgba(255, 255, 255, 0.01) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+    width: 100% !important;
+}
+
+.cdNotifItem:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(56, 189, 248, 0.15) !important;
+}
+
+/* Unread Glowing Highlight State */
+.cdNotifItem.cdNotifUnread {
+    background: rgba(56, 189, 248, 0.05) !important;
+    border-left: 3px solid #38bdf8 !important;
+}
+
+.cdNotifItem.cdNotifUnread.cdColorBuy {
+    background: rgba(16, 185, 129, 0.04) !important;
+    border-left-color: #10b981 !important;
+}
+
+.cdNotifItem.cdNotifUnread.cdColorSell {
+    background: rgba(239, 68, 68, 0.04) !important;
+    border-left-color: #ef4444 !important;
+}
+
+.cdNotifItem.cdNotifUnread.cdColorAlert {
+    background: rgba(251, 146, 60, 0.04) !important;
+    border-left-color: #fb923c !important;
+}
+
+/* Glowing real-time dots */
+.cdNotifDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.cdDotGreen { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+.cdDotRed   { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+.cdDotBlue  { background-color: #38bdf8; box-shadow: 0 0 8px #38bdf8; }
+.cdDotAmber { background-color: #fb923c; box-shadow: 0 0 8px #fb923c; }
+
+/* Notification text alignments */
+.cdNotifContent {
+    flex-grow: 1;
+    width: 100%;
+}
+
+.cdNotifTitle {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.cdNotifTime {
+    color: #64748b !important;
+    font-size: 0.75rem !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.cdNotifMessage {
+    color: #cbd5e1 !important;
+    font-size: 0.8rem !important;
+    margin-top: 4px !important;
+    line-height: 1.35 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Nav Badge Count Renders */
+.cdBellWrap {
+    position: relative;
+    margin-right: 15px;
+}
+
+.cdNotifBadgeText {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    font-size: 0.7rem !important;
+    font-weight: bold !important;
+    padding: 1px 5px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important;
+    border: 1px solid #040b17 !important;
+}
+

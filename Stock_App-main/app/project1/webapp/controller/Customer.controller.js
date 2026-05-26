@@ -93,7 +93,7 @@ sap.ui.define([
             this._applySectorChartStyle();
 
             /* ── Auto-refresh everything every 7s ─────────────── */
-            setInterval(() => {
+            this._intervalId = setInterval(() => {
                 const oTable = this.byId("stockTable");
                 if (oTable && oTable.getBinding("items")) {
                     oTable.getBinding("items").refresh();
@@ -104,6 +104,13 @@ sap.ui.define([
                 this._refreshDailyChart();
                 this._refreshNotifications();
             }, 7000);
+        },
+
+        onExit: function () {
+            if (this._intervalId) {
+                clearInterval(this._intervalId);
+                this._intervalId = null;
+            }
         },
 
         /* ═══════════════════════════════════════════════════════
@@ -165,11 +172,8 @@ sap.ui.define([
 
         onNotificationsPress: function (oEvent) {
             const oVM = this.getView().getModel("custVM");
+            const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
             const aItems = oVM.getProperty("/notifications/items") || [];
-
-            /* ── Mark all as read: record the current timestamp as last-read ── */
-            this._lastReadTs = Date.now();
-            oVM.setProperty("/notifications/unreadCount", 0);
 
             /* ── Snapshot the items for this popover session ── */
             const oNotifModel = new JSONModel({ items: aItems });
@@ -178,10 +182,37 @@ sap.ui.define([
                 items: {
                     path: "notif>/items",
                     template: new sap.m.CustomListItem({
+                        type: "Active",
+                        press: async (oEvt) => {
+                            const oItemCtx = oEvt.getSource().getBindingContext("notif");
+                            const sId = oItemCtx.getProperty("ID");
+                            try {
+                                const oModel = this.getOwnerComponent().getModel();
+                                const oContext = oModel.bindContext(`/Notifications(${sId})`);
+                                await oContext.getBoundContext().setProperty("isRead", true);
+                                
+                                MessageToast.show("Notification dismissed");
+                                this._refreshNotifications();
+                                if (this._oNotifPopover) {
+                                    this._oNotifPopover.close();
+                                }
+                            } catch (err) {
+                                console.error("Mark notification read error:", err);
+                            }
+                        },
                         content: [
                             new sap.m.HBox({
                                 alignItems: "Center",
-                                class: "cdNotifItem",
+                                class: {
+                                    path: "notif>type",
+                                    formatter: function (sType) {
+                                        let c = "cdNotifItem cdNotifUnread";
+                                        if (sType === "buy") c += " cdColorBuy";
+                                        else if (sType === "sell") c += " cdColorSell";
+                                        else if (sType === "alert" || sType === "spike") c += " cdColorAlert";
+                                        return c;
+                                    }
+                                },
                                 items: [
                                     new sap.m.VBox({
                                         class: "cdNotifDotWrap",
@@ -233,8 +264,8 @@ sap.ui.define([
 
             this._oNotifPopover = new sap.m.Popover({
                 title: "🔔 Notifications",
-                contentWidth: "360px",
-                contentHeight: "420px",
+                contentWidth: "380px",
+                contentHeight: "460px",
                 placement: "Bottom",
                 showHeader: true,
                 class: "cdNotifPopover",
@@ -242,10 +273,24 @@ sap.ui.define([
                 endButton: new sap.m.Button({
                     text: "Clear All",
                     type: "Transparent",
-                    press: () => {
-                        oVM.setProperty("/notifications/items", []);
-                        oVM.setProperty("/notifications/unreadCount", 0);
-                        oNotifModel.setProperty("/items", []);
+                    press: async () => {
+                        try {
+                            const oModel = this.getOwnerComponent().getModel();
+                            const oAct = oModel.bindContext("/clearAllNotifications(...)");
+                            oAct.setParameter("customerName", sCustomer);
+                            await oAct.execute();
+
+                            oVM.setProperty("/notifications/items", []);
+                            oVM.setProperty("/notifications/unreadCount", 0);
+                            oNotifModel.setProperty("/items", []);
+                            
+                            MessageToast.show("All notifications cleared");
+                            if (this._oNotifPopover) {
+                                this._oNotifPopover.close();
+                            }
+                        } catch (err) {
+                            console.error("Clear all notifications error:", err);
+                        }
                     }
                 }),
                 afterClose: () => {
@@ -1008,48 +1053,21 @@ sap.ui.define([
             const oVM = this.getView().getModel("custVM");
             const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
 
-            /* _lastReadTs: timestamp when user last opened the popover.
-               Initialised to "now" on first load so old transactions don't show as new. */
-            if (this._lastReadTs === undefined) {
-                this._lastReadTs = Date.now();
-            }
-
             try {
                 const oModel = this.getOwnerComponent().getModel();
-                const fmt = (num) => Number(num).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-                /* ── 1. REAL transactions for this customer (newest first) ── */
-                const aTxCtx = await oModel
-                    .bindList("/Transactions", null,
-                        [new sap.ui.model.Sorter("createdAt", true)],   // descending
-                        [new sap.ui.model.Filter("customerName", sap.ui.model.FilterOperator.EQ, sCustomer)]
+                const aCtx = await oModel
+                    .bindList("/Notifications", null,
+                        [new sap.ui.model.Sorter("createdAt", true)], // descending
+                        [
+                            new sap.ui.model.Filter("customerName", sap.ui.model.FilterOperator.EQ, sCustomer),
+                            new sap.ui.model.Filter("isRead", sap.ui.model.FilterOperator.EQ, false)
+                        ]
                     )
-                    .requestContexts(0, 15);
+                    .requestContexts(0, 50);
 
-                /* ── 2. REAL low-stock products ── */
-                const aProdCtx = await oModel
-                    .bindList("/Products", null, null,
-                        [new sap.ui.model.Filter("status", sap.ui.model.FilterOperator.EQ, "LOW")]
-                    )
-                    .requestContexts(0, 5);
-
-                /* ── 3. REAL price spikes in last 10 minutes ── */
-                const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-                const aSpikeCtx = await oModel
-                    .bindList("/HistoricalPrices", null, null, [
-                        new sap.ui.model.Filter("createdAt", sap.ui.model.FilterOperator.GE, tenMinAgo)
-                    ])
-                    .requestContexts(0, 30);
-
-                /* ───────────── Build notification items ───────────── */
-                const aItems = [];
-                let newTxCount = 0;   // genuinely new tx since last popover open
-
-                /* Trade notifications (REAL OData data) */
-                aTxCtx.forEach(function (c) {
-                    const t = c.getObject();
-                    const isBuy = t.transactionType === "BUY";
-                    const when = t.createdAt ? new Date(t.createdAt) : new Date();
+                const aItems = aCtx.map(function (c) {
+                    const n = c.getObject();
+                    const when = n.createdAt ? new Date(n.createdAt) : new Date();
                     const tsMs = when.getTime();
                     const diff = Date.now() - tsMs;
                     const mins = Math.floor(diff / 60000);
@@ -1058,74 +1076,18 @@ sap.ui.define([
                     else if (mins >= 60) { sAgo = Math.floor(mins / 60) + "h ago"; }
                     else if (mins >= 1) { sAgo = mins + "m ago"; }
 
-                    /* Count as "new" only if created after last popover open */
-                    if (tsMs > this._lastReadTs) { newTxCount++; }
-
-                    const name = t.product_productName || t.productName || "Stock";
-                    aItems.push({
-                        type: isBuy ? "buy" : "sell",
-                        title: isBuy ? "✅ Buy Confirmed" : "🔴 Sell Executed",
-                        message: t.quantity + " × " + name + " @ ₹" + fmt(t.unitPrice || 0),
+                    return {
+                        ID: n.ID,
+                        type: n.type || "info",
+                        title: n.title || "Stock Alert",
+                        message: n.message || "",
                         time: sAgo,
                         ts: tsMs
-                    });
-                }.bind(this));
-
-                /* Low-stock alerts (live from OData) */
-                aProdCtx.forEach(function (c) {
-                    const p = c.getObject();
-                    aItems.push({
-                        type: "alert",
-                        title: "⚠️ Low Stock Alert",
-                        message: p.productName + " — only " + p.stockQuantity + " units remaining",
-                        time: "live",
-                        ts: Date.now() + 200
-                    });
+                    };
                 });
 
-                /* Price spike alerts from HistoricalPrices */
-                const spikeMap = {};
-                aSpikeCtx.forEach(function (c) {
-                    const h = c.getObject();
-                    const pct = Math.abs(Number(h.changePct || 0));
-                    if (pct >= 3) {  // only alert on >=3% moves
-                        const pid = h.product_ID;
-                        if (!spikeMap[pid] || pct > spikeMap[pid].pct) {
-                            spikeMap[pid] = { pct, price: Number(h.price || 0) };
-                        }
-                    }
-                });
-                Object.keys(spikeMap).forEach(function (pid) {
-                    const s = spikeMap[pid];
-                    const dir = s.pct >= 0 ? "📈" : "📉";
-                    aItems.push({
-                        type: "spike",
-                        title: dir + " Price Move Alert",
-                        message: "Market moved " + Math.abs(s.pct).toFixed(1) + "% — ₹" + fmt(s.price),
-                        time: "just now",
-                        ts: Date.now() + 100
-                    });
-                });
-
-                /* Portfolio milestone from real holdings */
-                const aHoldings = oVM.getProperty("/holdings") || [];
-                const gainers = aHoldings.filter(h => h.plState === "Success");
-                if (gainers.length > 0) {
-                    aItems.push({
-                        type: "info",
-                        title: "📈 Portfolio Milestone",
-                        message: gainers.length + " holding(s) in profit!",
-                        time: "now",
-                        ts: Date.now() - 1
-                    });
-                }
-
-                /* Sort newest first */
-                aItems.sort((a, b) => b.ts - a.ts);
-
-                /* Update model — unread = new transactions since last popover open */
                 oVM.setProperty("/notifications/items", aItems);
-                oVM.setProperty("/notifications/unreadCount", newTxCount);
+                oVM.setProperty("/notifications/unreadCount", aItems.length);
 
             } catch (e) {
                 console.error("Notifications refresh error:", e);
@@ -1201,6 +1163,15 @@ sap.ui.define([
             const oVM = this.getView().getModel("custVM");
             if (!oVM) { return; }
             const oModel = this.getOwnerComponent().getModel();
+            
+            const SECTOR_COLOR_MAP = {
+                "Technology": { hex: "#a78bfa", cssClass: "cdColorTech" },
+                "Energy": { hex: "#fb923c", cssClass: "cdColorEnergy" },
+                "Banking": { hex: "#10b981", cssClass: "cdColorBanking" },
+                "Financial Services": { hex: "#10b981", cssClass: "cdColorBanking" },
+                "Automotive": { hex: "#38bdf8", cssClass: "cdColorAuto" },
+                "Automobile": { hex: "#38bdf8", cssClass: "cdColorAuto" }
+            };
             try {
                 // 1. Fetch live products from database via OData ListBinding
                 const oListBinding = oModel.bindList("/Products", null, null, null, { $expand: "category" });
@@ -1238,7 +1209,6 @@ sap.ui.define([
                     const oSec = oSectorsMap[sName];
                     const fAvgChange = oSec.products.length > 0 ? (oSec.changeSum / oSec.products.length) : 0;
                     
-                    // Assign stylized icons, color dots and glowing classes dynamically based on category
                     let sIcon = "sap-icon://circle-task";
                     let sClass = "cdIconTeal";
                     let sDot = "cdMaterialsDot";
@@ -1265,6 +1235,8 @@ sap.ui.define([
                         sDot = "cdHealthDot";
                         sDesc = "Cyclical • Moderate";
                     }
+                    
+                    const colorMap = SECTOR_COLOR_MAP[sName] || { hex: "#94a3b8", cssClass: "cdColorOther" };
 
                     const isUp = fAvgChange >= 0;
                     const sChangeText = (isUp ? "+" : "") + fAvgChange.toFixed(2) + "%";
@@ -1291,18 +1263,30 @@ sap.ui.define([
                         dotClass: sDot,
                         sparklineIcon: sSparkIcon,
                         status: sStatus,
-                        statusState: sStatusState
+                        statusState: sStatusState,
+                        sectorColorHex: colorMap.hex,
+                        sectorColorClass: colorMap.cssClass
                     };
                 });
 
                 // Prepended "All Sectors" object for dropdown select item mapping
                 const aDropdownSectors = [
-                    { key: "ALL", name: "All Sectors", dotClass: "", icon: "", iconClass: "", changeText: "" }
+                    { key: "ALL", name: "All Sectors", dotClass: "cdAllDot", icon: "sap-icon://globe", iconClass: "cdIconTeal", changeText: "", sectorColorHex: "#ffffff", sectorColorClass: "cdColorAll" }
                 ].concat(aSectors);
                 oVM.setProperty("/sectorList", aDropdownSectors);
 
-                // Build dynamic Market Insights array (excluding ALL)
-                const aInsights = aSectors.map(function (s) {
+                const sSelectedFilter = oVM.getProperty("/selectedSectorFilter") || "ALL";
+                const sSelectedRange = oVM.getProperty("/sectorRange") || "1D";
+
+                // Filter sectors based on current selection
+                const aFilteredSectors = sSelectedFilter === "ALL" 
+                    ? aSectors 
+                    : aSectors.filter(s => s.name === sSelectedFilter);
+
+                oVM.setProperty("/filteredSectorList", aFilteredSectors);
+
+                // Build dynamic Market Insights array based on the filtered sectors
+                const aInsights = aFilteredSectors.map(function (s) {
                     const oSec = oSectorsMap[s.key];
                     const aProds = oSec.products || [];
                     
@@ -1360,7 +1344,17 @@ sap.ui.define([
                 let sText = "NEUTRAL";
                 let sTextClass = "cdChangeStatus";
                 let sMsg = "Market is trending sideways";
-                if (score >= 60) {
+                
+                // Realtime bullish/bearish logic
+                if (advancing > declining && advancing >= (aSectors.length / 2)) {
+                    sText = "BULLISH";
+                    sTextClass = "cdChangeUp";
+                    sMsg = "Market is trending positive";
+                } else if (declining > advancing && declining >= (aSectors.length / 2)) {
+                    sText = "BEARISH";
+                    sTextClass = "cdChangeDown";
+                    sMsg = "Market is trending negative";
+                } else if (score >= 60) {
                     sText = "BULLISH";
                     sTextClass = "cdChangeUp";
                     sMsg = "Market is trending positive";
@@ -1377,21 +1371,19 @@ sap.ui.define([
                     sentimentTrendMsg: sMsg,
                     advancing: advancing,
                     declining: declining,
-                    unchanged: unchanged
+                    unchanged: unchanged,
+                    totalSectors: aSectors.length
                 });
 
                 // 5. Append historical scrolling data point
-                const sSelectedFilter = oVM.getProperty("/selectedSectorFilter") || "ALL";
-                const sSelectedRange = oVM.getProperty("/sectorRange") || "1D";
-                
                 let aChartData = oVM.getProperty("/sectorChartData") || [];
 
-                // Initialize historical walks if chart is empty
+                // Initialize historical walks if chart is empty, using the filtered array
                 if (aChartData.length === 0) {
-                    aChartData = this._generateSectorChartData(sSelectedRange, aSectors);
+                    aChartData = this._generateSectorChartData(sSelectedRange, aFilteredSectors);
                 }
 
-                // Add live points for each active database sector
+                // Add live points for each active filtered sector
                 const nowTime = new Date();
                 const sTimeStr = nowTime.getHours().toString().padStart(2, '0') + ":" + 
                                  nowTime.getMinutes().toString().padStart(2, '0') + ":" + 
@@ -1404,17 +1396,27 @@ sap.ui.define([
                     aChartData = aChartData.filter(d => d.Time !== oldestTime);
                 }
 
-                aSectors.forEach(function (s) {
-                    if (sSelectedFilter === "ALL" || sSelectedFilter === s.name) {
-                        aChartData.push({
-                            Time: sTimeStr,
-                            Sector: s.name,
-                            Performance: s.change
-                        });
-                    }
+                aFilteredSectors.forEach(function (s) {
+                    aChartData.push({
+                        Time: sTimeStr,
+                        Sector: s.name,
+                        Performance: s.change
+                    });
                 });
 
                 oVM.setProperty("/sectorChartData", aChartData);
+                
+                // Set permanent dynamic color palette for the filtered sectors exactly
+                const dynamicPalette = aFilteredSectors.map(s => s.sectorColorHex);
+                const oViz = this.byId("sectorMovementChart");
+                if (oViz) {
+                    oViz.setVizProperties({
+                        plotArea: {
+                            colorPalette: dynamicPalette
+                        }
+                    });
+                }
+                
                 oVM.updateBindings(true);
 
             } catch (e) {
@@ -1503,6 +1505,19 @@ sap.ui.define([
         onSectorFilterChange: function () {
             const oVM = this.getView().getModel("custVM");
             if (!oVM) { return; }
+            
+            // Clear chart data to trigger dynamic filter application in history building
+            oVM.setProperty("/sectorChartData", []);
+            this._refreshLiveSectorAnalytics();
+        },
+
+        onSectorTabPress: function (oEvent) {
+            const oCtx = oEvent.getSource().getBindingContext("custVM");
+            if (!oCtx) { return; }
+            const sKey = oCtx.getProperty("key");
+            
+            const oVM = this.getView().getModel("custVM");
+            oVM.setProperty("/selectedSectorFilter", sKey);
             
             // Clear chart data to trigger dynamic filter application in history building
             oVM.setProperty("/sectorChartData", []);

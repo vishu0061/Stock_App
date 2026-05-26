@@ -7,7 +7,8 @@ module.exports = cds.service.impl(async function () {
         Transactions,
         Portfolio,
         HistoricalPrices,
-        PriceHistory
+        PriceHistory,
+        Notifications
     } = this.entities;
 
     let globalMarketTrend = 0;
@@ -96,6 +97,34 @@ module.exports = cds.service.impl(async function () {
                     volume: buyQty + sellQty,
                     timestamp: now.toISOString()
                 }));
+
+                // --- Real-time Price Spike Notifications Generator ---
+                const absolutePct = Math.abs(priceChangePercent * 100);
+                if (absolutePct >= 3.0) {
+                    const direction = priceChangePercent > 0 ? "Spiked 🚀" : "Dropped 📉";
+                    const title = priceChangePercent > 0 ? "🚀 Price Spike Alert" : "⚠️ Price Drop Alert";
+                    const message = `${p.productName} has ${direction} by ${absolutePct.toFixed(2)}% to ₹${newPrice.toFixed(2)}`;
+
+                    // Alert "Demo Customer"
+                    const [existingSpike] = await tx.run(
+                        SELECT.from(Notifications).where({
+                            type: "spike",
+                            title: title,
+                            customerName: "Demo Customer",
+                            isRead: false
+                        })
+                    );
+                    if (!existingSpike) {
+                        await tx.run(INSERT.into(Notifications).entries({
+                            ID: cds.utils.uuid(),
+                            type: "spike",
+                            title: title,
+                            message: message,
+                            isRead: false,
+                            customerName: "Demo Customer"
+                        }));
+                    }
+                }
             }
             await tx.commit();
         } catch (e) {
@@ -118,6 +147,14 @@ module.exports = cds.service.impl(async function () {
             const sevenDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 
             await tx.run(DELETE.from(PriceHistory).where('timestamp <', sevenDaysAgo));
+
+            if (entities.Notifications) {
+                const { Notifications } = entities;
+                // Delete read notifications older than 1 day
+                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                await tx.run(DELETE.from(Notifications).where('isRead =', true).and('createdAt <', oneDayAgo));
+            }
+
             await tx.commit();
         } catch (e) {
             await tx.rollback();
@@ -278,6 +315,37 @@ module.exports = cds.service.impl(async function () {
                 status: "COMPLETED"
             });
 
+            // Record Buy Executed Notification
+            await INSERT.into(Notifications).entries({
+                ID: cds.utils.uuid(),
+                type: "buy",
+                title: "✅ Buy Executed",
+                message: `${quantity} × ${oProduct.productName} @ ${oProduct.currency} ${unitPrice.toFixed(2)}`,
+                isRead: false,
+                customerName: customerName
+            });
+
+            // Record Low Stock alert if applicable
+            if (newQty < 20) {
+                const [existingAlert] = await SELECT.from(Notifications).where({
+                    type: "alert",
+                    customerName: customerName,
+                    title: "⚠️ Low Stock Alert",
+                    message: `${oProduct.productName} — only ${newQty} units remaining`,
+                    isRead: false
+                });
+                if (!existingAlert) {
+                    await INSERT.into(Notifications).entries({
+                        ID: cds.utils.uuid(),
+                        type: "alert",
+                        title: "⚠️ Low Stock Alert",
+                        message: `${oProduct.productName} — only ${newQty} units remaining`,
+                        isRead: false,
+                        customerName: customerName
+                    });
+                }
+            }
+
             // Upsert portfolio
             const [existing] = await SELECT.from(Portfolio).where({ customerName, product_ID: productId });
             if (existing) {
@@ -353,6 +421,16 @@ module.exports = cds.service.impl(async function () {
                 unitPrice,
                 totalPrice,
                 status: "COMPLETED"
+            });
+
+            // Record Sell Executed Notification
+            await INSERT.into(Notifications).entries({
+                ID: cds.utils.uuid(),
+                type: "sell",
+                title: "🔴 Sell Executed",
+                message: `${quantity} × ${oProduct.productName} @ ${oProduct.currency} ${unitPrice.toFixed(2)}`,
+                isRead: false,
+                customerName: customerName
             });
 
             // Update portfolio
@@ -460,6 +538,20 @@ module.exports = cds.service.impl(async function () {
             req.error(500, err.message);
         }
 
+    });
+
+    // ================= CLEAR ALL NOTIFICATIONS =================
+    this.on("clearAllNotifications", async (req) => {
+        const { customerName } = req.data;
+        try {
+            await UPDATE(Notifications)
+                .set({ isRead: true })
+                .where({ customerName: customerName, isRead: false });
+            return true;
+        } catch (err) {
+            console.error("Bulk clearing notifications error:", err);
+            req.error(500, err.message);
+        }
     });
 
 });
