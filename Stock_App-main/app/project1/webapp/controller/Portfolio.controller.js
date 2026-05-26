@@ -348,7 +348,7 @@ sap.ui.define([
                 const cur = (t.currency || "INR").toUpperCase();
                 if (cur !== "INR" && cur !== "₹") { return; }
                 const amt = Number(t.totalPrice || 0);
-                if (t.transactionType === "BUY")  { cashOutflow += amt; }
+                if (t.transactionType === "BUY" || t.transactionType === "WITHDRAW")  { cashOutflow += amt; }
                 if (t.transactionType === "SELL" || t.transactionType === "ADD_FUNDS") { cashInflow  += amt; }
             });
             const availBal = Math.max(0, startingCapital - cashOutflow + cashInflow);
@@ -365,17 +365,31 @@ sap.ui.define([
             const fmt = (num) => Number(num).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const profitable = aAll.filter(function (h) { return Number(h.profitLoss) > 0; }).length;
 
-            oVM.setProperty("/summary/totalPortfolio",    "₹" + fmt(totalValue));
-            oVM.setProperty("/summary/portfolioPct",      (portGrowthPct >= 0 ? "+" : "") + portGrowthPct.toFixed(2) + "%");
-            oVM.setProperty("/summary/portfolioPctState", portGrowthPct >= 0 ? "Success" : "Error");
-            oVM.setProperty("/summary/totalPL",           (totalPL >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(totalPL)));
-            oVM.setProperty("/summary/plPct",             (plPct >= 0 ? "+" : "") + plPct.toFixed(2) + "%");
-            oVM.setProperty("/summary/plState",           plPct >= 0 ? "Success" : "Error");
-            oVM.setProperty("/summary/todaysGain",        (todaysGain >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(todaysGain)));
-            oVM.setProperty("/summary/invested",          "₹" + fmt(totalCost));
-            oVM.setProperty("/summary/balance",           "₹" + fmt(availBal));
-            oVM.setProperty("/summary/stocksOwned",       aAll.length + " Holdings");
-            oVM.setProperty("/summary/stocksOwnedSub",    profitable + " profitable");
+            if (totalCost === 0) {
+                oVM.setProperty("/summary/totalPortfolio",    "₹0.00");
+                oVM.setProperty("/summary/portfolioPct",      "0.00%");
+                oVM.setProperty("/summary/portfolioPctState", "None");
+                oVM.setProperty("/summary/totalPL",           "₹0.00");
+                oVM.setProperty("/summary/plPct",             "0.00%");
+                oVM.setProperty("/summary/plState",           "None");
+                oVM.setProperty("/summary/todaysGain",        "₹0.00");
+                oVM.setProperty("/summary/invested",          "₹0.00");
+                oVM.setProperty("/summary/balance",           "₹" + fmt(availBal));
+                oVM.setProperty("/summary/stocksOwned",       "0 Holdings");
+                oVM.setProperty("/summary/stocksOwnedSub",    "0 profitable");
+            } else {
+                oVM.setProperty("/summary/totalPortfolio",    "₹" + fmt(totalValue));
+                oVM.setProperty("/summary/portfolioPct",      (portGrowthPct >= 0 ? "+" : "") + portGrowthPct.toFixed(2) + "%");
+                oVM.setProperty("/summary/portfolioPctState", portGrowthPct >= 0 ? "Success" : "Error");
+                oVM.setProperty("/summary/totalPL",           (totalPL >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(totalPL)));
+                oVM.setProperty("/summary/plPct",             (plPct >= 0 ? "+" : "") + plPct.toFixed(2) + "%");
+                oVM.setProperty("/summary/plState",           plPct >= 0 ? "Success" : "Error");
+                oVM.setProperty("/summary/todaysGain",        (todaysGain >= 0 ? "+" : "-") + "₹" + fmt(Math.abs(todaysGain)));
+                oVM.setProperty("/summary/invested",          "₹" + fmt(totalCost));
+                oVM.setProperty("/summary/balance",           "₹" + fmt(availBal));
+                oVM.setProperty("/summary/stocksOwned",       aAll.length + " Holdings");
+                oVM.setProperty("/summary/stocksOwnedSub",    profitable + " profitable");
+            }
         },
 
         /* ═══════════════════════════════════════════════════════
@@ -396,13 +410,71 @@ sap.ui.define([
                 return s + Number(h.totalValue || 0);
             }, 0);
 
-            let isDemo = false;
             if (totalCost === 0) {
-                /* No active holdings — show mock portfolio demo */
-                totalCost = 3473800;
-                totalValue = 3841920;
-                isDemo = true;
+                oVM.setProperty("/analytics/bestPerfValue", "0.00%");
+                oVM.setProperty("/analytics/bestPerfTime", "—");
+                oVM.setProperty("/analytics/worstPerfValue", "0.00%");
+                oVM.setProperty("/analytics/worstPerfTime", "—");
+                oVM.setProperty("/analytics/breakEvenTime", "—");
+                oVM.setProperty("/analytics/breakEvenSub", "No investments");
+                oVM.setProperty("/analytics/totalFluctuation", "0.00%");
+                oVM.setProperty("/analytics/totalFluctuationSub", "No active holdings");
+                oVM.setProperty("/analytics/marketTrend", "Neutral");
+                oVM.setProperty("/analytics/marketTrendClass", "pfAnalyticsVal pfValWhite");
+                oVM.setProperty("/analytics/marketTrendIcon", "sap-icon://line-chart");
+                oVM.setProperty("/analytics/marketTrendIconClass", "pfAnalyticsTrendIcon pfValWhiteIcon");
+                oVM.setProperty("/analytics/marketTrendSub", "No activity");
+
+                const sHtmlContent = `
+                    <div class="pfPerfChartEmptyState" style="
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 320px;
+                        background: #090f1d;
+                        border-radius: 16px;
+                        border: 1px dashed rgba(255,255,255,0.08);
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <svg style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0.15;">
+                            <line x1="0" y1="60" x2="1000" y2="60" stroke="#64748b" stroke-dasharray="2,2" />
+                            <line x1="0" y1="120" x2="1000" y2="120" stroke="#64748b" stroke-dasharray="2,2" />
+                            <line x1="0" y1="180" x2="1000" y2="180" stroke="#64748b" stroke-dasharray="2,2" />
+                            <line x1="0" y1="240" x2="1000" y2="240" stroke="#64748b" stroke-dasharray="2,2" />
+                        </svg>
+                        <div style="
+                            display: flex;
+                            align-content: center;
+                            justify-content: center;
+                            width: 64px;
+                            height: 64px;
+                            background: rgba(255,255,255,0.03);
+                            border: 1px solid rgba(255,255,255,0.08);
+                            border-radius: 50%;
+                            margin-bottom: 16px;
+                            align-items: center;
+                        ">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                        </div>
+                        <div style="font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700; color: #94a3b8; margin-bottom: 4px;">No Portfolio Data</div>
+                        <div style="font-family: 'Inter', sans-serif; font-size: 13px; color: #64748b;">Start investing to view portfolio analytics</div>
+                    </div>
+                `;
+                
+                const oChartHTML = this.byId("pfPerfChartHTML");
+                if (oChartHTML) {
+                    oChartHTML.setContent(sHtmlContent);
+                }
+                return;
             }
+
+            let isDemo = false;
 
             /* Determine number of points based on range */
             let n = 12;
@@ -1000,6 +1072,82 @@ sap.ui.define([
                         } catch (e) {
                             console.error(e);
                             MessageBox.error("Failed to add funds. Please try again.");
+                        }
+                    }
+                }),
+                endButton: new sap.m.Button({ text: "Cancel", press: () => oDialog.close() }),
+                afterClose: () => oDialog.destroy()
+            });
+            this.getView().addDependent(oDialog);
+            oDialog.open();
+        },
+
+        onWithdrawFundsDialog: function () {
+            const oAmtInput = new sap.m.Input({ type: "Number", placeholder: "Enter amount to withdraw" });
+
+            const oDialog = new sap.m.Dialog({
+                title:        "Withdraw Virtual Funds",
+                contentWidth: "380px",
+                resizable:    false,
+                draggable:    true,
+                content: [
+                    new sap.m.VBox({
+                        class: "sapUiMediumMargin",
+                        items: [
+                            new sap.m.Text({ text: "Withdraw virtual funds from your StockTrade Pro wallet.", class: "sapUiTinyMarginBottom" }),
+                            new sap.m.Label({ text: "Enter Amount (₹)", class: "sapUiSmallMarginTop" }),
+                            oAmtInput,
+                            new sap.m.HBox({
+                                class: "sapUiTinyMarginTop",
+                                wrap:  "Wrap",
+                                items: [
+                                    new sap.m.Button({ text: "₹10,000",  type: "Transparent", press: function () { oAmtInput.setValue("10000");  } }),
+                                    new sap.m.Button({ text: "₹25,000",  type: "Transparent", press: function () { oAmtInput.setValue("25000");  } }),
+                                    new sap.m.Button({ text: "₹50,000",  type: "Transparent", press: function () { oAmtInput.setValue("50000");  } }),
+                                    new sap.m.Button({ text: "₹1,00,000",type: "Transparent", press: function () { oAmtInput.setValue("100000"); } })
+                                ]
+                            })
+                        ]
+                    })
+                ],
+                beginButton: new sap.m.Button({
+                    text: "- Withdraw Money",
+                    type: "Emphasized",
+                    icon: "sap-icon://minus",
+                    press: async () => {
+                        const iAmt = parseFloat(oAmtInput.getValue());
+                        if (!iAmt || iAmt <= 0) return MessageBox.error("Enter a valid amount.");
+                        try {
+                            const oVM       = this.getView().getModel("pfVM");
+                            const sCustomer = (oVM.getProperty("/customerName") || "Demo Customer").trim();
+                            const sBalanceStr = oVM.getProperty("/summary/balance") || "₹0.00";
+                            const fBalance  = parseFloat(sBalanceStr.replace(/[^0-9.]/g, "")) || 0;
+
+                            if (iAmt > fBalance) {
+                                return MessageBox.error("Insufficient balance. You cannot withdraw more than your current available balance (₹" + fBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 }) + ").");
+                            }
+
+                            const oModel    = this.getOwnerComponent().getModel();
+                            const oList     = oModel.bindList("/Transactions");
+                            
+                            oList.create({
+                                customerName: sCustomer,
+                                transactionType: "WITHDRAW",
+                                quantity: 1,
+                                unitPrice: iAmt,
+                                totalPrice: iAmt,
+                                status: "COMPLETED"
+                            });
+                            
+                            MessageToast.show("₹" + iAmt.toLocaleString("en-IN") + " withdrawn from your wallet!");
+                            oDialog.close();
+                            // Delay slightly to let db transaction propagate then refresh UI
+                            setTimeout(async () => {
+                                await this._loadAll();
+                            }, 500);
+                        } catch (e) {
+                            console.error(e);
+                            MessageBox.error("Failed to withdraw funds. Please try again.");
                         }
                     }
                 }),

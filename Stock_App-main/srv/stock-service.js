@@ -544,9 +544,15 @@ module.exports = cds.service.impl(async function () {
     this.on("clearAllNotifications", async (req) => {
         const { customerName } = req.data;
         try {
-            await UPDATE(Notifications)
-                .set({ isRead: true })
-                .where({ customerName: customerName, isRead: false });
+            if (!customerName || customerName === "admin" || customerName === "Demo Admin") {
+                await UPDATE(Notifications)
+                    .set({ isRead: true })
+                    .where({ isRead: false });
+            } else {
+                await UPDATE(Notifications)
+                    .set({ isRead: true })
+                    .where({ customerName: customerName, isRead: false });
+            }
             return true;
         } catch (err) {
             console.error("Bulk clearing notifications error:", err);

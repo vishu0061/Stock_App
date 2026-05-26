@@ -14,7 +14,7 @@
              CUSTOMER NAVBAR  (same style as Customer.view.xml)
         ═══════════════════════════════════════════════════════ -->
         <customHeader>
-            <Bar id="portfolioNavBar" design="Header" class="cdNavBar" width="100%">
+            <Bar id="portfolioNavBar" design="Header" class="cdNavBar">
 
                 <!-- LEFT -->
                 <contentLeft>
@@ -56,12 +56,7 @@
                 <!-- RIGHT -->
                 <contentRight>
                     <HBox alignItems="Center" justifyContent="End" width="100%" class="cdNavActions">
-                        <Button
-                            id="pfNavPortfolioBtn"
-                            text="Portfolio"
-                            icon="sap-icon://wallet"
-                            type="Emphasized"
-                            class="cdNavPortfolioBtn pfNavPortfolioActive"/>
+                       
                         <Button
                             id="pfNavBellBtn"
                             icon="sap-icon://bell"
@@ -70,8 +65,8 @@
                             class="cdNavBellBtn"/>
                         <Button
                             id="pfNavProfileBtn"
-                            icon="sap-icon://customer"
-                            text="Customer"
+                            icon="sap-icon://Portfolio"
+                            text="Portfolio"
                             type="Transparent"
                             class="cdNavProfileBtn"/>
                     </HBox>
@@ -172,11 +167,18 @@
                         <VBox class="pfSummIconWrap pfSummIconAmber">
                             <core:Icon src="sap-icon://credit-card" class="pfSummIcon"/>
                         </VBox>
-                        <Button
-                            text="+ Add Funds"
-                            type="Transparent"
-                            press=".onAddFundsDialog"
-                            class="pfAddFundsBtn"/>
+                        <HBox gap="5px">
+                            <Button
+                                text="+ Add"
+                                type="Transparent"
+                                press=".onAddFundsDialog"
+                                class="pfAddFundsBtn"/>
+                            <Button
+                                text="- Withdraw"
+                                type="Transparent"
+                                press=".onWithdrawFundsDialog"
+                                class="pfAddFundsBtn"/>
+                        </HBox>
                     </HBox>
                     <Title text="{pfVM>/summary/balance}" level="H2" class="pfSummValue pfSummAmberVal"/>
                     <Text text="Available Balance" class="pfSummLabel"/>
@@ -228,7 +230,7 @@
 
                 <!-- Premium Custom D3/SVG Line Chart Container -->
                 <VBox class="pfPerfChartHTMLWrapper" width="100%">
-                    <core:HTML id="pfPerfChartHTML" preferDOM="true" sanitize="None" />
+                    <core:HTML id="pfPerfChartHTML" preferDOM="true" sanitizeContent="false" />
                 </VBox>
 
                 <!-- Bottom 5 Analytics Cards Section -->
@@ -380,12 +382,20 @@
                     <VBox class="pfWalletBalanceBox">
                         <Text text="Available Balance" class="pfWalletLabel"/>
                         <Title text="{pfVM>/summary/balance}" level="H1" class="pfWalletBalance"/>
-                        <Button
-                            id="pfAddFundsBtnWallet"
-                            text="+ Add Funds"
-                            type="Emphasized"
-                            press=".onAddFundsDialog"
-                            class="pfAddFundsBtnLarge"/>
+                        <HBox justifyContent="Center" gap="10px" width="100%" class="sapUiTinyMarginTop">
+                            <Button
+                                id="pfAddFundsBtnWallet"
+                                text="+ Add Funds"
+                                type="Emphasized"
+                                press=".onAddFundsDialog"
+                                class="pfAddFundsBtnLarge"/>
+                            <Button
+                                id="pfWithdrawFundsBtnWallet"
+                                text="- Withdraw Funds"
+                                type="Default"
+                                press=".onWithdrawFundsDialog"
+                                class="pfWithdrawFundsBtnLarge"/>
+                        </HBox>
                     </VBox>
 
                     <VBox class="pfRecentTxSection">
@@ -399,16 +409,16 @@
                             <CustomListItem class="pfTxItem">
                                 <HBox justifyContent="SpaceBetween" alignItems="Center" width="100%">
                                     <HBox alignItems="Center">
-                                        <VBox class="{= ${pfVM>transactionType} === 'BUY' ? 'pfTxDotBuy' : (${pfVM>transactionType} === 'ADD_FUNDS' ? 'pfTxDotAdd' : 'pfTxDotSell') }"/>
+                                        <VBox class="{= ${pfVM>transactionType} === 'BUY' || ${pfVM>transactionType} === 'WITHDRAW' ? 'pfTxDotBuy' : (${pfVM>transactionType} === 'ADD_FUNDS' ? 'pfTxDotAdd' : 'pfTxDotSell') }"/>
                                         <VBox class="pfTxInfo">
-                                            <Text text="{= ${pfVM>transactionType} === 'BUY' ? '-' + ${pfVM>currency} + ' ' + ${pfVM>totalPrice} : (${pfVM>transactionType} === 'ADD_FUNDS' ? '+₹' + ${pfVM>totalPrice} : '+' + ${pfVM>currency} + ' ' + ${pfVM>totalPrice}) }" class="pfTxAmount"/>
+                                            <Text text="{= ${pfVM>transactionType} === 'BUY' || ${pfVM>transactionType} === 'WITHDRAW' ? '-' + (${pfVM>transactionType} === 'WITHDRAW' ? '₹' : ${pfVM>currency}) + ' ' + ${pfVM>totalPrice} : (${pfVM>transactionType} === 'ADD_FUNDS' ? '+₹' + ${pfVM>totalPrice} : '+' + ${pfVM>currency} + ' ' + ${pfVM>totalPrice}) }" class="pfTxAmount"/>
                                             <Text text="{pfVM>productName}" class="pfTxDesc"/>
                                         </VBox>
                                     </HBox>
                                     <VBox alignItems="End">
                                         <ObjectStatus
                                             text="{pfVM>transactionType}"
-                                            state="{= ${pfVM>transactionType} === 'BUY' ? 'Error' : (${pfVM>transactionType} === 'ADD_FUNDS' ? 'Information' : 'Success') }"
+                                            state="{= ${pfVM>transactionType} === 'BUY' || ${pfVM>transactionType} === 'WITHDRAW' ? 'Error' : (${pfVM>transactionType} === 'ADD_FUNDS' ? 'Information' : 'Success') }"
                                             class="pfTxTypeBadge"/>
                                         <Text text="{pfVM>createdAtText}" class="pfTxDate"/>
                                     </VBox>
@@ -496,11 +506,11 @@
                             <cells>
                                 <ObjectStatus
                                     text="{pfVM>transactionType}"
-                                    state="{= ${pfVM>transactionType} === 'BUY' ? 'Error' : (${pfVM>transactionType} === 'SELL' ? 'Success' : 'Information') }"
+                                    state="{= ${pfVM>transactionType} === 'BUY' || ${pfVM>transactionType} === 'WITHDRAW' ? 'Error' : (${pfVM>transactionType} === 'SELL' ? 'Success' : 'Information') }"
                                     class="pfTxTypePill"/>
                                 <Text text="{pfVM>productName}" class="pfTxStockName"/>
                                 <Text text="{pfVM>quantity}"    class="pfQtyText"/>
-                                <Text text="{= ${pfVM>currency} + ' ' + ${pfVM>totalPrice} }" class="pfTxAmt"/>
+                                <Text text="{= (${pfVM>transactionType} === 'WITHDRAW' ? '₹' : ${pfVM>currency}) + ' ' + ${pfVM>totalPrice} }" class="pfTxAmt"/>
                                 <Text text="{pfVM>createdAtText}" class="pfTxDate"/>
                                 <ObjectStatus
                                     text="{pfVM>status}"

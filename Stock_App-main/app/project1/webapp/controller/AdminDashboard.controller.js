@@ -40,11 +40,7 @@ sap.ui.define([
             this._stopPolling();
             this._intervalId = setInterval(function () {
                 this._loadDashboardData();
-                var oModel = this.getOwnerComponent().getModel();
-                if (oModel) {
-                    oModel.refresh();
-                }
-            }.bind(this), 5000);
+            }.bind(this), 3000); // 3 seconds live interval for Bloomberg-level responsiveness
         },
 
         _stopPolling: function () {
@@ -63,11 +59,27 @@ sap.ui.define([
         _loadDashboardData: async function () {
             try {
                 var oModel = this.getOwnerComponent().getModel();
+                if (!oModel) { return; }
 
-                var aProducts = await oModel.bindList("/Products").requestContexts(0, 1000);
+                if (!this._oProductsBinding) {
+                    this._oProductsBinding = oModel.bindList("/Products");
+                }
+                if (!this._oTxBinding) {
+                    this._oTxBinding = oModel.bindList("/Transactions");
+                }
+
+                // Force cache invalidation to get real-time results from SQLite/HANA
+                try {
+                    this._oProductsBinding.refresh();
+                    this._oTxBinding.refresh();
+                } catch (err) {
+                    // Ignore if binding is new or empty
+                }
+
+                var aProducts = await this._oProductsBinding.requestContexts(0, 1000);
                 this.byId("statTotalStocks").setText(String(aProducts.length));
 
-                var aTx = await oModel.bindList("/Transactions").requestContexts(0, 5000);
+                var aTx = await this._oTxBinding.requestContexts(0, 5000);
                 var iBuyers = 0, iSellers = 0;
                 aTx.forEach(function (c) {
                     var t = c.getObject().transactionType;
@@ -81,26 +93,32 @@ sap.ui.define([
                 var aDailyData = this._buildDailyData(aTx);
                 this.getView().setModel(new JSONModel({ dailyData: aDailyData }), "dashboard");
 
-                setTimeout(function () {
-                    var oViz = this.byId("dailyTradeChart");
-                    if (oViz) {
-                        oViz.setVizProperties({
-                            title: { text: "Daily Buys vs Sells" },
-                            legend: { visible: true },
-                            plotArea: {
-                                dataLabel: { visible: false },
-                                colorPalette: ["#059669", "#dc2626"],
-                                line: { marker: { visible: true, size: 5 } }
-                            },
-                            categoryAxis: { title: { visible: true, text: "Date" } },
-                            valueAxis: { title: { visible: true, text: "Transactions" } }
-                        });
+                var oViz = this.byId("dailyTradeChart");
+                if (oViz) {
+                    oViz.setVizProperties({
+                        title: { text: "Daily Buys vs Sells" },
+                        legend: { visible: true },
+                        plotArea: {
+                            dataLabel: { visible: false },
+                            colorPalette: ["#059669", "#dc2626"],
+                            line: { marker: { visible: true, size: 5 } }
+                        },
+                        categoryAxis: { title: { visible: true, text: "Date" } },
+                        valueAxis: { title: { visible: true, text: "Transactions" } }
+                    });
+                }
+
+                // Refresh Recently Created Stocks Table
+                var oTable = this.byId("recentStocksTable");
+                if (oTable) {
+                    var oTableBinding = oTable.getBinding("items");
+                    if (oTableBinding) {
+                        oTableBinding.refresh();
                     }
-                }.bind(this), 400);
+                }
 
             } catch (e) {
                 console.error("Dashboard load error:", e);
-                MessageToast.show("Failed to load dashboard data");
             }
             /* ── Refresh admin notifications alongside dashboard ── */
             this._refreshAdminNotifications();
@@ -223,81 +241,53 @@ sap.ui.define([
             var oAdminVM = this.getView().getModel("adminVM");
             if (!oAdminVM) { return; }
             try {
-                var oModel   = this.getOwnerComponent().getModel();
+                var oModel = this.getOwnerComponent().getModel();
+                if (!oModel) { return; }
 
-                /* ── Latest transactions (all customers) ── */
-                var aTxCtx = await oModel
-                    .bindList("/Transactions")
-                    .requestContexts(0, 10);
+                if (!this._oAdminNotifBinding) {
+                    this._oAdminNotifBinding = oModel.bindList("/Notifications", null,
+                        [new sap.ui.model.Sorter("createdAt", true)], // newest first
+                        [new sap.ui.model.Filter("isRead", sap.ui.model.FilterOperator.EQ, false)]
+                    );
+                }
 
-                /* ── Low or OUT stock products ── */
-                var aProdLow = await oModel
-                    .bindList("/Products", null, null, [
-                        new sap.ui.model.Filter("status", sap.ui.model.FilterOperator.EQ, "LOW")
-                    ])
-                    .requestContexts(0, 5);
+                try {
+                    this._oAdminNotifBinding.refresh();
+                } catch (e) {}
 
-                var aProdOut = await oModel
-                    .bindList("/Products", null, null, [
-                        new sap.ui.model.Filter("status", sap.ui.model.FilterOperator.EQ, "OUT")
-                    ])
-                    .requestContexts(0, 5);
+                var aCtx = await this._oAdminNotifBinding.requestContexts(0, 50);
 
-                var aItems = [];
-
-                /* Trade activity */
-                aTxCtx.forEach(function (c) {
-                    var t     = c.getObject();
-                    var isBuy = t.transactionType === "BUY";
-                    var when  = t.createdAt ? new Date(t.createdAt) : new Date();
-                    var diff  = Date.now() - when.getTime();
-                    var mins  = Math.floor(diff / 60000);
-                    var sAgo  = "just now";
+                var aItems = aCtx.map(function (c) {
+                    var n = c.getObject();
+                    var when = n.createdAt ? new Date(n.createdAt) : new Date();
+                    var tsMs = when.getTime();
+                    var diff = Date.now() - tsMs;
+                    var mins = Math.floor(diff / 60000);
+                    var sAgo = "just now";
                     if (mins >= 1440) { sAgo = Math.floor(mins / 1440) + "d ago"; }
                     else if (mins >= 60) { sAgo = Math.floor(mins / 60) + "h ago"; }
                     else if (mins >= 1) { sAgo = mins + "m ago"; }
 
-                    aItems.push({
-                        type   : isBuy ? "buy" : "sell",
-                        title  : isBuy ? "🟢 Buy Order" : "🔴 Sell Order",
-                        message: (t.customerName || "Customer") + " — " + (t.quantity || 0) + " units",
-                        time   : sAgo,
-                        ts     : when.getTime()
-                    });
+                    // Custom mapping for admin
+                    var sTitle = n.title;
+                    var sType = n.type || "info";
+                    if (sType === "buy") { sTitle = "🟢 Buy Order"; }
+                    else if (sType === "sell") { sTitle = "🔴 Sell Order"; }
+                    else if (sType === "alert") { sTitle = "⚠️ Low Stock Warning"; }
+                    else if (sType === "spike") { sTitle = "⚡ Volatility Alert"; }
+
+                    return {
+                        ID: n.ID,
+                        type: sType,
+                        title: sTitle,
+                        message: n.message || "",
+                        time: sAgo,
+                        ts: tsMs
+                    };
                 });
 
-                /* Low stock alerts */
-                aProdLow.forEach(function (c) {
-                    var p = c.getObject();
-                    aItems.push({
-                        type   : "alert",
-                        title  : "⚠️ Low Stock Warning",
-                        message: p.productName + " — " + p.stockQuantity + " units remaining",
-                        time   : "live",
-                        ts     : Date.now() + 2
-                    });
-                });
-
-                /* Out of stock */
-                aProdOut.forEach(function (c) {
-                    var p = c.getObject();
-                    aItems.push({
-                        type   : "out",
-                        title  : "🛑 Out of Stock",
-                        message: p.productName + " is completely sold out",
-                        time   : "now",
-                        ts     : Date.now() + 3
-                    });
-                });
-
-                aItems.sort(function (a, b) { return b.ts - a.ts; });
-
-                var prevItems = oAdminVM.getProperty("/notifications/items") || [];
-                var prevCount = oAdminVM.getProperty("/notifications/unreadCount") || 0;
-                var newCount  = Math.max(0, aItems.length - prevItems.length);
-
-                oAdminVM.setProperty("/notifications/items",       aItems);
-                oAdminVM.setProperty("/notifications/unreadCount", prevCount + newCount);
+                oAdminVM.setProperty("/notifications/items", aItems);
+                oAdminVM.setProperty("/notifications/unreadCount", aItems.length);
 
             } catch (e) {
                 console.error("Admin notification refresh error:", e);
@@ -307,21 +297,45 @@ sap.ui.define([
         onAdminNotificationsPress: function (oEvent) {
             var oAdminVM = this.getView().getModel("adminVM");
             var aItems   = (oAdminVM && oAdminVM.getProperty("/notifications/items")) || [];
-
-            /* Mark all as read */
-            if (oAdminVM) { oAdminVM.setProperty("/notifications/unreadCount", 0); }
-
+ 
             var oNotifModel = new JSONModel({ items: aItems });
-
+ 
             var oList = new sap.m.List({
                 items: {
                     path    : "notif>/items",
                     template: new sap.m.CustomListItem({
+                        type: "Active",
+                        press: async (oEvt) => {
+                            var oItemCtx = oEvt.getSource().getBindingContext("notif");
+                            var sId = oItemCtx.getProperty("ID");
+                            try {
+                                var oModel = this.getOwnerComponent().getModel();
+                                var oContext = oModel.bindContext(`/Notifications(${sId})`);
+                                await oContext.getBoundContext().setProperty("isRead", true);
+                                
+                                MessageToast.show("Alert dismissed");
+                                this._refreshAdminNotifications();
+                                if (this._oAdminNotifPopover) {
+                                    this._oAdminNotifPopover.close();
+                                }
+                            } catch (err) {
+                                console.error("Mark admin notification read error:", err);
+                            }
+                        },
                         content: [
                             new sap.m.HBox({
                                 alignItems: "Center",
-                                class     : "cdNotifItem",
-                                items     : [
+                                class: {
+                                    path: "notif>type",
+                                    formatter: function (sType) {
+                                        let c = "cdNotifItem cdNotifUnread";
+                                        if (sType === "buy") c += " cdColorBuy";
+                                        else if (sType === "sell") c += " cdColorSell";
+                                        else if (sType === "alert" || sType === "spike") c += " cdColorAlert";
+                                        return c;
+                                    }
+                                },
+                                items: [
                                     new sap.m.VBox({
                                         class: "cdNotifDotWrap",
                                         items: [
@@ -330,11 +344,11 @@ sap.ui.define([
                                                 class: {
                                                     path     : "notif>type",
                                                     formatter: function (sType) {
-                                                        if (sType === "buy")   { return "cdNotifDot cdDotGreen"; }
-                                                        if (sType === "sell")  { return "cdNotifDot cdDotRed"; }
-                                                        if (sType === "alert") { return "cdNotifDot cdDotAmber"; }
-                                                        if (sType === "out")   { return "cdNotifDot cdDotRed"; }
-                                                        return "cdNotifDot cdDotBlue";
+                                                        return sType === "buy" ? "cdNotifDot cdDotGreen" :
+                                                            sType === "sell" ? "cdNotifDot cdDotRed" :
+                                                                sType === "alert" ? "cdNotifDot cdDotAmber" :
+                                                                    sType === "spike" ? "cdNotifDot cdDotAmber" :
+                                                                        "cdNotifDot cdDotBlue";
                                                     }
                                                 }
                                             })
@@ -361,19 +375,19 @@ sap.ui.define([
                 noDataText    : "🎉 All clear — no new alerts!",
                 showSeparators: "Inner"
             });
-
+ 
             oList.setModel(oNotifModel, "notif");
-
+ 
             if (this._oAdminNotifPopover) {
                 this._oAdminNotifPopover.destroy();
                 this._oAdminNotifPopover = null;
             }
-
+ 
             var self = this;
             this._oAdminNotifPopover = new sap.m.Popover({
                 title        : "🔔 Admin Notifications",
                 contentWidth : "380px",
-                contentHeight: "440px",
+                contentHeight: "460px",
                 placement    : "Bottom",
                 showHeader   : true,
                 class        : "cdNotifPopover",
@@ -381,12 +395,26 @@ sap.ui.define([
                 endButton    : new sap.m.Button({
                     text : "Clear All",
                     type : "Transparent",
-                    press: function () {
-                        if (oAdminVM) {
-                            oAdminVM.setProperty("/notifications/items", []);
-                            oAdminVM.setProperty("/notifications/unreadCount", 0);
+                    press: async () => {
+                        try {
+                            var oModel = this.getOwnerComponent().getModel();
+                            var oAct = oModel.bindContext("/clearAllNotifications(...)");
+                            oAct.setParameter("customerName", "admin");
+                            await oAct.execute();
+
+                            if (oAdminVM) {
+                                oAdminVM.setProperty("/notifications/items", []);
+                                oAdminVM.setProperty("/notifications/unreadCount", 0);
+                            }
+                            oNotifModel.setProperty("/items", []);
+                            
+                            MessageToast.show("All notifications cleared");
+                            if (self._oAdminNotifPopover) {
+                                self._oAdminNotifPopover.close();
+                            }
+                        } catch (err) {
+                            console.error("Clear all admin notifications error:", err);
                         }
-                        oNotifModel.setProperty("/items", []);
                     }
                 }),
                 afterClose: function () {
@@ -396,7 +424,7 @@ sap.ui.define([
                     }
                 }
             });
-
+ 
             this.getView().addDependent(this._oAdminNotifPopover);
             var oSource = oEvent ? oEvent.getSource() : this.byId("adminBellBtn");
             this._oAdminNotifPopover.openBy(oSource);
