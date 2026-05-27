@@ -203,50 +203,21 @@ sap.ui.define([
                         content: [
                             new sap.m.HBox({
                                 alignItems: "Center",
-                                class: {
-                                    path: "notif>type",
-                                    formatter: function (sType) {
-                                        let c = "cdNotifItem cdNotifUnread";
-                                        if (sType === "buy") c += " cdColorBuy";
-                                        else if (sType === "sell") c += " cdColorSell";
-                                        else if (sType === "alert" || sType === "spike") c += " cdColorAlert";
-                                        return c;
-                                    }
-                                },
                                 items: [
                                     new sap.m.VBox({
-                                        class: "cdNotifDotWrap",
-                                        items: [
-                                            new sap.m.Text({
-                                                text: "",
-                                                class: {
-                                                    path: "notif>type",
-                                                    formatter: function (sType) {
-                                                        return sType === "buy" ? "cdNotifDot cdDotGreen" :
-                                                            sType === "sell" ? "cdNotifDot cdDotRed" :
-                                                                sType === "alert" ? "cdNotifDot cdDotAmber" :
-                                                                    sType === "spike" ? "cdNotifDot cdDotAmber" :
-                                                                        "cdNotifDot cdDotBlue";
-                                                    }
-                                                }
-                                            })
-                                        ]
-                                    }),
-                                    new sap.m.VBox({
-                                        class: "cdNotifContent",
                                         items: [
                                             new sap.m.HBox({
                                                 justifyContent: "SpaceBetween",
                                                 items: [
-                                                    new sap.m.Title({ text: "{notif>title}", level: "H6", class: "cdNotifTitle" }),
-                                                    new sap.m.Text({ text: "{notif>time}", class: "cdNotifTime" })
+                                                    new sap.m.Text({ text: "{notif>title}" }).addStyleClass("cdNotifTitle"),
+                                                    new sap.m.Text({ text: "{notif>time}" }).addStyleClass("cdNotifTime")
                                                 ]
                                             }),
-                                            new sap.m.Text({ text: "{notif>message}", class: "cdNotifMessage" })
+                                            new sap.m.Text({ text: "{notif>message}" }).addStyleClass("cdNotifMessage")
                                         ]
-                                    })
+                                    }).addStyleClass("cdNotifContent")
                                 ]
-                            })
+                            }).addStyleClass("cdNotifItem")
                         ]
                     })
                 },
@@ -268,7 +239,6 @@ sap.ui.define([
                 contentHeight: "460px",
                 placement: "Bottom",
                 showHeader: true,
-                class: "cdNotifPopover",
                 content: [oList],
                 endButton: new sap.m.Button({
                     text: "Clear All",
@@ -298,6 +268,7 @@ sap.ui.define([
                 }
             });
 
+            this._oNotifPopover.addStyleClass("cdNotifPopover");
             this.getView().addDependent(this._oNotifPopover);
             const oSource = oEvent ? oEvent.getSource() : this.byId("customerBellBtn");
             this._oNotifPopover.openBy(oSource);
@@ -1079,7 +1050,7 @@ sap.ui.define([
                     return {
                         ID: n.ID,
                         type: n.type || "info",
-                        title: n.title || "Stock Alert",
+                        title: (n.title || "Stock Alert").replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim(),
                         message: n.message || "",
                         time: sAgo,
                         ts: tsMs

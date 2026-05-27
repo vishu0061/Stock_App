@@ -3523,16 +3523,16 @@
 
 .cdNotifItem {
     padding: 14px 16px !important;
-    background: rgba(255, 255, 255, 0.01) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     cursor: pointer !important;
     width: 100% !important;
 }
 
 .cdNotifItem:hover {
-    background: rgba(255, 255, 255, 0.04) !important;
-    border-color: rgba(56, 189, 248, 0.15) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Unread Glowing Highlight State */

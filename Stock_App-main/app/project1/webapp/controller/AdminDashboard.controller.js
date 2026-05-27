@@ -271,10 +271,10 @@ sap.ui.define([
                     // Custom mapping for admin
                     var sTitle = n.title;
                     var sType = n.type || "info";
-                    if (sType === "buy") { sTitle = "🟢 Buy Order"; }
-                    else if (sType === "sell") { sTitle = "🔴 Sell Order"; }
-                    else if (sType === "alert") { sTitle = "⚠️ Low Stock Warning"; }
-                    else if (sType === "spike") { sTitle = "⚡ Volatility Alert"; }
+                    if (sType === "buy") { sTitle = "Buy Order"; }
+                    else if (sType === "sell") { sTitle = "Sell Order"; }
+                    else if (sType === "alert") { sTitle = "Low Stock Warning"; }
+                    else if (sType === "spike") { sTitle = "Volatility Alert"; }
 
                     return {
                         ID: n.ID,
@@ -325,50 +325,21 @@ sap.ui.define([
                         content: [
                             new sap.m.HBox({
                                 alignItems: "Center",
-                                class: {
-                                    path: "notif>type",
-                                    formatter: function (sType) {
-                                        let c = "cdNotifItem cdNotifUnread";
-                                        if (sType === "buy") c += " cdColorBuy";
-                                        else if (sType === "sell") c += " cdColorSell";
-                                        else if (sType === "alert" || sType === "spike") c += " cdColorAlert";
-                                        return c;
-                                    }
-                                },
                                 items: [
                                     new sap.m.VBox({
-                                        class: "cdNotifDotWrap",
-                                        items: [
-                                            new sap.m.Text({
-                                                text : "",
-                                                class: {
-                                                    path     : "notif>type",
-                                                    formatter: function (sType) {
-                                                        return sType === "buy" ? "cdNotifDot cdDotGreen" :
-                                                            sType === "sell" ? "cdNotifDot cdDotRed" :
-                                                                sType === "alert" ? "cdNotifDot cdDotAmber" :
-                                                                    sType === "spike" ? "cdNotifDot cdDotAmber" :
-                                                                        "cdNotifDot cdDotBlue";
-                                                    }
-                                                }
-                                            })
-                                        ]
-                                    }),
-                                    new sap.m.VBox({
-                                        class: "cdNotifContent",
                                         items: [
                                             new sap.m.HBox({
                                                 justifyContent: "SpaceBetween",
                                                 items: [
-                                                    new sap.m.Title({ text: "{notif>title}",   level: "H6", class: "cdNotifTitle" }),
-                                                    new sap.m.Text({  text: "{notif>time}",    class: "cdNotifTime" })
+                                                    new sap.m.Text({ text: "{notif>title}" }).addStyleClass("cdNotifTitle"),
+                                                    new sap.m.Text({ text: "{notif>time}" }).addStyleClass("cdNotifTime")
                                                 ]
                                             }),
-                                            new sap.m.Text({ text: "{notif>message}", class: "cdNotifMessage" })
+                                            new sap.m.Text({ text: "{notif>message}" }).addStyleClass("cdNotifMessage")
                                         ]
-                                    })
+                                    }).addStyleClass("cdNotifContent")
                                 ]
-                            })
+                            }).addStyleClass("cdNotifItem")
                         ]
                     })
                 },
@@ -390,7 +361,6 @@ sap.ui.define([
                 contentHeight: "460px",
                 placement    : "Bottom",
                 showHeader   : true,
-                class        : "cdNotifPopover",
                 content      : [ oList ],
                 endButton    : new sap.m.Button({
                     text : "Clear All",
@@ -425,6 +395,7 @@ sap.ui.define([
                 }
             });
  
+            this._oAdminNotifPopover.addStyleClass("cdNotifPopover");
             this.getView().addDependent(this._oAdminNotifPopover);
             var oSource = oEvent ? oEvent.getSource() : this.byId("adminBellBtn");
             this._oAdminNotifPopover.openBy(oSource);

@@ -101,8 +101,8 @@ module.exports = cds.service.impl(async function () {
                 // --- Real-time Price Spike Notifications Generator ---
                 const absolutePct = Math.abs(priceChangePercent * 100);
                 if (absolutePct >= 3.0) {
-                    const direction = priceChangePercent > 0 ? "Spiked 🚀" : "Dropped 📉";
-                    const title = priceChangePercent > 0 ? "🚀 Price Spike Alert" : "⚠️ Price Drop Alert";
+                    const direction = priceChangePercent > 0 ? "Spiked" : "Dropped";
+                    const title = priceChangePercent > 0 ? "Price Spike Alert" : "Price Drop Alert";
                     const message = `${p.productName} has ${direction} by ${absolutePct.toFixed(2)}% to ₹${newPrice.toFixed(2)}`;
 
                     // Alert "Demo Customer"
@@ -319,7 +319,7 @@ module.exports = cds.service.impl(async function () {
             await INSERT.into(Notifications).entries({
                 ID: cds.utils.uuid(),
                 type: "buy",
-                title: "✅ Buy Executed",
+                title: "Buy Executed",
                 message: `${quantity} × ${oProduct.productName} @ ${oProduct.currency} ${unitPrice.toFixed(2)}`,
                 isRead: false,
                 customerName: customerName
@@ -330,7 +330,7 @@ module.exports = cds.service.impl(async function () {
                 const [existingAlert] = await SELECT.from(Notifications).where({
                     type: "alert",
                     customerName: customerName,
-                    title: "⚠️ Low Stock Alert",
+                    title: "Low Stock Alert",
                     message: `${oProduct.productName} — only ${newQty} units remaining`,
                     isRead: false
                 });
@@ -338,7 +338,7 @@ module.exports = cds.service.impl(async function () {
                     await INSERT.into(Notifications).entries({
                         ID: cds.utils.uuid(),
                         type: "alert",
-                        title: "⚠️ Low Stock Alert",
+                        title: "Low Stock Alert",
                         message: `${oProduct.productName} — only ${newQty} units remaining`,
                         isRead: false,
                         customerName: customerName
@@ -427,7 +427,7 @@ module.exports = cds.service.impl(async function () {
             await INSERT.into(Notifications).entries({
                 ID: cds.utils.uuid(),
                 type: "sell",
-                title: "🔴 Sell Executed",
+                title: "Sell Executed",
                 message: `${quantity} × ${oProduct.productName} @ ${oProduct.currency} ${unitPrice.toFixed(2)}`,
                 isRead: false,
                 customerName: customerName
