@@ -98,17 +98,6 @@ sap.ui.define([
                 
                 // Determine active year dynamically from the latest transaction date or current system time
                 var sYear = new Date().getFullYear();
-                var aDates = [];
-                aTx.forEach(function (c) {
-                    var t = c.getObject();
-                    if (t && t.createdAt) {
-                        aDates.push(String(t.createdAt).substring(0, 10));
-                    }
-                });
-                if (aDates.length > 0) {
-                    aDates.sort();
-                    sYear = new Date(aDates[aDates.length - 1]).getFullYear();
-                }
 
                 this.getView().setModel(new JSONModel({ 
                     dailyData: aDailyData,
@@ -549,6 +538,20 @@ sap.ui.define([
                         };
                     });
 
+                    // Append current live price as the latest tick to make chart 100% real-time
+                    var fCurrentPrice = Number(oProduct.price || 0);
+                    if (fCurrentPrice > 0) {
+                        var dtNow = new Date();
+                        var sDateNow = dtNow.getDate() + "/" + (dtNow.getMonth() + 1);
+                        aData.push({
+                            date: sDateNow,
+                            price: fCurrentPrice,
+                            changePct: Number(oProduct.changePct || 0),
+                            volume: 0,
+                            reason: "LIVE"
+                        });
+                    }
+
                     var aPrices = aData.map(function (r) { return r.price; });
                     var fMax = Math.max.apply(null, aPrices);
                     var fMin = Math.min.apply(null, aPrices);
@@ -557,12 +560,6 @@ sap.ui.define([
                     var fChangePct = ((fLast - fFirst) / fFirst * 100).toFixed(2);
 
                     var sYear = new Date().getFullYear();
-                    if (aData.length > 0) {
-                        var latestTxDate = aCtx[aCtx.length - 1].getObject().createdAt;
-                        if (latestTxDate) {
-                            sYear = new Date(latestTxDate).getFullYear();
-                        }
-                    }
 
                     self._renderStockDialog(
                         oProduct, aData, fMax, fMin, fChangePct, sYear,

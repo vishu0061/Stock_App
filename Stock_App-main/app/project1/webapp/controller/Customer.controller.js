@@ -870,14 +870,21 @@ sap.ui.define([
                 if (a && a.value && Array.isArray(a.value)) { a = a.value; }
                 if (!Array.isArray(a)) { a = []; }
 
-                /* Filter to INR only for summary totals — avoid mixing INR+USD+EUR */
-                const aINR = a.filter(function (h) { return (h.currency || "INR") === "INR"; });
                 const owned = a.length;
                 const profitable = a.filter(function (h) { return Number(h.profitLoss || 0) > 0; }).length;
 
-                const totalValue = aINR.reduce(function (s, h) { return s + Number(h.totalValue || 0); }, 0);
-                const totalPL = aINR.reduce(function (s, h) { return s + Number(h.profitLoss || 0); }, 0);
-                const totalInv = aINR.reduce(function (s, h) { return s + (Number(h.avgBuyPrice || 0) * Number(h.quantity || 0)); }, 0);
+                const totalValue = a.reduce(function (s, h) {
+                    var mult = (h.currency === "USD") ? 90 : 1;
+                    return s + (Number(h.totalValue || 0) * mult);
+                }, 0);
+                const totalPL = a.reduce(function (s, h) {
+                    var mult = (h.currency === "USD") ? 90 : 1;
+                    return s + (Number(h.profitLoss || 0) * mult);
+                }, 0);
+                const totalInv = a.reduce(function (s, h) {
+                    var mult = (h.currency === "USD") ? 90 : 1;
+                    return s + (Number(h.avgBuyPrice || 0) * Number(h.quantity || 0) * mult);
+                }, 0);
 
                 const fmt = (num) => Number(num).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const startingCapital = 1000000; // ₹10,00,000 virtual wallet
@@ -891,8 +898,9 @@ sap.ui.define([
                     aTxCtx.forEach(function (c) {
                         const t = c.getObject();
                         const cur = (t.currency || "INR").toUpperCase();
-                        if (cur !== "INR" && cur !== "₹") { return; }
-                        const amt = Number(t.totalPrice || 0);
+                        if (cur !== "INR" && cur !== "₹" && cur !== "USD") { return; }
+                        var mult = (cur === "USD") ? 90 : 1;
+                        const amt = Number(t.totalPrice || 0) * mult;
                         if (t.transactionType === "BUY" || t.transactionType === "WITHDRAW") { cashOut += amt; }
                         if (t.transactionType === "SELL" || t.transactionType === "ADD_FUNDS") { cashIn += amt; }
                     });

@@ -319,15 +319,20 @@ sap.ui.define([
              * We pick INR (the dominant currency in the seed data).
              * USD / EUR holdings are shown in the table with their own currency.
              * ───────────────────────────────────────────── */
-            const sPrimary  = "INR";
-            const aINR      = aHoldings.filter(function (h) { return (h.currency || "INR") === sPrimary; });
             const aAll      = aHoldings; // used for counts
 
-            const totalValue    = aINR.reduce(function (s, h) { return s + Number(h.totalValue  || 0); }, 0);
-            const totalCost     = aINR.reduce(function (s, h) {
-                return s + Number(h.buyPrice || 0) * Number(h.quantity || 0);
+            const totalValue = aHoldings.reduce(function (s, h) {
+                var mult = (h.currency === "USD") ? 90 : 1;
+                return s + (Number(h.totalValue || 0) * mult);
             }, 0);
-            const totalPL       = aINR.reduce(function (s, h) { return s + Number(h.profitLoss || 0); }, 0);
+            const totalCost = aHoldings.reduce(function (s, h) {
+                var mult = (h.currency === "USD") ? 90 : 1;
+                return s + (Number(h.buyPrice || 0) * Number(h.quantity || 0) * mult);
+            }, 0);
+            const totalPL = aHoldings.reduce(function (s, h) {
+                var mult = (h.currency === "USD") ? 90 : 1;
+                return s + (Number(h.profitLoss || 0) * mult);
+            }, 0);
 
             /* Portfolio growth %: how much the market value moved vs cost basis */
             const portGrowthPct = totalCost > 0
@@ -337,29 +342,26 @@ sap.ui.define([
             /* P/L %: same as portGrowthPct when using unrealized P/L */
             const plPct = portGrowthPct;
 
-            /* ── Available Balance: computed from real transaction cash-flow ──
-             * currency field on mapped transactions stores the product currency CODE
-             * (INR / USD / EUR). Only count INR transactions against the INR wallet. */
+            /* ── Available Balance: computed from real transaction cash-flow ── */
             const startingCapital = 1000000; // ₹10,00,000 virtual wallet
             let cashOutflow = 0;
             let cashInflow  = 0;
             aTx.forEach(function (t) {
-                /* Skip foreign-currency transactions (USD, EUR, etc.) */
                 const cur = (t.currency || "INR").toUpperCase();
-                if (cur !== "INR" && cur !== "₹") { return; }
-                const amt = Number(t.totalPrice || 0);
+                if (cur !== "INR" && cur !== "₹" && cur !== "USD") { return; }
+                var mult = (cur === "USD") ? 90 : 1;
+                const amt = Number(t.totalPrice || 0) * mult;
                 if (t.transactionType === "BUY" || t.transactionType === "WITHDRAW")  { cashOutflow += amt; }
                 if (t.transactionType === "SELL" || t.transactionType === "ADD_FUNDS") { cashInflow  += amt; }
             });
             const availBal = Math.max(0, startingCapital - cashOutflow + cashInflow);
 
-            /* ── Today's Gain: use previousPrice from getPortfolio result ──
-             * This is the real intraday movement = (current - previous) × qty
-             * for all INR holdings. Much more reliable than tx-date matching. */
-            const todaysGain = aINR.reduce(function (s, h) {
+            /* ── Today's Gain: use previousPrice from getPortfolio result ── */
+            const todaysGain = aHoldings.reduce(function (s, h) {
+                var mult = (h.currency === "USD") ? 90 : 1;
                 const curr  = Number(h.currentPrice || 0);
                 const prev  = Number(h.previousPrice || curr);
-                return s + (curr - prev) * Number(h.quantity || 0);
+                return s + (curr - prev) * Number(h.quantity || 0) * mult;
             }, 0);
 
             const fmt = (num) => Number(num).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

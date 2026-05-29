@@ -144,25 +144,7 @@ sap.ui.define([
             var todayStr       = new Date().toDateString();
             var sId            = this._selectedStockId;
 
-            // ── 1. Current price & trend ──
-            $.ajax({
-                url: "/api/Products(" + sId + ")",
-                method: "GET",
-                cache: false,
-                success: function (data) {
-                    var d = data;
-                    if (data && data.value) {
-                        d = Array.isArray(data.value) ? data.value[0] : data.value;
-                    }
-                    if (d) {
-                        oModel.setProperty("/currentPrice", (d.currency || "") + " " + Number(d.price || 0).toFixed(2));
-                        oModel.setProperty("/trend", d.trend || "NEUTRAL");
-                    }
-                },
-                error: function (err) { console.error("Product fetch error:", err); }
-            });
-
-            // ── 2. Transaction volume ──
+            // ── 1. Transaction volume ──
             $.ajax({
                 url: "/api/Transactions?$filter=product_ID eq " + sId,
                 method: "GET",
@@ -175,29 +157,47 @@ sap.ui.define([
                 }
             });
 
-            // ── 3. Historical + live ticks → chart ──
+            // ── 2. Unified parallel fetch for Product details + historical + live ticks ──
+            var sProd = "/api/Products(" + sId + ")";
             var sHist = "/api/HistoricalPrices?$filter=product_ID eq " + sId + "&$orderby=createdAt asc&$top=30";
             var sLive = "/api/PriceHistory?$filter=product_ID eq "     + sId + "&$orderby=timestamp asc&$top=50";
 
             $.when(
+                $.ajax({ url: sProd, method: "GET", cache: false }),
                 $.ajax({ url: sHist, method: "GET", cache: false }),
                 $.ajax({ url: sLive, method: "GET", cache: false })
-            ).done(function (resHist, resLive) {
+            ).done(function (resProd, resHist, resLive) {
+                var d = resProd[0];
+                if (d && d.value) {
+                    d = Array.isArray(d.value) ? d.value[0] : d.value;
+                }
+                if (d) {
+                    var sCurrency = d.currency || "INR";
+                    var sSymbol = sCurrency === "INR" ? "₹" : (sCurrency === "USD" ? "$" : (sCurrency === "EUR" ? "€" : sCurrency + " "));
+                    oModel.setProperty("/currentPrice", sCurrency + " " + sSymbol + Number(d.price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                    oModel.setProperty("/trend", d.trend || "NEUTRAL");
+                }
+
                 var combined = [];
 
                 ((resHist[0] && resHist[0].value) || []).forEach(function (h) {
-                    var d = new Date(h.createdAt);
-                    if (!isNaN(d) && Number(h.price) > 0) {
-                        combined.push({ rawDate: d, price: Number(h.price) });
+                    var dt = new Date(h.createdAt);
+                    if (!isNaN(dt) && Number(h.price) > 0) {
+                        combined.push({ rawDate: dt, price: Number(h.price) });
                     }
                 });
 
                 ((resLive[0] && resLive[0].value) || []).forEach(function (h) {
-                    var d = new Date(h.timestamp);
-                    if (!isNaN(d) && Number(h.close) > 0) {
-                        combined.push({ rawDate: d, price: Number(h.close) });
+                    var dt = new Date(h.timestamp);
+                    if (!isNaN(dt) && Number(h.close) > 0) {
+                        combined.push({ rawDate: dt, price: Number(h.close) });
                     }
                 });
+
+                // Append active fluctuating live price as the final point to make chart 100% real-time and auto-updating!
+                if (d && Number(d.price) > 0) {
+                    combined.push({ rawDate: new Date(), price: Number(d.price) });
+                }
 
                 combined.sort(function (a, b) { return a.rawDate - b.rawDate; });
 
