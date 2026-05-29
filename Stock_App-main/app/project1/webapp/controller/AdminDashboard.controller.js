@@ -52,6 +52,10 @@ sap.ui.define([
 
         onExit: function () {
             this._stopPolling();
+            if (this._oChartPopover) {
+                this._oChartPopover.destroy();
+                this._oChartPopover = null;
+            }
         },
 
         /* ═══ LOAD DATA ═══════════════════════════════════════════════════ */
@@ -91,21 +95,80 @@ sap.ui.define([
                 this.byId("statTotalSellers").setText(String(iSellers));
 
                 var aDailyData = this._buildDailyData(aTx);
-                this.getView().setModel(new JSONModel({ dailyData: aDailyData }), "dashboard");
+                
+                // Determine active year dynamically from the latest transaction date or current system time
+                var sYear = new Date().getFullYear();
+                var aDates = [];
+                aTx.forEach(function (c) {
+                    var t = c.getObject();
+                    if (t && t.createdAt) {
+                        aDates.push(String(t.createdAt).substring(0, 10));
+                    }
+                });
+                if (aDates.length > 0) {
+                    aDates.sort();
+                    sYear = new Date(aDates[aDates.length - 1]).getFullYear();
+                }
+
+                this.getView().setModel(new JSONModel({ 
+                    dailyData: aDailyData,
+                    currentYear: String(sYear)
+                }), "dashboard");
 
                 var oViz = this.byId("dailyTradeChart");
                 if (oViz) {
                     oViz.setVizProperties({
-                        title: { text: "Daily Buys vs Sells" },
-                        legend: { visible: true },
-                        plotArea: {
-                            dataLabel: { visible: false },
-                            colorPalette: ["#059669", "#dc2626"],
-                            line: { marker: { visible: true, size: 5 } }
+                        title: {
+                            text: "Daily Buys vs Sells",
+                            style: { color: "#ffffff", fontSize: "14px", fontWeight: "bold", fontFamily: "Inter" }
                         },
-                        categoryAxis: { title: { visible: true, text: "Date" } },
-                        valueAxis: { title: { visible: true, text: "Transactions" } }
+                        legend: {
+                            visible: true,
+                            label: { style: { color: "#94a3b8", fontFamily: "Inter" } }
+                        },
+                        categoryAxis: {
+                            title: { visible: true, text: "Date", style: { color: "#94a3b8" } },
+                            label: { style: { color: "#94a3b8" } },
+                            gridLine: { visible: false },
+                            axisLine: { visible: true, color: "#334155" }
+                        },
+                        valueAxis: {
+                            title: { visible: true, text: "Transactions", style: { color: "#94a3b8" } },
+                            label: { style: { color: "#94a3b8" } },
+                            gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
+                            axisLine: { visible: false }
+                        },
+                        plotArea: {
+                            background: { visible: false },
+                            dataLabel: { visible: false },
+                            colorPalette: ["#10b981", "#ef4444"],
+                            line: { marker: { visible: true, size: 6 }, width: 3 }
+                        },
+                        background: { visible: false },
+                        tooltip: { visible: true },
+                        interaction: {
+                            selectability: { mode: "single" },
+                            hoverBehavior: "tooltip"
+                        }
                     });
+
+                    // Ensure dynamic Fiori Popover is connected to show detailed values on hover/click
+                    if (!this._oChartPopover) {
+                        var self = this;
+                        sap.ui.require(["sap/viz/ui5/controls/Popover"], function (Popover) {
+                            if (!self._oChartPopover) {
+                                self._oChartPopover = new Popover();
+                                self._oChartPopover.connect(oViz.getVizUid());
+                            }
+                        }, function (err) {
+                            try {
+                                self._oChartPopover = new sap.viz.ui5.controls.Popover();
+                                self._oChartPopover.connect(oViz.getVizUid());
+                            } catch (e) {
+                                console.error("Could not load chart popover", e);
+                            }
+                        });
+                    }
                 }
 
                 // Refresh Recently Created Stocks Table
@@ -127,6 +190,7 @@ sap.ui.define([
         /* ═══ BUILD DAILY CHART DATA ═══════════════════════════════════════
            Groups transactions by calendar date.
            Fills gaps (inactive days) with buys:0, sells:0.
+           Always shows the last 30 calendar days to keep the x-axis crisp and clean.
         ═══════════════════════════════════════════════════════════════════ */
         _buildDailyData: function (aTx) {
             var oByDate = {};
@@ -139,13 +203,22 @@ sap.ui.define([
                 if (t.transactionType === "SELL") { oByDate[sDate].sells++; }
             });
 
+            var oToday = new Date();
+            oToday.setHours(0, 0, 0, 0);
+
+            var oEnd = new Date(oToday);
             var aDates = Object.keys(oByDate).sort();
-            if (!aDates.length) { return []; }
+            if (aDates.length > 0) {
+                var oLatestTxDate = new Date(aDates[aDates.length - 1]);
+                if (oLatestTxDate > oEnd) {
+                    oEnd = oLatestTxDate;
+                }
+            }
 
-            var oStart = new Date(aDates[0]);
-            var oEnd = new Date(aDates[aDates.length - 1]);
+            // Always display exactly the last 30 calendar days to keep the x-axis crisp and clean
+            var oStart = new Date(oEnd.getTime() - 29 * 24 * 60 * 60 * 1000);
+
             var aResult = [];
-
             for (var d = new Date(oStart); d <= oEnd; d.setDate(d.getDate() + 1)) {
                 var sKey = d.toISOString().substring(0, 10);
                 aResult.push({
@@ -541,13 +614,245 @@ sap.ui.define([
             oContentBox.addStyleClass("sapUiSmallMarginBeginEnd");
 
             var oDialog = new Dialog({
-                title: "\ud83d\udcc8  " + oProduct.productName + " \u2014 Stock Price Graph",
+                title: "📈  " + oProduct.productName + " — Stock Price Graph",
                 contentWidth: "680px",
                 content: [oContentBox],
                 endButton: new MButton({ text: "Close", type: "Transparent", press: function () { oDialog.close(); } }),
                 afterClose: function () { oDialog.destroy(); }
             });
             oDialog.open();
+        },
+
+        /* ═══ TRANSACTION ANALYTICS POPUP DIALOGS ═══════════════════════════ */
+        onOpenBuysDialog: function () {
+            this._openAnalyticsDialog("BUY");
+        },
+
+        onOpenSellsDialog: function () {
+            this._openAnalyticsDialog("SELL");
+        },
+
+        _openAnalyticsDialog: async function (sMode) {
+            var self = this;
+            var oView = this.getView();
+
+            // Fetch transaction contexts
+            var aTx = await this._oTxBinding.requestContexts(0, 5000);
+
+            // Initialize Dialog Model
+            var oDialogModel = new JSONModel({
+                mode: sMode,
+                range: "1M",
+                chartData: this._getFilteredChartData(sMode, "1M", aTx)
+            });
+
+            // Segmented Button
+            var oSegmentedButton = new sap.m.SegmentedButton({
+                width: "330px",
+                selectedKey: "{dialogModel>/range}",
+                selectionChange: function (oEvent) {
+                    var sNewRange = oEvent.getParameter("item").getKey();
+                    var aFiltered = self._getFilteredChartData(sMode, sNewRange, aTx);
+                    oDialogModel.setProperty("/chartData", aFiltered);
+                }
+            });
+            oSegmentedButton.addStyleClass("cdSegmentedBtn");
+            oSegmentedButton.addItem(new sap.m.SegmentedButtonItem({ key: "1D", text: "1D" }));
+            oSegmentedButton.addItem(new sap.m.SegmentedButtonItem({ key: "1W", text: "1W" }));
+            oSegmentedButton.addItem(new sap.m.SegmentedButtonItem({ key: "1M", text: "1M" }));
+            oSegmentedButton.addItem(new sap.m.SegmentedButtonItem({ key: "3M", text: "3M" }));
+            oSegmentedButton.addItem(new sap.m.SegmentedButtonItem({ key: "1Y", text: "1Y" }));
+
+            // Programmatic VizFrame
+            var oVizFrame = new sap.viz.ui5.controls.VizFrame({
+                vizType: "line",
+                width: "100%",
+                height: "340px",
+                uiConfig: { applicationSet: "fiori" }
+            });
+
+            var oDataset = new sap.viz.ui5.data.FlattenedDataset({
+                data: "{dialogModel>/chartData}",
+                dimensions: [
+                    new sap.viz.ui5.data.DimensionDefinition({
+                        name: "Time",
+                        value: "{dialogModel>label}"
+                    })
+                ],
+                measures: [
+                    new sap.viz.ui5.data.MeasureDefinition({
+                        name: "Transactions",
+                        value: "{dialogModel>value}"
+                    })
+                ]
+            });
+            oVizFrame.setDataset(oDataset);
+
+            oVizFrame.addFeed(new sap.viz.ui5.controls.common.feeds.FeedItem({
+                uid: "valueAxis",
+                type: "Measure",
+                values: ["Transactions"]
+            }));
+            oVizFrame.addFeed(new sap.viz.ui5.controls.common.feeds.FeedItem({
+                uid: "categoryAxis",
+                type: "Dimension",
+                values: ["Time"]
+            }));
+
+            oVizFrame.setVizProperties({
+                title: { visible: false },
+                legend: { visible: false },
+                categoryAxis: {
+                    title: { visible: true, text: "Timeline", style: { color: "#94a3b8" } },
+                    label: { style: { color: "#94a3b8" } },
+                    gridLine: { visible: false },
+                    axisLine: { visible: true, color: "#334155" }
+                },
+                valueAxis: {
+                    title: { visible: true, text: "Volume", style: { color: "#94a3b8" } },
+                    label: { style: { color: "#94a3b8" } },
+                    gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
+                    axisLine: { visible: false }
+                },
+                plotArea: {
+                    background: { visible: false },
+                    dataLabel: { visible: false },
+                    colorPalette: [sMode === "BUY" ? "#10b981" : "#d97706"],
+                    line: { marker: { visible: true, size: 6 }, width: 3 }
+                },
+                background: { visible: false },
+                tooltip: { visible: true },
+                interaction: {
+                    selectability: { mode: "single" },
+                    hoverBehavior: "tooltip"
+                }
+            });
+
+            // Connect dynamic Popover
+            var oPopover = new sap.viz.ui5.controls.Popover();
+            oPopover.connect(oVizFrame.getVizUid());
+
+            var oContentVBox = new sap.m.VBox({
+                items: [
+                    new sap.m.HBox({
+                        justifyContent: "Center",
+                        class: "sapUiSmallMarginBottom",
+                        items: [ oSegmentedButton ]
+                    }),
+                    oVizFrame
+                ]
+            });
+            oContentVBox.addStyleClass("sapUiSmallMarginBeginEnd sapUiSmallMarginTop");
+
+            var oDialog = new sap.m.Dialog({
+                title: sMode === "BUY" ? "🛒  Total Buys Analytics" : "📈  Total Sells Analytics",
+                contentWidth: "680px",
+                contentHeight: "450px",
+                content: [ oContentVBox ],
+                endButton: new sap.m.Button({
+                    text: "Close",
+                    type: "Transparent",
+                    press: function () {
+                        oDialog.close();
+                    }
+                }),
+                afterClose: function () {
+                    oPopover.destroy();
+                    oDialog.destroy();
+                }
+            });
+
+            oDialog.addStyleClass("adminAnalyticsDialog");
+            oDialog.setModel(oDialogModel, "dialogModel");
+            oView.addDependent(oDialog);
+            oDialog.open();
+        },
+
+        _getFilteredChartData: function (sMode, sRange, aTx) {
+            var oNow = new Date();
+            var oByGroup = {};
+            var aResult = [];
+
+            // Extract objects
+            var aItems = aTx.map(function (c) {
+                var o = c.getObject();
+                return {
+                    type: o.transactionType,
+                    date: o.createdAt ? new Date(o.createdAt) : null
+                };
+            }).filter(function (t) {
+                return t.type === sMode && t.date;
+            });
+
+            if (sRange === "1D") {
+                // Hourly grouping for the last 24 hours
+                var oStart = new Date(oNow.getTime() - 24 * 60 * 60 * 1000);
+                aItems.forEach(function (t) {
+                    if (t.date >= oStart && t.date <= oNow) {
+                        var iHour = t.date.getHours();
+                        var sHour = (iHour < 10 ? "0" : "") + iHour + ":00";
+                        oByGroup[sHour] = (oByGroup[sHour] || 0) + 1;
+                    }
+                });
+
+                // Generate 24 hours
+                for (var i = 23; i >= 0; i--) {
+                    var d = new Date(oNow.getTime() - i * 60 * 60 * 1000);
+                    var iHr = d.getHours();
+                    var sLabel = (iHr < 10 ? "0" : "") + iHr + ":00";
+                    aResult.push({
+                        label: sLabel,
+                        value: oByGroup[sLabel] || 0
+                    });
+                }
+            } else if (sRange === "1W" || sRange === "1M" || sRange === "3M") {
+                // Daily grouping
+                var iDays = sRange === "1W" ? 7 : (sRange === "1M" ? 30 : 90);
+                var oStart = new Date(oNow.getTime() - iDays * 24 * 60 * 60 * 1000);
+                oStart.setHours(0, 0, 0, 0);
+
+                aItems.forEach(function (t) {
+                    if (t.date >= oStart && t.date <= oNow) {
+                        var sDate = t.date.toISOString().substring(0, 10);
+                        oByGroup[sDate] = (oByGroup[sDate] || 0) + 1;
+                    }
+                });
+
+                // Generate dates
+                for (var i = iDays - 1; i >= 0; i--) {
+                    var d = new Date(oNow.getTime() - i * 24 * 60 * 60 * 1000);
+                    var sKey = d.toISOString().substring(0, 10);
+                    var sLabel = (d.getMonth() + 1) + "/" + d.getDate();
+                    aResult.push({
+                        label: sLabel,
+                        value: oByGroup[sKey] || 0
+                    });
+                }
+            } else if (sRange === "1Y") {
+                // Monthly grouping for the last 12 months
+                var oStart = new Date(oNow.getFullYear() - 1, oNow.getMonth() + 1, 1);
+                var aMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+                aItems.forEach(function (t) {
+                    if (t.date >= oStart && t.date <= oNow) {
+                        var sMonthKey = t.date.getFullYear() + "-" + (t.date.getMonth() < 9 ? "0" : "") + (t.date.getMonth() + 1);
+                        oByGroup[sMonthKey] = (oByGroup[sMonthKey] || 0) + 1;
+                    }
+                });
+
+                // Generate 12 months
+                for (var i = 11; i >= 0; i--) {
+                    var d = new Date(oNow.getFullYear(), oNow.getMonth() - i, 1);
+                    var sKey = d.getFullYear() + "-" + (d.getMonth() < 9 ? "0" : "") + (d.getMonth() + 1);
+                    var sLabel = aMonths[d.getMonth()] + " " + String(d.getFullYear()).substring(2);
+                    aResult.push({
+                        label: sLabel,
+                        value: oByGroup[sKey] || 0
+                    });
+                }
+            }
+
+            return aResult;
         }
 
     });

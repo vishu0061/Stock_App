@@ -560,4 +560,50 @@ module.exports = cds.service.impl(async function () {
         }
     });
 
+    // ================= SEED DATA TIME-SHIFT BOOTSTRAP =================
+    // Dynamically shifts transaction seed dates on boot so they fall into the current month/year,
+    // avoiding a 2-year flatline gap on the line chart.
+    cds.once("served", async () => {
+        try {
+            const tx = cds.tx();
+            const aTx = await tx.run(SELECT.from(Transactions));
+            if (aTx && aTx.length > 0) {
+                let latestDate = null;
+                aTx.forEach(t => {
+                    if (t.createdAt) {
+                        const d = new Date(t.createdAt);
+                        if (!latestDate || d > latestDate) {
+                            latestDate = d;
+                        }
+                    }
+                });
+
+                if (latestDate) {
+                    const now = new Date();
+                    const diffMs = now - latestDate;
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    if (diffDays > 3) {
+                        console.log(`[StockApp Bootstrap] Shifting transaction seed dates by ${diffDays} days to match current timeframe...`);
+                        for (const t of aTx) {
+                            if (t.createdAt) {
+                                const oldDate = new Date(t.createdAt);
+                                const newDate = new Date(oldDate.getTime() + diffMs);
+                                await tx.run(UPDATE(Transactions).set({
+                                    createdAt: newDate.toISOString(),
+                                    modifiedAt: newDate.toISOString()
+                                }).where({ ID: t.ID }));
+                            }
+                        }
+                        await tx.commit();
+                        console.log(`[StockApp Bootstrap] Successfully shifted seed transaction dates to match local time.`);
+                        return;
+                    }
+                }
+            }
+            await tx.rollback();
+        } catch (e) {
+            console.error("[StockApp Bootstrap] Failed to shift seed transaction dates:", e);
+        }
+    });
+
 });

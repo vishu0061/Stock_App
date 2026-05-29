@@ -108,22 +108,28 @@ xmlns:unified="sap.ui.unified"
                     </VBox>
 
                     <VBox class="adminStatCard adminStatCardGreen">
-                        <HBox alignItems="Center">
-                            <core:Icon src="sap-icon://cart" size="1.6rem" color="#059669" class="adminStatIcon"/>
-                            <VBox class="adminStatTextBlock">
-                                <Text text="Total Buys" class="adminStatLabel"/>
-                                <Title id="statTotalBuyers" text="0" class="adminStatValue"/>
-                            </VBox>
+                        <HBox alignItems="Center" justifyContent="SpaceBetween" width="100%">
+                            <HBox alignItems="Center">
+                                <core:Icon src="sap-icon://cart" size="1.6rem" color="#059669" class="adminStatIcon"/>
+                                <VBox class="adminStatTextBlock">
+                                    <Text text="Total Buys" class="adminStatLabel"/>
+                                    <Title id="statTotalBuyers" text="0" class="adminStatValue"/>
+                                </VBox>
+                            </HBox>
+                            <Button icon="sap-icon://line-chart" type="Transparent" press=".onOpenBuysDialog" class="adminStatOpenBtn" tooltip="Open dynamic trend analytics dialog"/>
                         </HBox>
                     </VBox>
 
                     <VBox class="adminStatCard adminStatCardOrange">
-                        <HBox alignItems="Center">
-                            <core:Icon src="sap-icon://sales-order" size="1.6rem" color="#d97706" class="adminStatIcon"/>
-                            <VBox class="adminStatTextBlock">
-                                <Text text="Total Sells" class="adminStatLabel"/>
-                                <Title id="statTotalSellers" text="0" class="adminStatValue"/>
-                            </VBox>
+                        <HBox alignItems="Center" justifyContent="SpaceBetween" width="100%">
+                            <HBox alignItems="Center">
+                                <core:Icon src="sap-icon://sales-order" size="1.6rem" color="#d97706" class="adminStatIcon"/>
+                                <VBox class="adminStatTextBlock">
+                                    <Text text="Total Sells" class="adminStatLabel"/>
+                                    <Title id="statTotalSellers" text="0" class="adminStatValue"/>
+                                </VBox>
+                            </HBox>
+                            <Button icon="sap-icon://line-chart" type="Transparent" press=".onOpenSellsDialog" class="adminStatOpenBtn" tooltip="Open dynamic trend analytics dialog"/>
                         </HBox>
                     </VBox>
 
@@ -167,9 +173,12 @@ xmlns:unified="sap.ui.unified"
 
                 <!-- ── DAILY TRADE CHART ─────────────────────────────── -->
                 <VBox class="adminSectionBlock">
-                    <HBox alignItems="Center" class="adminSectionHeaderRow">
-                        <core:Icon src="sap-icon://line-chart" size="1.1rem" color="#7c3aed" class="adminSectionIcon"/>
-                        <Title text="DAILY BUYS vs SELLS" class="adminSectionTitle"/>
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="adminSectionHeaderRow" width="100%">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://line-chart" size="1.1rem" color="#7c3aed" class="adminSectionIcon" style="margin-right: 0.6rem;"/>
+                            <Title text="DAILY BUYS vs SELLS" class="adminSectionTitle"/>
+                        </HBox>
+                        <ObjectStatus text="{dashboard>/currentYear}" state="Information" icon="sap-icon://calendar" class="adminChartYearBadge"/>
                     </HBox>
                     <VBox class="adminChartContainer">
                         <viz:VizFrame

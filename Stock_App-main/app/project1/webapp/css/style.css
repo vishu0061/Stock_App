@@ -3617,3 +3617,58 @@
     border: 1px solid #040b17 !important;
 }
 
+/* =========================================================
+   ADMIN DYNAMIC ANALYTICS DIALOG & STAT OPEN BTN
+========================================================= */
+.adminAnalyticsDialog .sapMDialogHeader {
+    background: #0b1528 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.adminAnalyticsDialog .sapMDialogTitle {
+    color: #ffffff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+}
+
+.adminAnalyticsDialog .sapMDialog {
+    background-color: #040b17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 8px !important;
+}
+
+.adminAnalyticsDialog .sapMDialogScrollCont {
+    background-color: #040b17 !important;
+}
+
+.adminAnalyticsDialog footer {
+    background: #0b1528 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.adminAnalyticsDialog footer .sapMBtn {
+    color: #38bdf8 !important;
+    font-weight: 600 !important;
+}
+
+.adminAnalyticsDialog footer .sapMBtn:hover {
+    color: #00ffaa !important;
+}
+
+.adminStatOpenBtn.sapMBtn {
+    padding: 0 !important;
+    margin-left: 10px !important;
+}
+
+.adminStatOpenBtn.sapMBtn .sapMBtnIcon {
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-size: 1.1rem !important;
+    transition: color 0.2s ease !important;
+}
+
+.adminStatOpenBtn.sapMBtn:hover .sapMBtnIcon {
+    color: #ffffff !important;
+}
+
+
