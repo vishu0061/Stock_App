@@ -127,6 +127,10 @@ sap.ui.define([
 
         onExit: function () {
             this._stopPolling();
+            if (this._oChartPopover) {
+                this._oChartPopover.destroy();
+                this._oChartPopover = null;
+            }
         },
 
         /* ── Main data fetch – price, volume, chart history ── */
@@ -215,16 +219,43 @@ sap.ui.define([
                     var oViz = self.byId("priceTrendChart");
                     if (oViz) {
                         oViz.setVizProperties({
-                            title:    { text: "Live Price Chart" },
+                            title:    { visible: false },
                             legend:   { visible: false },
                             plotArea: {
+                                background: { visible: false },
                                 dataLabel:   { visible: false },
-                                colorPalette: ["#059669"],
-                                line: { marker: { visible: true, size: 4 } }
+                                colorPalette: ["#10b981"],
+                                line: { marker: { visible: true, size: 6 }, width: 3 }
                             },
-                            categoryAxis: { title: { visible: true, text: "Time" } },
-                            valueAxis:    { title: { visible: true, text: "Price" } }
+                            background: { visible: false },
+                            categoryAxis: {
+                                title: { visible: true, text: "Time", style: { color: "#94a3b8" } },
+                                label: { style: { color: "#94a3b8" } },
+                                gridLine: { visible: false },
+                                axisLine: { visible: true, color: "#334155" }
+                            },
+                            valueAxis:    {
+                                title: { visible: true, text: "Price", style: { color: "#94a3b8" } },
+                                label: { style: { color: "#94a3b8" } },
+                                gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
+                                axisLine: { visible: false }
+                            },
+                            tooltip: { visible: true },
+                            interaction: {
+                                selectability: { mode: "single" },
+                                hoverBehavior: "tooltip"
+                            }
                         });
+
+                        // Create and connect dynamic Popover once to enable exact price value tooltips on hover
+                        if (!self._oChartPopover) {
+                            sap.ui.require(["sap/viz/ui5/controls/Popover"], function (Popover) {
+                                if (!self._oChartPopover && oViz.getVizUid()) {
+                                    self._oChartPopover = new Popover();
+                                    self._oChartPopover.connect(oViz.getVizUid());
+                                }
+                            });
+                        }
                     }
                 }, 300);
 

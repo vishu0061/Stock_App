@@ -3671,4 +3671,13 @@
     color: #ffffff !important;
 }
 
+.adminStockDialogSub.sapMText {
+    color: #94a3b8 !important;
+    font-size: 0.85rem !important;
+    font-family: 'Inter', sans-serif !important;
+    line-height: 1.4 !important;
+    display: block !important;
+}
+
+
 

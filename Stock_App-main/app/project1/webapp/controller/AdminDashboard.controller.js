@@ -539,8 +539,9 @@ sap.ui.define([
                     var aData = aCtx.map(function (c) {
                         var h = c.getObject();
                         var dt = h.createdAt ? new Date(h.createdAt) : new Date();
+                        var sShortDate = dt.getDate() + "/" + (dt.getMonth() + 1);
                         return {
-                            date: dt.toLocaleDateString(),
+                            date: sShortDate,
                             price: Number(h.price || 0),
                             changePct: Number(h.changePct || 0),
                             volume: Number(h.volume || 0),
@@ -555,8 +556,16 @@ sap.ui.define([
                     var fLast = aData[aData.length - 1].price;
                     var fChangePct = ((fLast - fFirst) / fFirst * 100).toFixed(2);
 
+                    var sYear = new Date().getFullYear();
+                    if (aData.length > 0) {
+                        var latestTxDate = aCtx[aCtx.length - 1].getObject().createdAt;
+                        if (latestTxDate) {
+                            sYear = new Date(latestTxDate).getFullYear();
+                        }
+                    }
+
                     self._renderStockDialog(
-                        oProduct, aData, fMax, fMin, fChangePct,
+                        oProduct, aData, fMax, fMin, fChangePct, sYear,
                         VizFrame, FlattenedDataset, DimDef, MeasDef, FeedItem,
                         Dialog, MButton, VBox, HBox, MLabel, MTitle, MText, ObjectStatus
                     );
@@ -569,13 +578,13 @@ sap.ui.define([
             });
         },
 
-        _renderStockDialog: function (oProduct, aData, fMax, fMin, fChangePct,
+        _renderStockDialog: function (oProduct, aData, fMax, fMin, fChangePct, sYear,
             VizFrame, FlattenedDataset, DimDef, MeasDef, FeedItem,
             Dialog, MButton, VBox, HBox, MLabel, MTitle, MText, ObjectStatus) {
 
             var bUp = Number(fChangePct) >= 0;
-            var sColor = bUp ? "#059669" : "#dc2626";
-            var sArrow = bUp ? "\u25b2" : "\u25bc";
+            var sColor = bUp ? "#10b981" : "#ef4444";
+            var sArrow = bUp ? "▲" : "▼";
             var sState = bUp ? "Success" : "Error";
             var oGM = new JSONModel({ rows: aData });
 
@@ -589,12 +598,37 @@ sap.ui.define([
             oViz.addFeed(new FeedItem({ uid: "valueAxis", type: "Measure", values: ["Price"] }));
             oViz.addFeed(new FeedItem({ uid: "categoryAxis", type: "Dimension", values: ["Date"] }));
             oViz.setVizProperties({
-                title: { text: "" },
+                title: { visible: false },
                 legend: { visible: false },
-                plotArea: { dataLabel: { visible: false }, colorPalette: [sColor], line: { marker: { visible: true, size: 5 } } },
-                categoryAxis: { title: { visible: true, text: "Date" } },
-                valueAxis: { title: { visible: true, text: "Price (" + oProduct.currency + ")" } }
+                plotArea: {
+                    background: { visible: false },
+                    dataLabel: { visible: false },
+                    colorPalette: [sColor],
+                    line: { marker: { visible: true, size: 6 }, width: 3 }
+                },
+                background: { visible: false },
+                categoryAxis: {
+                    title: { visible: true, text: "Timeline", style: { color: "#94a3b8" } },
+                    label: { style: { color: "#94a3b8" } },
+                    gridLine: { visible: false },
+                    axisLine: { visible: true, color: "#334155" }
+                },
+                valueAxis: {
+                    title: { visible: true, text: "Price (" + oProduct.currency + ")", style: { color: "#94a3b8" } },
+                    label: { style: { color: "#94a3b8" } },
+                    gridLine: { visible: true, color: "rgba(255,255,255,0.05)", size: 1 },
+                    axisLine: { visible: false }
+                },
+                tooltip: { visible: true },
+                interaction: {
+                    selectability: { mode: "single" },
+                    hoverBehavior: "tooltip"
+                }
             });
+
+            // Connect dynamic Popover for hover/click tooltips showing exact price values
+            var oPopover = new sap.viz.ui5.controls.Popover();
+            oPopover.connect(oViz.getVizUid());
 
             var oStats = new HBox({
                 justifyContent: "SpaceBetween",
@@ -603,13 +637,19 @@ sap.ui.define([
                     new VBox({ items: [new MLabel({ text: "14-Day Change" }), new ObjectStatus({ text: sArrow + " " + Math.abs(fChangePct) + "%", state: sState })] }),
                     new VBox({ items: [new MLabel({ text: "14-Day High" }), new MText({ text: oProduct.currency + " " + fMax })] }),
                     new VBox({ items: [new MLabel({ text: "14-Day Low" }), new MText({ text: oProduct.currency + " " + fMin })] }),
-                    new VBox({ items: [new MLabel({ text: "Trend" }), new ObjectStatus({ text: oProduct.trend, state: sState })] })
+                    new VBox({ items: [new MLabel({ text: "Trend" }), new ObjectStatus({ text: oProduct.trend, state: sState })] }),
+                    new VBox({ items: [new MLabel({ text: "Year" }), new ObjectStatus({ text: String(sYear), state: "Information", icon: "sap-icon://calendar" })] })
                 ]
             });
             oStats.addStyleClass("sapUiSmallMarginBottom sapUiSmallMarginTop");
 
+            var oInfoText = new MText({
+                text: "📈 Showing real-time stock price fluctuations and transaction trends over the last 14 active trading intervals."
+            });
+            oInfoText.addStyleClass("adminStockDialogSub sapUiSmallMarginBottom");
+
             var oContentBox = new VBox({
-                items: [oStats, oViz]
+                items: [oStats, oInfoText, oViz]
             });
             oContentBox.addStyleClass("sapUiSmallMarginBeginEnd");
 
