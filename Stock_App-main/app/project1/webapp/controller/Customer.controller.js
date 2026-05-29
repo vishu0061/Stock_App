@@ -890,9 +890,11 @@ sap.ui.define([
                     const aTxCtx = await oTxList.requestContexts(0, 200);
                     aTxCtx.forEach(function (c) {
                         const t = c.getObject();
+                        const cur = (t.currency || "INR").toUpperCase();
+                        if (cur !== "INR" && cur !== "₹") { return; }
                         const amt = Number(t.totalPrice || 0);
-                        if (t.transactionType === "BUY") { cashOut += amt; }
-                        if (t.transactionType === "SELL") { cashIn += amt; }
+                        if (t.transactionType === "BUY" || t.transactionType === "WITHDRAW") { cashOut += amt; }
+                        if (t.transactionType === "SELL" || t.transactionType === "ADD_FUNDS") { cashIn += amt; }
                     });
                 } catch (txErr) {
                     /* Fallback to cost-basis estimate if tx fetch fails */
