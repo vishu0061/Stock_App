@@ -81,7 +81,8 @@ sap.ui.define([
                         oModel.setProperty("/totalTrades", d.totalTrades);
                         oModel.setProperty("/activeUsers", d.activeUsers);
                         oModel.setProperty("/marketVolume", d.marketVolume);
-                        oModel.setProperty("/revenue", "$" + d.revenue);
+                        var formattedRevenue = Number(d.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        oModel.setProperty("/revenue", "₹" + formattedRevenue);
                     }
                 }
             });

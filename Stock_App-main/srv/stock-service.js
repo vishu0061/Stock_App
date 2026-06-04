@@ -188,9 +188,12 @@ module.exports = cds.service.impl(async function () {
             }
             marketVolume += Number(t.quantity || 0);
             activeUsers.add(t.customerName);
-            // roughly mock platform revenue as 1% of buy volume
             if (t.transactionType === "BUY") {
-                revenue += Number(t.totalPrice || 0) * 0.01;
+                let amt = Number(t.totalPrice || 0) * 0.01;
+                if (t.currency === "USD") {
+                    amt = amt * 90;
+                }
+                revenue += amt;
             }
         });
 
