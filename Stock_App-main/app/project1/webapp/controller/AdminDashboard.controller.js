@@ -40,7 +40,7 @@ sap.ui.define([
             this._stopPolling();
             this._intervalId = setInterval(function () {
                 this._loadDashboardData();
-            }.bind(this), 3000); // 3 seconds live interval for Bloomberg-level responsiveness
+            }.bind(this), 3000); 
         },
 
         _stopPolling: function () {

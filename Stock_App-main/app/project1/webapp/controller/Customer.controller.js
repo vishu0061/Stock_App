@@ -1219,18 +1219,30 @@ sap.ui.define([
                     
                     const colorMap = SECTOR_COLOR_MAP[sName] || { hex: "#94a3b8", cssClass: "cdColorOther" };
 
-                    const isUp = fAvgChange >= 0;
-                    const sChangeText = (isUp ? "+" : "") + fAvgChange.toFixed(2) + "%";
-                    const sChangeClass = isUp ? "cdChangeUp" : "cdChangeDown";
-                    const sSparkIcon = isUp ? "sap-icon://trend-up" : "sap-icon://trend-down";
-
                     let sStatus = "Stable";
-                    let sStatusState = "Success";
-                    if (fAvgChange >= 1.5) { sStatus = "Strong"; }
-                    else if (fAvgChange >= 0.5) { sStatus = "Positive"; }
-                    else if (fAvgChange >= -0.2) { sStatus = "Stable"; }
-                    else if (fAvgChange >= -1.0) { sStatus = "Neutral"; sStatusState = "Warning"; }
-                    else { sStatus = "Weak"; sStatusState = "Error"; }
+                    let sStatusState = "Information";
+                    let sChangeClass = "cdChangeStatus"; // neutral grey
+                    let sSparkIcon = "sap-icon://minus";
+                    let sChangeText = fAvgChange.toFixed(2) + "%";
+
+                    if (fAvgChange > 0) {
+                        sStatus = fAvgChange >= 1.5 ? "Strong" : "Advancing";
+                        sStatusState = "Success";
+                        sChangeClass = "cdChangeUp";
+                        sSparkIcon = "sap-icon://trend-up";
+                        sChangeText = "+" + sChangeText;
+                    } else if (fAvgChange < 0) {
+                        sStatus = fAvgChange <= -1.5 ? "Weak" : "Declining";
+                        sStatusState = "Error";
+                        sChangeClass = "cdChangeDown";
+                        sSparkIcon = "sap-icon://trend-down";
+                    } else {
+                        sStatus = "Stable";
+                        sStatusState = "None";
+                        sChangeClass = "cdChangeStatus";
+                        sSparkIcon = "sap-icon://minus";
+                        sChangeText = "+0.00%";
+                    }
 
                     return {
                         key: oSec.key,
@@ -1320,7 +1332,11 @@ sap.ui.define([
                 const unchanged = aSectors.length - advancing - declining;
 
                 let score = 50 + (advancing - declining) * (aSectors.length > 0 ? Math.round(40 / aSectors.length) : 5);
-                score = Math.min(95, Math.max(10, score));
+                if (aSectors.length > 0) {
+                    if (declining === aSectors.length) { score = 0; }
+                    else if (advancing === aSectors.length) { score = 100; }
+                }
+                score = Math.min(100, Math.max(0, score));
 
                 let sText = "NEUTRAL";
                 let sTextClass = "cdChangeStatus";

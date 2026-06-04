@@ -183,7 +183,9 @@ module.exports = cds.service.impl(async function () {
         const activeUsers = new Set();
 
         aTransactions.forEach(t => {
-            totalTrades++;
+            if (t.transactionType === "BUY" || t.transactionType === "SELL") {
+                totalTrades++;
+            }
             marketVolume += Number(t.quantity || 0);
             activeUsers.add(t.customerName);
             // roughly mock platform revenue as 1% of buy volume
