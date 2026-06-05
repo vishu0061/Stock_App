@@ -716,7 +716,12 @@ sap.ui.define([
             aTx.forEach(function (c) {
                 const t = c.getObject();
                 if (!t || !t.createdAt) { return; }
-                const sDate = String(t.createdAt).substring(0, 10);
+                const dTx = new Date(t.createdAt);
+                if (isNaN(dTx.getTime())) { return; }
+                const yyyy = dTx.getFullYear();
+                const mm = String(dTx.getMonth() + 1).padStart(2, '0');
+                const dd = String(dTx.getDate()).padStart(2, '0');
+                const sDate = yyyy + "-" + mm + "-" + dd;
                 if (!oByDate[sDate]) { oByDate[sDate] = { buys: 0, sells: 0 }; }
                 if (t.transactionType === "BUY") { oByDate[sDate].buys++; }
                 if (t.transactionType === "SELL") { oByDate[sDate].sells++; }
@@ -738,7 +743,10 @@ sap.ui.define([
 
             const aResult = [];
             for (let d = new Date(oStart); d <= oToday; d.setDate(d.getDate() + 1)) {
-                const sKey = d.toISOString().substring(0, 10);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const sKey = yyyy + "-" + mm + "-" + dd;
                 aResult.push({
                     date: (d.getMonth() + 1) + "/" + d.getDate(),
                     buys: (oByDate[sKey] || {}).buys || 0,
@@ -1429,7 +1437,7 @@ sap.ui.define([
                 for (let i = 0; i < iCount; i++) {
                     const h = 9 + Math.floor(i / 2);
                     const m = (i % 2) * 30;
-                    aLabels.push(h.toString().padStart(2, '0') + ":" + m.toString().padStart(2, '0'));
+                    aLabels.push(h.toString().padStart(2, '0') + ":" + m.toString().padStart(2, '0') + ":00");
                 }
             } else if (sRange === "1W") {
                 iCount = 7;

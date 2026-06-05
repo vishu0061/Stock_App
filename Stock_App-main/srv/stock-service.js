@@ -182,6 +182,11 @@ module.exports = cds.service.impl(async function () {
         let marketVolume = 0;
         const activeUsers = new Set();
 
+        const productCurrencyMap = {};
+        aProducts.forEach(p => {
+            productCurrencyMap[p.ID] = p.currency;
+        });
+
         aTransactions.forEach(t => {
             if (t.transactionType === "BUY" || t.transactionType === "SELL") {
                 totalTrades++;
@@ -190,7 +195,8 @@ module.exports = cds.service.impl(async function () {
             activeUsers.add(t.customerName);
             if (t.transactionType === "BUY") {
                 let amt = Number(t.totalPrice || 0) * 0.01;
-                if (t.currency === "USD") {
+                const sCurrency = productCurrencyMap[t.product_ID];
+                if (sCurrency === "USD") {
                     amt = amt * 90;
                 }
                 revenue += amt;
@@ -474,24 +480,54 @@ module.exports = cds.service.impl(async function () {
             // Load portfolio entries + join product data manually
             const aHoldings = await SELECT.from(Portfolio).where({ customerName });
 
-            const result = [];
+            // Group holdings by product_ID to consolidate duplicates and compute weighted average buy price
+            const consolidated = {};
             for (const h of aHoldings) {
-                const [prod] = await SELECT.from(Products).where({ ID: h.product_ID });
+                const pid = h.product_ID;
+                if (!consolidated[pid]) {
+                    consolidated[pid] = {
+                        product_ID: pid,
+                        quantity: 0,
+                        avgBuyPrice: 0,
+                        currency: h.currency,
+                        lastTradeAt: h.lastTradeAt
+                    };
+                }
+                const c = consolidated[pid];
+                const hQty = Number(h.quantity || 0);
+                const hAvgBuyPrice = Number(h.avgBuyPrice || 0);
+                const newQty = c.quantity + hQty;
+                
+                if (newQty > 0) {
+                    c.avgBuyPrice = ((c.avgBuyPrice * c.quantity) + (hAvgBuyPrice * hQty)) / newQty;
+                }
+                c.quantity = newQty;
+                if (h.lastTradeAt && (!c.lastTradeAt || new Date(h.lastTradeAt) > new Date(c.lastTradeAt))) {
+                    c.lastTradeAt = h.lastTradeAt;
+                }
+            }
+
+            const result = [];
+            for (const pid in consolidated) {
+                const h = consolidated[pid];
+                if (h.quantity <= 0) continue; // Skip empty positions
+                
+                const [prod] = await SELECT.from(Products).where({ ID: pid });
                 if (!prod) continue;
 
                 const currentPrice = Number(prod.price || 0);
                 const avgBuy = Number(h.avgBuyPrice || 0);
-                const qty = Number(h.quantity || 0);
+                const qty = h.quantity;
                 const totalValue = currentPrice * qty;
                 const profitLoss = (currentPrice - avgBuy) * qty;
                 const profitLossPct = avgBuy > 0 ? ((currentPrice - avgBuy) / avgBuy) * 100 : 0;
 
                 result.push({
-                    productId:     h.product_ID,
+                    productId:     pid,
                     productName:   prod.productName || "",
                     category:      prod.category_ID || "",
                     quantity:      qty,
-                    avgBuyPrice:   avgBuy,
+                    avgBuyPrice:   Number(avgBuy.toFixed(2)),
                     currentPrice:  currentPrice,
                     previousPrice: Number(prod.previousPrice || currentPrice),
                     currency:      h.currency || prod.currency || "INR",
@@ -527,7 +563,7 @@ module.exports = cds.service.impl(async function () {
             }
 
             const aHistory = await SELECT.from(HistoricalPrices)
-                .where({ product_ID: productId })
+                .where({ product_ID: productId, createdAt: { '>=': dFrom.toISOString() } })
                 .orderBy("createdAt asc");
 
             return aHistory.map((h) => ({
@@ -566,26 +602,25 @@ module.exports = cds.service.impl(async function () {
     });
 
     // ================= SEED DATA TIME-SHIFT BOOTSTRAP =================
-    // Dynamically shifts transaction seed dates on boot so they fall into the current month/year,
-    // avoiding a 2-year flatline gap on the line chart.
+    // Dynamically shifts transaction and historical price seed dates on boot so they fall into the
+    // current month/year, avoiding flatline gaps on the price charts.
     cds.once("served", async () => {
         try {
             const tx = cds.tx();
+            
+            // 1. Shift Transactions if they are old
             const aTx = await tx.run(SELECT.from(Transactions));
             if (aTx && aTx.length > 0) {
-                let latestDate = null;
+                let latestTxDate = null;
                 aTx.forEach(t => {
                     if (t.createdAt) {
                         const d = new Date(t.createdAt);
-                        if (!latestDate || d > latestDate) {
-                            latestDate = d;
-                        }
+                        if (!latestTxDate || d > latestTxDate) { latestTxDate = d; }
                     }
                 });
-
-                if (latestDate) {
+                if (latestTxDate) {
                     const now = new Date();
-                    const diffMs = now - latestDate;
+                    const diffMs = now - latestTxDate;
                     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                     if (diffDays > 3) {
                         console.log(`[StockApp Bootstrap] Shifting transaction seed dates by ${diffDays} days to match current timeframe...`);
@@ -599,15 +634,43 @@ module.exports = cds.service.impl(async function () {
                                 }).where({ ID: t.ID }));
                             }
                         }
-                        await tx.commit();
-                        console.log(`[StockApp Bootstrap] Successfully shifted seed transaction dates to match local time.`);
-                        return;
                     }
                 }
             }
-            await tx.rollback();
+
+            // 2. Shift HistoricalPrices if they are old (handles case where Transactions were already shifted)
+            const aHP = await tx.run(SELECT.from(HistoricalPrices));
+            if (aHP && aHP.length > 0) {
+                let latestHPDate = null;
+                aHP.forEach(hp => {
+                    if (hp.createdAt) {
+                        const d = new Date(hp.createdAt);
+                        if (!latestHPDate || d > latestHPDate) { latestHPDate = d; }
+                    }
+                });
+                if (latestHPDate) {
+                    const now = new Date();
+                    const diffMs = now - latestHPDate;
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    if (diffDays > 3) {
+                        console.log(`[StockApp Bootstrap] Shifting historical price seed dates by ${diffDays} days to match current timeframe...`);
+                        for (const hp of aHP) {
+                            if (hp.createdAt) {
+                                const oldDate = new Date(hp.createdAt);
+                                const newDate = new Date(oldDate.getTime() + diffMs);
+                                await tx.run(UPDATE(HistoricalPrices).set({
+                                    createdAt: newDate.toISOString()
+                                }).where({ ID: hp.ID }));
+                            }
+                        }
+                    }
+                }
+            }
+
+            await tx.commit();
+            console.log(`[StockApp Bootstrap] Time-shift alignment checked and successfully completed.`);
         } catch (e) {
-            console.error("[StockApp Bootstrap] Failed to shift seed transaction dates:", e);
+            console.error("[StockApp Bootstrap] Failed to shift seed dates:", e);
         }
     });
 

@@ -551,29 +551,7 @@
 
 
 
-                    <!-- ─────────────────────────────────────────
-                         6c. MARKET INSIGHTS
-                    ───────────────────────────────────────────── -->
-                    <VBox class="cdCard cdInsightsCard">
-                        <HBox alignItems="Center" class="cdCardHeader">
-                            <core:Icon src="sap-icon://lightbulb" class="cdSectionIcon cdIconAmber"/>
-                            <VBox>
-                                <Title text="Market Insights" level="H4" class="cdCardTitle"/>
-                                <Text text="AI-powered signals" class="cdCardSubtitle"/>
-                            </VBox>
-                        </HBox>
 
-                        <VBox items="{custVM>/marketInsights}">
-                            <VBox class="cdInsightItem {custVM>itemClass}">
-                                <HBox justifyContent="SpaceBetween" alignItems="Center">
-                                    <Text text="{custVM>name}" class="cdInsightTitle"/>
-                                    <ObjectStatus text="{custVM>status}" state="{custVM>state}"/>
-                                </HBox>
-                                <Text text="{custVM>desc}" class="cdInsightDesc"/>
-                                <ProgressIndicator percentValue="{custVM>score}" displayValue="" state="{custVM>state}" class="cdInsightBar"/>
-                            </VBox>
-                        </VBox>
-                    </VBox>
 
                 </VBox>
             </HBox>

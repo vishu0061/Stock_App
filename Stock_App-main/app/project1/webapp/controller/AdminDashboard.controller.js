@@ -40,7 +40,7 @@ sap.ui.define([
             this._stopPolling();
             this._intervalId = setInterval(function () {
                 this._loadDashboardData();
-            }.bind(this), 3000); 
+            }.bind(this), 3000); // 3 seconds live interval for Bloomberg-level responsiveness
         },
 
         _stopPolling: function () {
@@ -186,7 +186,12 @@ sap.ui.define([
             aTx.forEach(function (c) {
                 var t = c.getObject();
                 if (!t || !t.createdAt) { return; }
-                var sDate = String(t.createdAt).substring(0, 10);
+                var dTx = new Date(t.createdAt);
+                if (isNaN(dTx.getTime())) { return; }
+                var yyyy = dTx.getFullYear();
+                var mm = String(dTx.getMonth() + 1).padStart(2, '0');
+                var dd = String(dTx.getDate()).padStart(2, '0');
+                var sDate = yyyy + "-" + mm + "-" + dd;
                 if (!oByDate[sDate]) { oByDate[sDate] = { buys: 0, sells: 0 }; }
                 if (t.transactionType === "BUY") { oByDate[sDate].buys++; }
                 if (t.transactionType === "SELL") { oByDate[sDate].sells++; }
@@ -209,7 +214,10 @@ sap.ui.define([
 
             var aResult = [];
             for (var d = new Date(oStart); d <= oEnd; d.setDate(d.getDate() + 1)) {
-                var sKey = d.toISOString().substring(0, 10);
+                var yyyy = d.getFullYear();
+                var mm = String(d.getMonth() + 1).padStart(2, '0');
+                var dd = String(d.getDate()).padStart(2, '0');
+                var sKey = yyyy + "-" + mm + "-" + dd;
                 aResult.push({
                     date: (d.getMonth() + 1) + "/" + d.getDate(),
                     buys: (oByDate[sKey] || {}).buys || 0,
@@ -850,7 +858,10 @@ sap.ui.define([
 
                 aItems.forEach(function (t) {
                     if (t.date >= oStart && t.date <= oNow) {
-                        var sDate = t.date.toISOString().substring(0, 10);
+                        var yyyy = t.date.getFullYear();
+                        var mm = String(t.date.getMonth() + 1).padStart(2, '0');
+                        var dd = String(t.date.getDate()).padStart(2, '0');
+                        var sDate = yyyy + "-" + mm + "-" + dd;
                         oByGroup[sDate] = (oByGroup[sDate] || 0) + 1;
                     }
                 });
@@ -858,7 +869,10 @@ sap.ui.define([
                 // Generate dates
                 for (var i = iDays - 1; i >= 0; i--) {
                     var d = new Date(oNow.getTime() - i * 24 * 60 * 60 * 1000);
-                    var sKey = d.toISOString().substring(0, 10);
+                    var yyyy = d.getFullYear();
+                    var mm = String(d.getMonth() + 1).padStart(2, '0');
+                    var dd = String(d.getDate()).padStart(2, '0');
+                    var sKey = yyyy + "-" + mm + "-" + dd;
                     var sLabel = (d.getMonth() + 1) + "/" + d.getDate();
                     aResult.push({
                         label: sLabel,

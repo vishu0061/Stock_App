@@ -144,7 +144,7 @@
                         <ObjectStatus text="Today" state="Information" class="pfSummBadge"/>
                     </HBox>
                     <Title text="{pfVM>/summary/todaysGain}" level="H2" class="pfSummValue pfSummBlueVal"/>
-                    <Text text="Today's Gain" class="pfSummLabel"/>
+                    <Text text="Today's Gain/Loss" class="pfSummLabel"/>
                     <Text text="Intraday performance" class="pfSummSub"/>
                 </VBox>
 

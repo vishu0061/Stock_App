@@ -402,14 +402,13 @@ sap.ui.define([
             const sRange   = oVM.getProperty("/range") || "1D";
             const aHoldings = oVM.getProperty("/holdings") || [];
 
-            const sPrimary  = "INR";
-            const aINR      = aHoldings.filter(function (h) { return (h.currency || "INR") === sPrimary; });
-
-            let totalCost = aINR.reduce(function (s, h) {
-                return s + Number(h.buyPrice || 0) * Number(h.quantity || 0);
+            let totalCost = aHoldings.reduce(function (s, h) {
+                var mult = (h.currency === "USD") ? 90 : 1;
+                return s + (Number(h.buyPrice || 0) * Number(h.quantity || 0) * mult);
             }, 0);
-            let totalValue = aINR.reduce(function (s, h) {
-                return s + Number(h.totalValue || 0);
+            let totalValue = aHoldings.reduce(function (s, h) {
+                var mult = (h.currency === "USD") ? 90 : 1;
+                return s + (Number(h.totalValue || 0) * mult);
             }, 0);
 
             if (totalCost === 0) {

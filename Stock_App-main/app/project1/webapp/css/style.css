@@ -832,7 +832,67 @@
     color: white !important;
 }
 
+/* ==========================================
+   PORTFOLIO ANALYTICS ROW
+========================================== */
 
+.pfAnalyticsCardsRow {
+    margin-top: 1.5rem;
+    gap: 1.25rem;
+    justify-content: space-between;
+    align-items: stretch;
+}
+
+.pfAnalyticsCard {
+    flex: 1;
+    min-width: 180px;
+    padding: 1rem 1.25rem;
+
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+
+    backdrop-filter: blur(10px);
+}
+
+/* spacing between text lines */
+.pfAnalyticsLabel {
+    color: #94a3b8 !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem !important;
+}
+
+.pfAnalyticsValueRow {
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.pfAnalyticsVal {
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+}
+
+.pfAnalyticsSub {
+    color: #64748b !important;
+    font-size: 0.75rem !important;
+}
+
+/* optional separator look */
+.pfAnalyticsCard:not(:last-child) {
+    position: relative;
+}
+
+.pfAnalyticsCard:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 15%;
+    right: -0.65rem;
+    height: 70%;
+    width: 1px;
+    background: rgba(255,255,255,0.08);
+}
 /* =========================================================
    CHART
 ========================================================= */
